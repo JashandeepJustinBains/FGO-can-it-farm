@@ -49,6 +49,7 @@ class Servant:
         self.cards = data.get('cards', [])
         self.atk_growth = data.get('atkGrowth', [])
         self.skills = self.parse_skills(data.get('skills', []))
+        self.nps = self.parse_nps(data.get(''))
         self.cooldowns = []
         self.class_passive = self.parse_class_passive(data.get('classPassive', []))
         self.rarity = data.get('rarity')
