@@ -1,3 +1,6 @@
 # .gitignore
 /Quests
 /ServantData
+output.txt
+test.txt
+.env
