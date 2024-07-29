@@ -22,9 +22,12 @@ class Simulator:
 
 # holds the data for the current team
 class Team:
-    def createTeam():
-        team_comp = []
-        # add upto 6 team members
+    def __init__(self, servants):
+        self.servants = servants
+        self.stars = 0
+
+    def __repr__(self):
+        return f"Team(servants={[servant.name for servant in self.servants]})"
 
 # holds thedata for the current quest
 class Encounter:
@@ -46,17 +49,21 @@ class Servant:
         self.cards = data.get('cards', [])
         self.atk_growth = data.get('atkGrowth', [])
         self.skills = self.parse_skills(data.get('skills', []))
+        self.cooldowns = []
         self.class_passive = self.parse_class_passive(data.get('classPassive', []))
         self.rarity = data.get('rarity')
-
+        self.np_gauge = 0
+        self.buffs = []
+    
     def parse_skills(self, skills):
         parsed_skills = []
         for skill in skills:
             skill_info = {
                 'name': skill['name'],
-                'cooldown': skill['coolDown'][9] if len(skill['coolDown']) > 9 else None,
+                'cooldown': skill['coolDown'][9],
                 'functions': [],
             }
+            self.cooldowns.append(skill_info['cooldown'])
             for func in skill['functions']:
                 func_info = {
                     'funcType': func['funcType'],
@@ -108,6 +115,120 @@ class Servant:
 
     def get_class_base_multiplier(self):
         return self.class_base_multiplier
+
+    # adds a state/buff if they affect the damage or npgain formula
+    def apply_add_state(self, svals, buffs, target_type=None):
+        for buff in buffs:
+            buff_name = buff['name']
+            duration = svals.get('Turn', None)
+            count = svals.get('Count', None)
+            self.buffs.append({
+                'name': buff_name,
+                'duration': duration,
+                'count': count
+            })
+
+    def apply_gain_np(self, svals, buffs, target_type):
+        self.np_gauge += svals
+
+    # applies svals amount of skill cooldown to each skill
+    def apply_shorten_skill(self, svals, buffs, target_type):
+        for cooldown in self.cooldowns:
+            cooldown = min(0, cooldown - svals)
+
+    def apply_loss_np(self, svals, buffs, target_type): self.np_gauge = min(0, self.np_gauge-svals)
+
+    #probably do not need to implement
+    def apply_loss_star(self, svals, buffs, target_type):
+        # Implement the logic for lossStar
+        pass
+    def apply_gain_star(self, svals, buffs, target_type):
+        # Implement the logic for gainStar
+        pass
+    def apply_sub_state(self, svals, buffs, target_type):
+        # removes state from list of states if any exist.
+        # Implement the logic for subState
+        pass
+
+    #special mechanics 
+    def apply_gain_np_buff_individual_sum(self, svals, buffs, target_type):
+        # Implement the logic for gainNpBuffIndividualSum
+        # special mechanics for
+        #   238 Kingprotea
+        #   295 Van Gogh
+        #   353 Lady Avalon
+        #   388 Chloe Von Einzbern
+        pass
+    def apply_gain_np_from_targets(self, svals, buffs, target_type):
+        # Implement the logic for gainNpFromTargets
+        # special mechanics for
+        #   266 Meltirilis
+        #   275 Yang Guifei
+        pass
+    def apply_absorb_np_turn(self, svals, buffs, target_type):
+        # Implement the logic for absorbNpturn
+        # special mechanics for
+        #   266 Meltirilis
+        #   275 Yang Guifei
+        pass
+    def apply_transform_servant(self, svals, buffs, target_type):
+        # Implement the logic for transformServant
+        # special mechanics for
+        #   312 Melusine
+        #   394 Ptolemaios 
+        pass
+    def apply_extend_buff_turn(self, svals, buffs, target_type):
+        # Implement the logic for extendBuffturn
+        # special mechanic for 392 Cait Cu Cerpreistess
+        pass
+    def apply_gain_multiply_np(self, svals, buffs, target_type):
+        # Implement the logic for gainMultiplyNp
+        # 414 soujuurou np gauge increase skill 
+        pass
+    def apply_gain_np_individual_sum(self, svals, buffs, target_type):
+        # Implement the logic for gainNpIndividualSum
+        # halloween lis ability, honestly dont know what this one is
+        pass
+
+    def update_variables(self, skill):
+        func_type_mapping = {
+            'addState': self.apply_add_state, # adds buff 
+            'addStateShort': self.apply_add_state_short, # adds buff on timer
+            'gainNp': self.apply_gain_np, # increases NP gauge
+            'gainStar': self.apply_gain_star, # increases star counter
+            'shortenSkill': self.apply_shorten_skill, # reduces skill cooldown
+            'lossNp': self.apply_loss_np, # reduces NP gauge
+            'gainNpBuffIndividualSum': self.apply_gain_np_buff_individual_sum, # 
+            'gainNpFromTargets': self.apply_gain_np_from_targets, # 
+            'absorbNpturn': self.apply_absorb_np_turn, # 
+            'transformServant': self.apply_transform_servant, # 
+            'extendBuffturn': self.apply_extend_buff_turn, # 
+            'gainMultiplyNp': self.apply_gain_multiply_np, # 
+            
+            # below do not affect damage or refund ... probably
+            'delayNpturn': self.apply_delay_np_turn,
+            'gainHp': self.apply_gain_hp,
+            'subState': self.apply_sub_state,
+            'gainHpFromTargets': self.apply_gain_hp_from_targets,
+            'fixCommandcard': self.apply_fix_command_card, 
+            'cardReset': self.apply_card_reset,
+            'moveState': self.apply_move_state,
+            'shortenBuffcount': self.apply_shorten_buff_count, 
+            'displayBuffstring': self.apply_display_buff_string,
+            'gainNpIndividualSum': self.apply_gain_np_individual_sum,
+            'hastenNpturn': self.apply_hasten_np_turn, 
+            'lossHpSafe': self.apply_loss_hp_safe, 
+            'lossStar': self.apply_loss_star,
+        }
+
+        for func in skill['functions']:
+            func_type = func['funcType']
+            target_type = func['funcTargetType']
+            svals = func['svals']
+            buffs = func.get('buffs', [])
+
+            if func_type in func_type_mapping:
+                func_type_mapping[func_type]
 
     def NP_damage(self, defender, card, position, busterChain, class_advantage, trait_advantage):
         firstCardBonus = 0.5 if card == "Buster" else 0
