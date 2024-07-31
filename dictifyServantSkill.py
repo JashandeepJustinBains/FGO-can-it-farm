@@ -1,4 +1,4 @@
-from simulate import select_characters
+from Servant import select_characters
 from dotenv import load_dotenv
 import os
 import sys
