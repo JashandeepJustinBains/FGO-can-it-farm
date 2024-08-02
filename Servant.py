@@ -1,4 +1,4 @@
-from data import class_advantage_matrix, attribute, class_indices, base_multipliers, traits_dict, character_list
+from data import class_advantage_matrix, attribute_dict, class_indices, base_multipliers, traits_dict, character_list
 from connectDB import db
 import pandas as pd
 import random
@@ -44,11 +44,69 @@ class Servant:
             parsed_skill = {
                 'id': skill.get('id'),
                 'name': skill.get('name'),
-                'cooldown': skill.get('coolDown'),
-                'functions': skill.get('functions')
+                'cooldown': skill.get('coolDown')[9],
+                'functions': []
             }
+            for function in skill.get('functions', []):
+                parsed_function = {
+                    'funcType': function.get('funcType'),
+                    'funcTargetType': function.get('funcTargetType'),
+                    'functvals': function.get('functvals'),
+                    'fieldReq': function.get('funcquestTvals', []),
+                    'condTarget': function.get('functvals',[]),
+                    'svals': function.get('svals')[9],
+                    'buffs': []
+                }
+                for buff in function.get('buffs', []):
+                    parsed_buff = {
+                        'name': buff.get('name'),
+                        'tvals': buff['tvals'],
+                        'svals': buff.get('svals')[9] if len(buff.get('svals', [])) > 9 else None
+                    }
+                    parsed_function['buffs'].append(parsed_buff)
+                parsed_skill['functions'].append(parsed_function)
             skills.append(parsed_skill)
         return skills
+
+
+    def get_skills(self):
+        return self.skills
+    def get_skill_by_num(self, num):
+        return self.skills[num]
+    
+    def process_buffs(self):
+        # Reset modifiers
+        self.atk_mod = 0
+        self.b_up = 0
+        self.a_up = 0
+        self.q_up = 0
+        self.power_mod = 0
+        self.np_damage_mod = 0
+
+        # Process each buff
+        for buff in self.buffs:
+            # Check if the buff has a conditional field state
+            required_field = buff.get('script', {}).get('INDIVIDUALITIE', {}).get('id')
+            if required_field is None:
+                required_field = buff.get('originalScript', {}).get('INDIVIDUALITIE')
+
+            # Apply the buff only if the required field state is present
+            if required_field is None or (required_field in self.fields):
+                # Update modifiers based on the buff type
+                if buff['buff'] == 'ATK Up':
+                    self.atk_mod += buff['value'] / 1000
+                elif buff['buff'] == 'Buster Up':
+                    self.b_up += buff['value'] / 1000
+                elif buff['buff'] == 'Arts Up':
+                    self.a_up += buff['value'] / 1000
+                elif buff['buff'] == 'Quick Up':
+                    self.q_up += buff['value'] / 1000
+                elif buff['buff'] == 'Power Up':
+                    self.power_mod += buff['value'] / 1000
+                elif buff['buff'] == 'NP Strength Up':
+                    self.np_damage_mod += buff['value'] / 1000
+                # Add more buff processing as needed
+
 
     def parse_noble_phantasms(self, nps_data):
         nps = []
@@ -59,6 +117,7 @@ class Servant:
                 'card': np.get('card'),
                 'npgain': np.get('npGain'),
                 'npdist': np.get('npDistribution'),
+                'aoe': np.get('effectFlags')[0],
                 'functions': self.parse_np_functions(np.get('functions'))
             }
             nps.append(parsed_np)
@@ -70,6 +129,8 @@ class Servant:
                 'funcId': func['funcId'],
                 'funcType': func['funcType'],
                 'funcTargetType': func['funcTargetType'],
+                'fieldReq': func['funcquestTvals'],
+                'condTarget': func['functvals'],
                 'values': {
                     1: {i+1: func['svals'][i] for i in range(5)},
                     2: {i+1: func['svals2'][i] for i in range(5)},
@@ -94,7 +155,7 @@ class Servant:
                 func_dict['buffs'].append(buff_dict)
             np_values_list.append(func_dict)
         return np_values_list
-    def get_np_values(self, np_level, overcharge_level):
+    def get_np_values(self, np_level=1, overcharge_level=1):
         result = []
         for np in self.nps:
             for func in np['functions']:
@@ -105,16 +166,19 @@ class Servant:
                     buffs.append({
                         'type': buff['type'],
                         'tvals': buff['tvals'],
-                        'values': buff_values
+                        'svals': buff_values
                     })
                 result.append({
                     'funcId': func['funcId'],
                     'funcType': func['funcType'],
                     'funcTargetType': func['funcTargetType'],
-                    'values': func_values,
+                    'fieldReq': func.get('fieldReq', {}),
+                    'condTarget': func.get('condTarget'),
+                    'svals': func_values,
                     'buffs': buffs
                 })
         return result
+
     def hasSuperEffective(self) -> int:
         for np in self.nps:
             for func in np['functions']:
@@ -133,10 +197,23 @@ class Servant:
             parsed_passive = {
                 'id': passive.get('id'),
                 'name': passive.get('name'),
-                'functions': passive.get('functions')
+                'functions': self.parse_passive_functions(passive.get('functions', []))
             }
             passives.append(parsed_passive)
         return passives
+
+    def parse_passive_functions(self, functions_data):
+        functions = []
+        for func in functions_data:
+            parsed_function = {
+                'funcType': func.get('funcType'),
+                'funcTargetType': func.get('funcTargetType'),
+                'functvals': func.get('functvals', []),
+                'svals': func.get('svals', [{}])[0],  # Assuming you want the first svals entry
+                'buffs': func.get('buffs', [])
+            }
+            functions.append(parsed_function)
+        return functions
 
     def get_atk_at_level(self, level=0):
         if level == 0:
@@ -152,32 +229,6 @@ class Servant:
                 level = 90
         return self.atk_growth[level-1] if level <= 120 else None
 
-    def process_buffs(self):
-        # Reset modifiers
-        self.atk_mod = 0
-        self.b_up = 0
-        self.a_up = 0
-        self.q_up = 0
-        self.power_mod = 0
-        self.np_damage_mod = 0
-
-        # Process buffs and update modifiers
-        for buff in self.buffs:
-            if buff['buff'] == 'ATKUp':
-                self.atk_mod += buff['value'] / 100
-            elif buff['buff'] == 'BusterUp':
-                self.b_up += buff['value'] / 100
-            elif buff['buff'] == 'ArtsUp':
-                self.a_up += buff['value'] / 100
-            elif buff['buff'] == 'QuickUp':
-                self.q_up += buff['value'] / 100
-            elif buff['buff'] == 'PowerUp':
-                self.power_mod += buff['value'] / 100
-            elif buff['buff'] == 'SelfDamageUp':
-                self.self_damage_mod += buff['value'] / 100
-            elif buff['buff'] == 'NPStrengthUp':
-                self.np_damage_mod += buff['value'] / 100
-            # Add more buff processing as needed
 
     def get_name(self):
         return self.name
@@ -205,6 +256,42 @@ class Servant:
         return self.nps[0]['npdist']
     def get_cardtype(self):
         return self.nps[0]['card']
+    def get_npgauge(self):
+        return self.np_gauge
+    def set_npgauge(self, val=0):
+        if val == 0:
+            self.np_gauge = 0
+        else: self.np_gauge += val
+
+    def add_buff(self, buff : dict):
+        self.buffs.append(buff)
+        self.process_buffs()
+    def decrement_buffs(self):
+        # Create a copy of the list to iterate over
+        for buff in self.buffs[:]:
+            if buff['turns'] > 0:
+                buff['turns'] -= 1
+            if buff['turns'] == 0:
+                self.buffs.remove(buff)
+
+    def get_np_damage_values(self, oc=1, np_level=1):
+        for np in self.nps:
+            for func in np['functions']:
+                if func['funcType'] == 'damageNpIndividual':
+                    oc_values = func['values'].get(oc, {}) or {}
+                    np_damage = oc_values.get(np_level, {})['Value']
+                    np_correction = oc_values.get(np_level, {})['Correction']
+                    return np_damage/1000, np_correction/1000
+        return None
+    def get_np_non_damage_values(self, oc=1, np_level=1):
+        result = {}
+        for np in self.nps:
+            for func in np['functions']:
+                oc_values = func['values'].get(oc, {}) or {}
+                func_value = oc_values.get(np_level, {})
+                result[func['funcType']] = func_value
+        return result
+
 
     def __repr__(self):
         return f"Servant(name={self.name}, class_id={self.class_id}, attribute={self.attribute})"
@@ -238,47 +325,17 @@ class Servant:
             for func in np['functions']:
                 print(func)
     
-    def get_class_multiplier(self, defender_class):       
-        defender_index = class_indices[defender_class]
-        return class_advantage_matrix[class_indices[self.class_name]][defender_index]
-
+    def get_class_multiplier(self, defender_class):   
+        return class_advantage_matrix[class_indices[self.class_name]][class_indices[defender_class]]
     def get_class_base_multiplier(self):
         return self.class_base_multiplier
+    def get_attribute_modifier(self, defender):
+        return attribute_dict.get(self.attribute).get(defender.attribute)
+    
+    def contains_trait(self, trait_id):
+        return trait_id[0]['id'] in self.traits
 
 def select_character(character_id):
     servant = db.servants.find_one({'collectionNo': character_id})
     return servant # Ensure character_id is an integer
 
-
-def display_character_stats(characters):
-    data = []
-    for c in characters:
-        atk = (
-            c.get_atk_at_level(60) if c.rarity == 1 else
-            c.get_atk_at_level(65) if c.rarity == 2 else
-            c.get_atk_at_level(70) if c.rarity == 3 else
-            c.get_atk_at_level(80) if c.rarity == 4 else
-            c.get_atk_at_level(90) if c.rarity == 5 else
-            None  # Default value if none of the conditions are met
-        )
-
-        skills_summary = ", ".join([f"{skill['name']} (Cooldown: {skill['cooldown']})" for skill in c.skills])
-        class_passive_summary = ", ".join([passive['name'] for passive in c.class_passive])
-        data.append({
-            'Name': c.name,
-            'Gender': c.gender,
-            'Attribute': c.attribute,
-            'Cards': ", ".join(c.cards),
-            'ATK': atk,
-            'Skills': skills_summary,
-            'Class Passive': class_passive_summary
-        })
-    
-    df = pd.DataFrame(data)
-    
-    # Set display options to show all columns and rows
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_colwidth', None)
-    
-    print(df)
