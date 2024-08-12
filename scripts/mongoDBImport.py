@@ -50,5 +50,5 @@ def import_quests(folder_path):
             db['quests'].insert_one(data)
             print(f"Imported {quest_name} into 'quests' collection.")
 
-import_servants('./ServantData')
+# import_servants('./ServantData')
 import_quests('./Quests')
