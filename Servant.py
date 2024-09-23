@@ -1,6 +1,5 @@
 from data import class_advantage_matrix, attribute_dict, class_indices, base_multipliers, class_advantage_matrix
 from connectDB import db
-# from beaver import logger1, logger2
 
 class Servant:
     special_servants = [312, 394, 391,413, 385, 350, 306, 305]

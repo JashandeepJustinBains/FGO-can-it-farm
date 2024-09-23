@@ -9,7 +9,7 @@ class Quest:
         self.db = db
         self.quest_id = quest_id
         self.fields = []
-        self.waves = {}
+        self.waves = []
         self.retrieve_quest()
 
     def retrieve_quest(self):
@@ -34,10 +34,10 @@ class Quest:
                 ]
                 wave_data = []
                 wave_data.append(Enemy(enemydata))
-            self.waves[i+1] = wave_data
+            self.waves.append(wave_data)
 
     def pretty_print_waves(self):
-        for wave, enemies in self.waves.items():
+        for wave, enemies in enumerate(self.waves):
             print(f"field:{self.fields} Wave {wave}:")
             headers = ["Name", "HP", "Class", "Traits", "Attribute"]
             data = [[enemy.get_name(), enemy.get_hp(), enemy.get_class(), ", ".join(map(str, enemy.get_traits())), enemy.attribute] for enemy in enemies]
@@ -46,7 +46,5 @@ class Quest:
                 print(" | ".join(map(str, row)))
         print("\n")
 
-    def get_wave(self, wave_no=0):
-        if wave_no == 0:
-            return self.waves
-        return self.waves[wave_no]
+    def get_wave(self, wave_no=1):
+        print(self.waves)

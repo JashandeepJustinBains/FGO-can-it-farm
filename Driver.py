@@ -3,75 +3,63 @@ from Quest import Quest
 from connectDB import db
 from data import character_list_support
 from data import character_list_multicore_actuallygood
-from beaver import Beaver
 from Servant import Servant
-
-from itertools import permutations
+import numpy as np
+from itertools import product
+from tabulate import tabulate
 
 class Driver:
     def __init__(self, servant_ids, quest_id):
         self.servant_ids = servant_ids
         self.quest_id = quest_id
         self.game_state = None
+        self.quest = None
 
     def setup_game_state(self):
         # Instantiate the GameState class
         self.game_state = GameState()
 
         # Instantiate a Quest instance and retrieve enemies
-        quest = Quest(self.quest_id)
-        self.game_state.enemies = quest.get_wave(self.game_state.wave)
-        quest.pretty_print_waves()
+        self.quest = Quest(self.quest_id)
+        # self.game_state.enemies = quest.get_wave(self.game_state.wave)
+        self.quest.pretty_print_waves()
 
         # Add servants to the game state
-        for servant_id in self.servant_ids:
-            self.game_state.add_servant(servant_id=servant_id)
-
-
-    def generate_tokens_for_positions(self):
-        all_tokens = []
-        skill_tokens = [['a', 'b', 'c', 4], ['d', 'e', 'f', 5], ['g', 'h', 'i', 6]]
-        
-        for i in range(3):  # Only 3 positions on the field
-            servant = Servant(self.servant_ids[i])
-            servant_tokens = []
-            for skill, token in zip(servant.get_skills(), skill_tokens[i]):
-                has_ptOne = any(func['funcTargetType'] == 'ptOne' for func in skill['functions'])
-                if has_ptOne:
-                    for j in range(1, 4):
-                        servant_tokens.append(f"{token}{j}")
-                else:
-                    servant_tokens.append(token)
-            all_tokens.append(servant_tokens)
-
-        for i, tokens in enumerate(all_tokens):
-            print(f"Position {i+1} tokens: {tokens}")
-        return all_tokens
-
-    def find_valid_permutation(self):
-        all_tokens = self.generate_tokens_for_positions()
-        flat_tokens = [token for sublist in all_tokens for token in sublist]
-        
-        for perm in permutations(flat_tokens):
-            # game_state = GameState()  # Create a new GameState instance
-            if self.game_state.simulate_permutation(perm):
-                return perm
-        return None
+        # for servant_id in self.servant_ids:
+            # self.game_state.add_servant(servant_id=servant_id)
 
     def run(self):
         self.setup_game_state()
-        self.generate_tokens_for_positions()
-        valid_permutation = self.find_valid_permutation()
-        if valid_permutation:
-            print("Valid permutation found:", valid_permutation)
-        else:
-            print("No valid permutation found.")
+        
+        # Generate all permutations of buffs
+        buff_ranges = {
+            "attack_up": range(0, 121, 10),
+            "x_up": range(0, 201, 10),
+            "np_damage_up": range(0, 251, 10)
+        }
+        base_attack = 12000
+        results = []
+        attribute_multiplier = [0.9, 1.0, 1.1]
+        for attack_up, x_up, np_damage_up in product(buff_ranges["attack_up"], buff_ranges["x_up"], buff_ranges["np_damage_up"]):
+            self.game_state.attack_up = attack_up
+            self.game_state.x_up = x_up
+            self.game_state.np_damage_up = np_damage_up
+            total_damage = self.game_state.calculate_damage(base_attack, attribute_multiplier)
+            if total_damage >= self.quests.get_wave().enemy.get_hp():
+                results.append([attack_up, x_up, np_damage_up, total_damage])
+
+        # Display results in a table
+        headers = ["Attack Up", "X Up", "NP Damage Up", "Total Damage"]
+        results_array = np.array(results)
+        formatted_results = [[f"{x:.2f}" for x in row] for row in results_array]
+        print(tabulate(formatted_results, headers=headers, tablefmt="grid"))
 
 if __name__ == '__main__':
     # Example usage
     servant_ids = [51, 314, 314, 316]  # List of servant IDs
     quest_id = 94086602  # Quest ID
-    beaver_instance = Beaver("test")
    
     driver = Driver(servant_ids, quest_id)
     driver.run()
+    # game_state = GameState()  # Create a new GameState instance
+
