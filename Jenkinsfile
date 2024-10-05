@@ -14,17 +14,17 @@ pipeline {
         }
         stage('Run Functional Tests') {
             steps {
-                sh 'python -m unittest discover -s tests/functionaltests'
+                sh 'python3 -m unittest discover -s tests/functionaltests'
             }
         }
         stage('Run Unit Tests') {
             steps {
-                sh 'python -m unittest discover -s tests/unittests'
+                sh 'python3 -m unittest discover -s tests/unittests'
             }
         }
         stage('Run Integration Tests') {
             steps {
-                sh 'python -m unittest discover -s tests/integrationtests'
+                sh 'python3 -m unittest discover -s tests/integrationtests'
             }
         }
     }
