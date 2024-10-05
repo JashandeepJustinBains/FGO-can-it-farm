@@ -7,24 +7,51 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Install Dependencies') {
+        stage('Setup Virtual Environment') {
             steps {
-                sh 'pip install -r requirements.txt'
+                script {
+                    // Create a virtual environment
+                    sh 'python3 -m venv venv'
+                    
+                    // Activate the virtual environment and install dependencies
+                    sh '''
+                    source venv/bin/activate
+                    pip install -r requirements.txt
+                    '''
+                }
             }
         }
         stage('Run Functional Tests') {
             steps {
-                sh 'python3 -m unittest discover -s tests/functionaltests'
+                script {
+                    // Activate the virtual environment and run functional tests
+                    sh '''
+                    source venv/bin/activate
+                    python3 -m unittest discover -s tests/functionaltests
+                    '''
+                }
             }
         }
         stage('Run Unit Tests') {
             steps {
-                sh 'python3 -m unittest discover -s tests/unittests'
+                script {
+                    // Activate the virtual environment and run unit tests
+                    sh '''
+                    source venv/bin/activate
+                    python3 -m unittest discover -s tests/unittests
+                    '''
+                }
             }
         }
         stage('Run Integration Tests') {
             steps {
-                sh 'python3 -m unittest discover -s tests/integrationtests'
+                script {
+                    // Activate the virtual environment and run integration tests
+                    sh '''
+                    source venv/bin/activate
+                    python3 -m unittest discover -s tests/integrationtests
+                    '''
+                }
             }
         }
     }
