@@ -15,7 +15,7 @@ pipeline {
                     
                     // Activate the virtual environment and install dependencies
                     sh '''
-                    source /var/jenkins_home/venvs/CanItFarm/bin/activate
+                    . /var/jenkins_home/venvs/CanItFarm/bin/activate
                     pip install -r requirements.txt
                     '''
                 }
@@ -26,7 +26,7 @@ pipeline {
                 script {
                     // Activate the virtual environment and run functional tests
                     sh '''
-                    source /var/jenkins_home/venvs/CanItFarm/bin/activate
+                    . /var/jenkins_home/venvs/CanItFarm/bin/activate
                     python3 -m unittest discover -s tests/functionaltests
                     '''
                 }
@@ -37,7 +37,7 @@ pipeline {
                 script {
                     // Activate the virtual environment and run unit tests
                     sh '''
-                    source /var/jenkins_home/venvs/CanItFarm/bin/activate
+                    . /var/jenkins_home/venvs/CanItFarm/bin/activate
                     python3 -m unittest discover -s tests/unittests
                     '''
                 }
@@ -48,7 +48,7 @@ pipeline {
                 script {
                     // Activate the virtual environment and run integration tests
                     sh '''
-                    source /var/jenkins_home/venvs/CanItFarm/bin/activate
+                    . /var/jenkins_home/venvs/CanItFarm/bin/activate
                     python3 -m unittest discover -s tests/integrationtests
                     '''
                 }
