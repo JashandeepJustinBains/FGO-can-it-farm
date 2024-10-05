@@ -24,32 +24,36 @@ pipeline {
                 }
             }
         }
-        stage('Run Program with Tests') {
-            stage('Run Unit Tests') {
-                steps {
-                    script {
-                        // Activate the virtual environment and run unit tests
-                        sh '''
-                        . /var/jenkins_home/venvs/CanItFarm/bin/activate
-                        python3 -m unittest discover -s tests/unittests
-                        '''
-                    }
-                }
-            }
-            stage('Run Integration Tests') {
-                steps {
-                    script {
-                        // Activate the virtual environment and run integration tests
-                        sh '''
-                        . /var/jenkins_home/venvs/CanItFarm/bin/activate
-                        python3 -m unittest discover -s tests/integrationtests
-                        '''
-                    }
-                }
-            }
+        stage('Run Unit Tests') {
             steps {
                 script {
-                    // Activate the virtual environment and run the program with tests
+                    // Activate the virtual environment and run unit tests
+                    sh '''
+                    export MONGO_USER=${MONGO_USER}
+                    export MONGO_PASS=${MONGO_PASS}
+                    . /var/jenkins_home/venvs/CanItFarm/bin/activate
+                    python3 -m unittest discover -s tests/unittests
+                    '''
+                }
+            }
+        }
+        stage('Run Integration Tests') {
+            steps {
+                script {
+                    // Activate the virtual environment and run integration tests
+                    sh '''
+                    . /var/jenkins_home/venvs/CanItFarm/bin/activate
+                    export MONGO_USER=${MONGO_USER}
+                    export MONGO_PASS=${MONGO_PASS}
+                    python3 -m unittest discover -s tests/integrationtests
+                    '''
+                }
+            }
+        }
+        stage('Run Functional Tests') {
+            steps {
+                script {
+                    // Activate the virtual environment and run functional tests
                     sh '''
                     . /var/jenkins_home/venvs/CanItFarm/bin/activate
                     export MONGO_USER=${MONGO_USER}
