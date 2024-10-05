@@ -11,10 +11,8 @@ pipeline {
             steps {
                 script {
                     // Create a virtual environment in the new directory
-                    sh 'python3 -m venv /var/jenkins_home/venvs/CanItFarm'
-                    
-                    // Activate the virtual environment and install dependencies
                     sh '''
+                    python3 -m venv /var/jenkins_home/venvs/CanItFarm
                     . /var/jenkins_home/venvs/CanItFarm/bin/activate
                     pip install -r requirements.txt
                     '''
