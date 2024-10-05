@@ -10,12 +10,12 @@ pipeline {
         stage('Setup Virtual Environment') {
             steps {
                 script {
-                    // Create a virtual environment
-                    sh 'python3 -m venv venv'
+                    // Create a virtual environment in the new directory
+                    sh 'python3 -m venv /var/jenkins_home/venvs/CanItFarm'
                     
                     // Activate the virtual environment and install dependencies
                     sh '''
-                    source venv/bin/activate
+                    source /var/jenkins_home/venvs/CanItFarm/bin/activate
                     pip install -r requirements.txt
                     '''
                 }
@@ -26,7 +26,7 @@ pipeline {
                 script {
                     // Activate the virtual environment and run functional tests
                     sh '''
-                    source venv/bin/activate
+                    source /var/jenkins_home/venvs/CanItFarm/bin/activate
                     python3 -m unittest discover -s tests/functionaltests
                     '''
                 }
@@ -37,7 +37,7 @@ pipeline {
                 script {
                     // Activate the virtual environment and run unit tests
                     sh '''
-                    source venv/bin/activate
+                    source /var/jenkins_home/venvs/CanItFarm/bin/activate
                     python3 -m unittest discover -s tests/unittests
                     '''
                 }
@@ -48,7 +48,7 @@ pipeline {
                 script {
                     // Activate the virtual environment and run integration tests
                     sh '''
-                    source venv/bin/activate
+                    source /var/jenkins_home/venvs/CanItFarm/bin/activate
                     python3 -m unittest discover -s tests/integrationtests
                     '''
                 }
