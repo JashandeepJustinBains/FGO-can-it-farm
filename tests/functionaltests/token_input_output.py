@@ -5,7 +5,8 @@ class TestDriverFunctional(unittest.TestCase):
 
     def test_battle_with_tokens(self):
         # Initialize the Driver with known servants and quest_id
-        driver = Driver(servants=[51, 314, 314], quest_id=94086602)
+        driver = Driver(servant_ids=[51, 314, 314], quest_id=94086602)
+        driver.reset_state()
 
         # Define the tokens to be used in the battle
         tokens = ["a","b","c","d1","e1","f1","g1","h1","i1","a", "4", "#"]

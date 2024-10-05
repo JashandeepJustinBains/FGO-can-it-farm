@@ -12,8 +12,9 @@ class GameManager:
             self.enemies = []
             self.servants = [Servant(collectionNo=servant_id) for servant_id in servant_ids]
             self.fields = []
-            self.quest = Quest(self.quest_id)  # Initialize the Quest instance
+            self.quest : Quest  # Initialize the Quest instance
             self.wave = 1
+            self.init_quest()
 
     def add_field(self, state):
         name = state.get('field_name', 'Unknown')
@@ -24,6 +25,10 @@ class GameManager:
         self.enemies = self.quest.get_wave(self.wave)
         self.servants = [Servant(collectionNo=servant_id) for servant_id in self.servant_ids]
         self.fields = []
+
+    def init_quest(self):
+        self.quest = Quest(self.quest_id)
+        self.enemies = self.quest.get_wave()
 
     def copy(self):
         return GameManager(self.servant_ids, self.quest_id, gm_copy=self)

@@ -220,7 +220,10 @@ if __name__ == '__main__':
     servant_ids = [51, 314, 314]  # List of servant IDs
     quest_id = 94086602  # Quest ID
 
-    driver = Driver(servant_ids, quest_id)
-    driver.generate_tokens_for_positions()
-    driver.find_valid_permutation()
+    driver = Driver(servant_ids=servant_ids, quest_id=quest_id)
+    driver.reset_state()
+
+    print(f"{driver.game_manager.enemies}")
+    # driver.generate_tokens_for_positions()
+    # driver.find_valid_permutation()
 
