@@ -1,16 +1,13 @@
 from data import class_advantage_matrix, attribute_dict, class_indices, base_multipliers, traits_dict, character_list
 from connectDB import db
 import pandas as pd
-from beaver import Beaver
-
-logger1 = Beaver.getlogger1()
 
 class MysticCode:
     def __init__(self, name) -> None:
         self.data = select_mc(name)
-        skills = self.data.get('skills', [])
+        skills = self.parse_skills(self.data.get('skills', []))
     
-    def parseskills(self):
+    def parse_skills(self, skills_data):
         skills = []
         for skill in skills_data:
             parsed_skill = {
@@ -48,6 +45,6 @@ class MysticCode:
         return self.skills[2]
     
 def select_mc(name):
-    servant = db.mysticcodes.find_one({'name': name})
-    return servant # Ensure character_id is an integer
+    mc = db.mysticcodes.find_one({'name': name})
+    return mc # Ensure mystic code is an integer
 
