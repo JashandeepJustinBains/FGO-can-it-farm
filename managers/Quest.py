@@ -1,6 +1,5 @@
-from Enemy import Enemy
+from units.Enemy import Enemy
 from connectDB import db
-from pprint import pprint
 import numpy as np
 
 # Define the Quest class

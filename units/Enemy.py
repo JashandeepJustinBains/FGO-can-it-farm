@@ -91,5 +91,3 @@ class Enemy:
     def __repr__(self) -> str:
         return f"Servant(name={self.name}, hp={self.hp}, class_id={self.class_name}, attribute={self.attribute}, traits={self.traits} \n {self.buffs})"
 
-
-
