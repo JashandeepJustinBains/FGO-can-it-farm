@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        MONGO_USER = credentials('a00158d6-1aa3-4cb7-802d-bc6681b07688')
-        MONGO_PASS = credentials('a00158d6-1aa3-4cb7-802d-bc6681b07688')
+        MONGO_USER = credentials('a00158d6-1aa3-4cb7-802d-bc6681b07688').username
+        MONGO_PASS = credentials('a00158d6-1aa3-4cb7-802d-bc6681b07688').password
     }
 
     stages {
