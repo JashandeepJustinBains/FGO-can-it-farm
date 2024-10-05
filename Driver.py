@@ -221,6 +221,6 @@ if __name__ == '__main__':
     quest_id = 94086602  # Quest ID
 
     driver = Driver(servant_ids, quest_id)
-    driver.generate_tokens_for_positions()
-    driver.find_valid_permutation()
+    # driver.generate_tokens_for_positions()
+    # driver.find_valid_permutation()
 
