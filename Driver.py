@@ -265,14 +265,15 @@ class Driver:
 
 # Example usage
 if __name__ == '__main__':
-    servant_ids = []
-    quest_id = 94054911
-    driver = Driver(servant_ids=servant_ids, quest_id=quest_id)
+    # to check ordeal call quests use this link https://apps.atlasacademy.io/db/JP/war/401
+    servant_ids = [314,314,280,316] # romulus-quirinus
+    quest_id = 94089601
+    driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
     driver.reset_state()
-
-    print(f"{driver.game_manager.enemies}")
-
     driver.generate_tokens_for_positions()
+    tokens = ["b3","c3","e3","f3","i", "j", "a3", "d3", "6", "#", "h", "i", "j", "x11", "a", "b3", "c3", "6", "#"]
+    for token in tokens:
+        driver.execute_token(token)
     # driver.find_valid_permutation()
 
     """

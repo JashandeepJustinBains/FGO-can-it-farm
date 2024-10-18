@@ -98,9 +98,14 @@ class NP:
             })
         return result
 
-
     def get_np_damage_values(self, oc=1, np_level=1, new_id=None):
         np = self.get_np_by_id(new_id)
+        np_damage = 0
+        np_damage_correction_init = 0
+        np_correction = 0
+        np_correction_id = []
+        np_correction_target = 0
+
         for func in np['functions']:
             if func['funcType'] in ['damageNp', 'damageNpPierce', 'damageNpIndividual', 'damageNpIndividualSum']:
                 # Adjust for the correct svals key
@@ -108,8 +113,14 @@ class NP:
                     np_damage = func['svals'][np_level - 1].get('Value', 0)
                 else:
                     np_damage = func[f'svals{oc}'][np_level - 1].get('Value', 0)
-                return np_damage / 1000, None, None
-        return 0, None, None  # Default values if no matching funcType is found
+            elif func['funcType'] == 'superEffectiveNp':
+                np_damage_correction_init = func['svals'][0].get('Value', 0) / 1000
+                np_correction = func['svals'][0].get('Value', 0) / 1000
+                np_correction_id = func['funcTargetIds']
+                np_correction_target = func['funcTargetType']
+
+        return np_damage / 1000, np_damage_correction_init, np_correction, np_correction_id, np_correction_target
+
 
     def get_npgain(self, card_type, new_id=None):
         np = self.get_np_by_id(new_id)

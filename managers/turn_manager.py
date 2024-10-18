@@ -14,6 +14,8 @@ class TurnManager:
             self.decrement_cooldowns()
             for servant in self.gm.servants[:3]:
                 servant.buffs.process_end_turn_skills()
+            for enemy in self.gm.enemies:
+                print(enemy)
             print(f"Wave {self.gm.wave} completed.")
             
             # Check if it's the last wave
