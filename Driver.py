@@ -228,6 +228,8 @@ class Driver:
             'l3': lambda: self.skill_manager.use_mystic_code_skill(2, self.game_manager.servants[2]),
 
             'x11': lambda: self.skill_manager.swap_servants(1,1),
+
+            """
             'x12': lambda: self.skill_manager.swap_servants(1,2),
             'x13': lambda: self.skill_manager.swap_servants(1,3),
             'x21': lambda: self.skill_manager.swap_servants(2,1),
@@ -236,6 +238,7 @@ class Driver:
             'x31': lambda: self.skill_manager.swap_servants(3,1),
             'x32': lambda: self.skill_manager.swap_servants(3,2),
             'x33': lambda: self.skill_manager.swap_servants(3,3),
+            """
             
             # NPs
             '4': lambda:  self.np_manager.use_np(self.game_manager.servants[0]),

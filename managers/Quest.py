@@ -2,7 +2,6 @@ from units.Enemy import Enemy
 from connectDB import db
 import numpy as np
 
-# Define the Quest class
 class Quest:
     def __init__(self, quest_id):
         self.db = db
@@ -10,6 +9,7 @@ class Quest:
         self.fields = []
         self.waves = {}
         self.total_waves = 0
+        self.current_wave_index = 1  # Initialize wave index to 1
         self.retrieve_quest()
 
     def retrieve_quest(self):
@@ -35,8 +35,7 @@ class Quest:
                 ]
                 wave_data.append(Enemy(enemydata))
             self.waves[i + 1] = wave_data
-        for wave in self.waves:
-            self.total_waves += 1
+        self.total_waves = len(self.waves)
 
     def get_wave(self, wave_no=0):
         if wave_no == 0:

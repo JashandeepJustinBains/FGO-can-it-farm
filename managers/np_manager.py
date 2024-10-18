@@ -13,24 +13,25 @@ class npManager:
             max_hp = 0
 
             # Identify the enemy with the highest HP
-            for enemy in self.gm.enemies:
-                if enemy.get_hp() > max_hp:
-                    max_hp = enemy.get_hp()
+            for enemy in self.gm.get_enemies():
+                print(enemy)
+                if enemy.hp > max_hp:
+                    max_hp = enemy.hp
                     maintarget = enemy
             # Apply effects and damage
             for i, func in enumerate(functions):
                 if func['funcType'] == 'damageNp' or func['funcType'] == 'damageNpIndividual' or func['funcType'] == 'damageNpPierce':
                     # print(f"firing NP of servant {servant}")
                     servant.buffs.process_servant_buffs()
-                    for enemy in self.gm.enemies:
+                    for enemy in self.gm.get_enemies():
                         self.apply_np_damage(servant, enemy)
                 elif func['funcType'] == 'damageNpIndividualSum':
                     servant.buffs.process_servant_buffs()
-                    for enemy in self.gm.enemies:
+                    for enemy in self.gm.get_enemies():
                         self.apply_np_odd_damage(servant, enemy)
                 else:
                     if func['funcTargetType'] == 'enemyAll':
-                        for enemy in self.gm.enemies:
+                        for enemy in self.gm.get_enemies():
                             self.sm.apply_effect(func, servant)
                     if func['funcTargetType'] == 'enemy':
                         self.sm.apply_effect(func, maintarget)
@@ -152,6 +153,7 @@ class npManager:
         servant_atk = servant.stats.get_atk_at_level() * servant.stats.get_class_base_multiplier()
         
         # Print all buffs and modifiers for debugging
+        """
         print(f"Servant ATK: {servant_atk}")
         print(f"NP Damage Multiplier: {np_damage_multiplier}")
         print(f"Card Damage Value: {card_damage_value}")
@@ -166,7 +168,9 @@ class npManager:
         print(f"NP Damage Mod: {np_damage_mod}")
         print(f"Super Effective Modifier: {super_effective_modifier}")
         print(f"Is Super Effective: {is_super_effective}")
-
+        """
+        
+        
         if np_correction_target == 1:
             for id in np_correction_id:
                 super_effective_modifier += np_correction * target.traits.count(id)
