@@ -97,16 +97,51 @@ class SkillManager:
     def skill_available(self, servant, skill_num):
         return servant.skills.skill_available(skill_num)
 
+
+    def use_mystic_code_skill(self, skill_num, target=None):
+        mystic_code = self.gm.mc  # Get the equipped mystic code
+        if not hasattr(mystic_code, 'cooldowns'):
+            mystic_code.cooldowns = {0: 0, 1: 0, 2: 0}
+
+        if mystic_code.cooldowns[skill_num] == 0:
+            skill = mystic_code.get_skill_by_num(skill_num)
+            print(f"Using Mystic Code skill {skill['name']}")
+
+            for effect in skill['functions']:
+                if effect['funcType'] == 'swapServant':
+                    # Swap ability handling
+                    if target:
+                        self.swap_servants(target[0], target[1])
+                else:
+                    self.apply_effect(effect, target)
+            
+            # Set the cooldown for the used skill
+            mystic_code.cooldowns[skill_num] = skill['cooldown']
+        else:
+            print(f"Mystic Code skill {skill_num} is on cooldown: {mystic_code.cooldowns[skill_num]} turns remaining")
+
+
     def use_skill(self, servant, skill_num, target=None):
         if self.skill_available(servant, skill_num):
             skill = servant.skills.get_skill_by_num(skill_num)
-            # print(f'Use {servant.name} skill {skill_num} on {target.name if target else None}')
             servant.skills.set_skill_cooldown(skill_num)
+            
+            # Print the remaining cooldown
+            cooldown_remaining = servant.skills.get_skill_cooldowns()[skill_num]
+            # print(f"Skill {skill_num} used. Cooldown remaining: {cooldown_remaining} turns")
+            
             for effect in skill['functions']:
-                # print(f"Applying {servant.name}'s {next(iter(effect.get('buffs','')), {}).get('name', '')} - Value:{effect['svals']['Value']} for {effect['svals'].get('Turn', '')} turns to '{effect['funcTargetType']}' / target=: {target.name if target else None}")             
+                # print(f"Applying {servant.name}'s {next(iter(effect.get('buffs', '')), {}).get('name', '')} - Value:{effect['svals']['Value']} for {effect['svals'].get('Turn', '')} turns to '{effect['funcTargetType']}' / target=: {target.name if target else None}")
                 self.apply_effect(effect, servant, target)
         else:
             print(f"{servant.name} skill {skill_num} is on cooldown: {servant.skills.cooldowns[skill_num]} turns remaining")
+            return False
+
+    def swap_servants(self, frontline_idx, backline_idx):
+        # Perform the swap operation
+        self.gm.swap_servants(frontline_idx - 1, backline_idx - 1)  # Adjust for 0-based indexing
+        print(f"Swapped frontline servant {frontline_idx} with backline servant {backline_idx}")
+
 
     def apply_gain_np(self, effect, target):
         state = self.extract_state(effect)

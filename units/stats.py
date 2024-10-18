@@ -63,13 +63,13 @@ class Stats:
         self.servant.oc_level = oc
 
     def get_npgain(self):
-        return self.servant.nps[0]['npgain'][self.servant.card_type][0] / 100
+        return self.servant.nps.get_npgain(self.servant.card_type)
 
     def get_np_gain_mod(self):
         return self.servant.np_gain_mod
 
     def get_npdist(self):
-        return self.servant.nps[0]['npdist']
+        return self.servant.nps.get_npdist()
 
     # def get_cardtype(self):
     #     return self.servant.nps[0]['card']

@@ -1,18 +1,21 @@
 from .Quest import Quest
 from units.Servant import Servant
+from .MysticCode import MysticCode
 import copy
 
 class GameManager:
-    def __init__(self, servant_ids, quest_id, gm_copy=None):
+    def __init__(self, servant_ids, quest_id, mc_id, gm_copy=None):
         if gm_copy:
-            self.__dict__ = copy.deepcopy(gm_copy.__dict__)          
+            self.__dict__ = copy.deepcopy(gm_copy.__dict__)
         else:
             self.servant_ids = servant_ids
             self.quest_id = quest_id
+            self.mc_id = mc_id
             self.enemies = []
             self.servants = [Servant(collectionNo=servant_id) for servant_id in servant_ids]
+            self.mc = MysticCode(mc_id)
             self.fields = []
-            self.quest : Quest  # Initialize the Quest instance
+            self.quest = None  # Initialize the Quest instance
             self.wave = 1
             self.init_quest()
 
@@ -28,7 +31,10 @@ class GameManager:
 
     def init_quest(self):
         self.quest = Quest(self.quest_id)
-        self.enemies = self.quest.get_wave()
+        self.enemies = self.quest.get_wave(self.wave)
+
+    def swap_servants(self, frontline_idx, backline_idx):
+        self.servants[frontline_idx], self.servants[backline_idx + 3] = self.servants[backline_idx + 3], self.servants[frontline_idx]
 
     def copy(self):
         return GameManager(self.servant_ids, self.quest_id, gm_copy=self)

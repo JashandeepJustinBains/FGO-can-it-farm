@@ -2,23 +2,49 @@ class TurnManager:
     def __init__(self, game_manager) -> None:
         self.gm = game_manager
 
+class TurnManager:
+    def __init__(self, game_manager) -> None:
+        self.gm = game_manager
+
     def end_turn(self):
-        # End the turn and decrement buffs
-        self.decrement_buffs()
-        self.decrement_cooldowns()
-        for servant in self.gm.servants[:3]:
-            servant.buffs.process_end_turn_skills()
-        for enemy in self.gm.enemies:
-            if enemy.get_hp() > 0:
-                print("FAILURE: Enemy still has HP remaining.")
-                return "FAILURE"
-        self.gm.wave += 1
-        print(f"Wave {self.gm.wave} completed.")
+        # Check if all enemies are defeated
+        if all(enemy.get_hp() <= 0 for enemy in self.gm.enemies):
+            # End the turn and decrement buffs if all enemies are defeated
+            self.decrement_buffs()
+            self.decrement_cooldowns()
+            for servant in self.gm.servants[:3]:
+                servant.buffs.process_end_turn_skills()
+            self.gm.wave += 1
+            print(f"Wave {self.gm.wave} completed.")
+            return True
+        else:
+            # Return False if any enemy still has health
+            print("End turn failed: Enemies are still alive.")
+            return False
 
     def decrement_buffs(self):
-        # Decrement the timer for each buff and remove buffs with 0 time left
+        # Iterate over the concatenated list of servants and enemies
         for target in self.gm.enemies + self.gm.servants:
-            target.buffs.decrement_buffs()
+            if hasattr(target, 'buffs') and hasattr(target.buffs, 'decrement_buffs'):
+                target.buffs.decrement_buffs()
+            else:
+                print(f"Object {target} does not have the required buffs attribute or decrement_buffs method")
+
+    def decrement_cooldowns(self):
+        # Decrement the timer for each buff and remove buffs with 0 time left
+        for target in self.gm.servants:
+            target.skills.decrement_cooldowns(1)
+
+
+
+    def decrement_buffs(self):
+        # Iterate over the concatenated list of servants and enemies
+        for target in self.gm.enemies + self.gm.servants:
+            if hasattr(target, 'buffs') and hasattr(target.buffs, 'decrement_buffs'):
+                target.buffs.decrement_buffs()
+            else:
+                print(f"Object {target} does not have the required buffs attribute or decrement_buffs method")
+
 
     def decrement_cooldowns(self):
         # Decrement the timer for each buff and remove buffs with 0 time left
