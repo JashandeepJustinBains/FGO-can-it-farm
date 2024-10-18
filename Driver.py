@@ -265,20 +265,18 @@ class Driver:
 
 # Example usage
 if __name__ == '__main__':
-    # servant_ids = [51, 314, 314]  # List of servant IDs
-    # quest_id = 94086602  # Quest ID
+    servant_ids = []
+    quest_id = 94054911
+    driver = Driver(servant_ids=servant_ids, quest_id=quest_id)
+    driver.reset_state()
 
-    # driver = Driver(servant_ids=servant_ids, quest_id=quest_id)
-    # driver.reset_state()
+    print(f"{driver.game_manager.enemies}")
 
-    # print(f"{driver.game_manager.enemies}")
-
-    # driver.generate_tokens_for_positions()
+    driver.generate_tokens_for_positions()
     # driver.find_valid_permutation()
 
-    quest_id = 94054911  # Quest ID
-
-    # test: Does the following token string correctly defeat the enemy?
+    """
+    # test: token string that should defeat enemy in quest 94086602
     driver = Driver(servant_ids=[51, 314, 314, 316], quest_id=94086602, mc_id=260)
     driver.reset_state()
     # driver.generate_tokens_for_positions()
@@ -286,7 +284,7 @@ if __name__ == '__main__':
     tokens = ["a","b","c","d1","e1","f1","g1","h1","i1","a", "x31", "g", "h1", "i1", "j", "4", "#"]
     for token in tokens:
         driver.execute_token(token)
-
+    """
     
     """
     # test: Servant is correctly initialized 

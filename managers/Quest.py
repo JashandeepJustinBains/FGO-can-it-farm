@@ -9,6 +9,7 @@ class Quest:
         self.quest_id = quest_id
         self.fields = []
         self.waves = {}
+        self.total_waves = 0
         self.retrieve_quest()
 
     def retrieve_quest(self):
@@ -34,6 +35,8 @@ class Quest:
                 ]
                 wave_data.append(Enemy(enemydata))
             self.waves[i + 1] = wave_data
+        for wave in self.waves:
+            self.total_waves += 1
 
     def get_wave(self, wave_no=0):
         if wave_no == 0:

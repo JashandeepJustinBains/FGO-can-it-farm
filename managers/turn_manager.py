@@ -14,13 +14,20 @@ class TurnManager:
             self.decrement_cooldowns()
             for servant in self.gm.servants[:3]:
                 servant.buffs.process_end_turn_skills()
-            self.gm.wave += 1
             print(f"Wave {self.gm.wave} completed.")
+            
+            # Check if it's the last wave
+            if self.gm.wave >= self.gm.total_waves:  # Assuming total_waves is defined
+                print("All waves completed. Ending program.")
+                exit(0)  # Ends the program
+            else:
+                self.gm.wave += 1
             return True
         else:
             # Return False if any enemy still has health
             print("End turn failed: Enemies are still alive.")
             return False
+
 
     def decrement_buffs(self):
         # Iterate over the concatenated list of servants and enemies

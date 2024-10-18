@@ -20,7 +20,7 @@ class npManager:
             # Apply effects and damage
             for i, func in enumerate(functions):
                 if func['funcType'] == 'damageNp' or func['funcType'] == 'damageNpIndividual' or func['funcType'] == 'damageNpPierce':
-                    print(f"firing NP of servant {servant}")
+                    # print(f"firing NP of servant {servant}")
                     servant.buffs.process_servant_buffs()
                     for enemy in self.gm.enemies:
                         self.apply_np_damage(servant, enemy)
@@ -69,6 +69,7 @@ class npManager:
         servant_atk = servant.stats.get_atk_at_level() * servant.stats.get_class_base_multiplier()
 
         # Print all buffs and modifiers for debugging
+        """
         print(f"Servant ATK: {servant_atk}")
         print(f"NP Damage Multiplier: {np_damage_multiplier}")
         print(f"Card Damage Value: {card_damage_value}")
@@ -83,6 +84,7 @@ class npManager:
         print(f"NP Damage Mod: {np_damage_mod}")
         print(f"Super Effective Modifier: {super_effective_modifier}")
         print(f"Is Super Effective: {is_super_effective}")
+        """
 
         total_damage = (servant_atk * np_damage_multiplier * (card_damage_value * (1 + card_mod - enemy_res_mod)) *
                         class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *

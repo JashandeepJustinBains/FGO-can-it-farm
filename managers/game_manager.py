@@ -17,6 +17,7 @@ class GameManager:
             self.fields = []
             self.quest = None  # Initialize the Quest instance
             self.wave = 1
+            self.total_waves = 0
             self.init_quest()
 
     def add_field(self, state):
@@ -32,6 +33,7 @@ class GameManager:
     def init_quest(self):
         self.quest = Quest(self.quest_id)
         self.enemies = self.quest.get_wave(self.wave)
+        self.total_waves = self.quest.total_waves
 
     def swap_servants(self, frontline_idx, backline_idx):
         self.servants[frontline_idx], self.servants[backline_idx + 3] = self.servants[backline_idx + 3], self.servants[frontline_idx]

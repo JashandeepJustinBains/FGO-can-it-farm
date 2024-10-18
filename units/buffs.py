@@ -56,7 +56,6 @@ class Buffs:
             if required_field is None:
                 required_field = buff.get('originalScript', {}).get('INDIVIDUALITIE')
             if required_field is None or (required_field in self.servant.fields):
-                print(buff)
                 if buff['buff'] == 'NP Strength Up' or buff['buff'] == 'upNpdamage':
                     self.servant.np_damage_mod += buff['value'] / 1000
                 elif buff['buff'] == 'Boost NP Strength Up':
@@ -72,7 +71,6 @@ class Buffs:
             if required_field is None:
                 required_field = buff.get('originalScript', {}).get('INDIVIDUALITIE')
             if required_field is None or (required_field in self.servant.fields):
-                print(buff)
                 if buff['buff'] == 'ATK Up':
                     self.servant.atk_mod += buff['value'] / 1000
                 elif buff['buff'] == 'Buster Up':
