@@ -1,5 +1,6 @@
 # .gitignore
 /Quests
+/Quest
 /ServantData
 output.txt
 test.txt
