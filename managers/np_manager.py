@@ -14,7 +14,6 @@ class npManager:
 
             # Identify the enemy with the highest HP
             for enemy in self.gm.get_enemies():
-                print(enemy)
                 if enemy.hp > max_hp:
                     max_hp = enemy.hp
                     maintarget = enemy
@@ -24,12 +23,15 @@ class npManager:
                     # print(f"firing NP of servant {servant}")
                     servant.buffs.process_servant_buffs()
                     for enemy in self.gm.get_enemies():
+                        enemy.buffs.process_enemy_buffs()
                         self.apply_np_damage(servant, enemy)
                 elif func['funcType'] == 'damageNpIndividualSum':
                     servant.buffs.process_servant_buffs()
                     for enemy in self.gm.get_enemies():
+                        enemy.buffs.process_enemy_buffs()
                         self.apply_np_odd_damage(servant, enemy)
                 else:
+                    print("When do we even enter the 'funcTargetType' of 'enemyAll' or 'enemy'?")
                     if func['funcTargetType'] == 'enemyAll':
                         for enemy in self.gm.get_enemies():
                             self.sm.apply_effect(func, servant)
@@ -152,25 +154,6 @@ class npManager:
         is_super_effective = 1 if np_correction_target in target.traits else 0
         servant_atk = servant.stats.get_atk_at_level() * servant.stats.get_class_base_multiplier()
         
-        # Print all buffs and modifiers for debugging
-        """
-        print(f"Servant ATK: {servant_atk}")
-        print(f"NP Damage Multiplier: {np_damage_multiplier}")
-        print(f"Card Damage Value: {card_damage_value}")
-        print(f"Card Mod: {card_mod}")
-        print(f"Enemy Res Mod: {enemy_res_mod}")
-        print(f"Class Modifier: {class_modifier}")
-        print(f"Attribute Modifier: {attribute_modifier}")
-        print(f"ATK Mod: {atk_mod}")
-        print(f"Enemy Def Mod: {enemy_def_mod}")
-        print(f"Power Mod: {power_mod}")
-        print(f"Self Damage Mod: {self_damage_mod}")
-        print(f"NP Damage Mod: {np_damage_mod}")
-        print(f"Super Effective Modifier: {super_effective_modifier}")
-        print(f"Is Super Effective: {is_super_effective}")
-        """
-        
-        
         if np_correction_target == 1:
             for id in np_correction_id:
                 super_effective_modifier += np_correction * target.traits.count(id)
@@ -182,6 +165,31 @@ class npManager:
                         if buff['buff'] == "Magic Bullet":
                             cum += 1
                     super_effective_modifier += cum * np_correction
+
+             # Print all buffs and modifiers for debugging  
+     
+
+        # print(f"Servant ATK: {servant_atk}")
+        # print(f"NP Damage Multiplier: {np_damage_multiplier}")
+        # print(f"initial np correction amount: {np_damage_correction_init}")
+        # print(f"np correction: {np_correction}")
+        # print(f"what id is used for the correction {np_correction_id}")
+        # print(f"target or buff that effects np_correction amounts:{np_correction_target}")
+
+        # print(f"Card Damage Value: {card_damage_value}")
+        # print(f"Card Mod: {card_mod}")
+        # print(f"Enemy Res Mod: {enemy_res_mod}")
+        # print(f"Class Modifier: {class_modifier}")
+        # print(f"Attribute Modifier: {attribute_modifier}")
+        # print(f"ATK Mod: {atk_mod}")
+        # print(f"Enemy Def Mod: {enemy_def_mod}")
+        # print(f"Power Mod: {power_mod}")
+        # print(f"Self Damage Mod: {self_damage_mod}")
+        # print(f"NP Damage Mod: {np_damage_mod}")
+        # print(f"Super Effective Modifier: {super_effective_modifier}")
+        # print(f"Is Super Effective: {is_super_effective}")
+
+        print(f"does this enemy {target.name} with traits {target.traits} get super effected with this servants np who is SE against {np_correction_id}? {any(trait in target.traits for trait in np_correction_id)}")
 
         total_damage = (servant_atk * np_damage_multiplier * (card_damage_value * (1 + card_mod - enemy_res_mod)) *
             class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
@@ -212,4 +220,4 @@ class npManager:
 
             if target.get_hp() <= 0:
                 print(f"{target.get_name()} has been defeated by hit {i+1}!")
-        print(f"{servant.stats.get_name()} attacks {target.get_name()} with Noble Phantasm for {'%.0f' % total_damage} total damage!")
+        print(f"{servant.stats.get_name()} attacks {target.get_name()} with Noble Phantasm for {'%.0f' % total_damage} total damage! {target.get_name()} is left with {target.hp} hp")

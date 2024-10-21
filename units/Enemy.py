@@ -12,7 +12,7 @@ class Enemy:
         self.b_resdown = 0
         self.a_resdown = 0
         self.q_resdown = 0  
-        self.buffs = Buffs(self)
+        self.buffs = Buffs(servant=None, enemy=self)
         self.np_per_hit_mult = self.np_gain_per_hit()
 
     def get_def(self):

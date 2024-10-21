@@ -131,7 +131,7 @@ class SkillManager:
             # print(f"Skill {skill_num} used. Cooldown remaining: {cooldown_remaining} turns")
             
             for effect in skill['functions']:
-                # print(f"Applying {servant.name}'s {next(iter(effect.get('buffs', '')), {}).get('name', '')} - Value:{effect['svals']['Value']} for {effect['svals'].get('Turn', '')} turns to '{effect['funcTargetType']}' / target=: {target.name if target else None}")
+                print(f"Applying {servant.name}'s {next(iter(effect.get('buffs', '')), {}).get('name', '')} - Value:{effect['svals'].get('Value','')} for {effect['svals'].get('Turn', '')} turns to '{effect['funcTargetType']}' / target=: {target.name if target else None}")
                 self.apply_effect(effect, servant, target)
         else:
             print(f"{servant.name} skill {skill_num} is on cooldown: {servant.skills.cooldowns[skill_num]} turns remaining")

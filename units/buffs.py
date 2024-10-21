@@ -4,6 +4,7 @@ class Buffs:
             self.servant = servant
             self.buffs = []
         if enemy:
+            print("HELLO I AM AN ENEMY")
             self.enemy = enemy
             self.buffs = []
 
@@ -18,7 +19,7 @@ class Buffs:
         self.enemy.b_resdown = 0
         self.enemy.a_resdown = 0
         self.enemy.q_resdown = 0
-        self.enemy.roman = self.traits.count(2004)
+        self.enemy.roman = self.enemy.traits.count(2004)
         # Process buffs and update modifiers
         # print(f"{self.name} has the following effects applied: {self.buffs}")
         for buff in self.buffs:
@@ -31,6 +32,7 @@ class Buffs:
             elif buff['buff'] == 'Quick Card Resist Down':
                 self.enemy.q_resdown -= buff['value'] / 1000
             elif buff['buff'] == 'Apply Trait (Rome)':
+                print("hello did we apply roman?")
                 self.enemy.traits.append(2004)
             # Add more buff processing as needed
         # print(buff)

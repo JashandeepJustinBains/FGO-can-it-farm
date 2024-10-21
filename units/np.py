@@ -107,19 +107,28 @@ class NP:
         np_correction_target = 0
 
         for func in np['functions']:
-            if func['funcType'] in ['damageNp', 'damageNpPierce', 'damageNpIndividual', 'damageNpIndividualSum']:
-                # Adjust for the correct svals key
+            if func['funcType'] in ['damageNp', 'damageNpPierce']:
                 if oc == 1:
                     np_damage = func['svals'][np_level - 1].get('Value', 0)
                 else:
                     np_damage = func[f'svals{oc}'][np_level - 1].get('Value', 0)
-            elif func['funcType'] == 'superEffectiveNp':
-                np_damage_correction_init = func['svals'][0].get('Value', 0) / 1000
-                np_correction = func['svals'][0].get('Value', 0) / 1000
-                np_correction_id = func['funcTargetIds']
-                np_correction_target = func['funcTargetType']
+                return np_damage / 1000, None, None, None, None
+            elif func['funcType'] == 'damageNpIndividual':
+                np_damage = func['svals'][np_level - 1].get('Value', 0)
+                np_correction_target = func['svals'][np_level - 1].get('Target', 0)
+                np_correction = func['svals'][np_level - 1].get('Correction', 0)
+                return np_damage / 1000, None, np_correction / 1000, None, np_correction_target
+            elif func['funcType'] == 'damageNpIndividualSum':
+                np_damage = func['svals'][np_level - 1].get('Value', 0)
+                np_damage_correction_init = func['svals'][np_level - 1].get('Value2', 0)
+                np_correction = func['svals'][np_level - 1].get('Correction', 0)
+                np_correction_target = func['svals'][np_level - 1].get('Target', 0)
+                np_correction_id = func['svals'][np_level - 1].get('TargetList', 0)
+                return np_damage / 1000, np_damage_correction_init / 1000, np_correction / 1000, np_correction_id, np_correction_target
 
-        return np_damage / 1000, np_damage_correction_init, np_correction, np_correction_id, np_correction_target
+        return 0, None, None, None, None  # Default values if no matching funcType is found
+
+
 
 
     def get_npgain(self, card_type, new_id=None):
