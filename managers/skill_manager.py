@@ -1,3 +1,9 @@
+import logging
+
+# Configure logging TODO ADD LOGGING HERE
+logging.basicConfig(filename='./outputs/skill_output.md', level=logging.INFO,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
+
 class SkillManager:
     def __init__(self, turn_manager):
         self.tm = turn_manager
@@ -122,17 +128,16 @@ class SkillManager:
 
 
     def use_skill(self, servant, skill_num, target=None):
+        skill_num += 1
         if self.skill_available(servant, skill_num):
             skill = servant.skills.get_skill_by_num(skill_num)
             servant.skills.set_skill_cooldown(skill_num)
-            
-            # Print the remaining cooldown
-            cooldown_remaining = servant.skills.get_skill_cooldowns()[skill_num]
-            # print(f"Skill {skill_num} used. Cooldown remaining: {cooldown_remaining} turns")
-            
+            logging.info(f"Skill {skill_num} used. Cooldown remaining: {servant.skills.get_skill_cooldowns()[skill_num]} turns")
+            logging.info(f"Applying {servant.name}'s {servant.skills.get_skill_by_num(skill_num)}")
             for effect in skill['functions']:
-                print(f"Applying {servant.name}'s {next(iter(effect.get('buffs', '')), {}).get('name', '')} - Value:{effect['svals'].get('Value','')} for {effect['svals'].get('Turn', '')} turns to '{effect['funcTargetType']}' / target=: {target.name if target else None}")
+                # logging.info(f"Applying {servant.name}'s {next(iter(effect.get('buffs', '')), {}).get('name', '')} - Value:{effect['svals'].get('Value','')} for {effect['svals'].get('Turn', '')} turns to '{effect['funcTargetType']}' / target=: {target.name if target else None}")
                 self.apply_effect(effect, servant, target)
+
         else:
             print(f"{servant.name} skill {skill_num} is on cooldown: {servant.skills.cooldowns[skill_num]} turns remaining")
             return False

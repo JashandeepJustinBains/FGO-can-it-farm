@@ -1,3 +1,9 @@
+import logging
+
+# Configure logging
+logging.basicConfig(filename='./outputs/np_output.md', level=logging.INFO,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
+
 
 class npManager:
     def __init__(self, skill_manager):
@@ -20,7 +26,7 @@ class npManager:
             # Apply effects and damage
             for i, func in enumerate(functions):
                 if func['funcType'] == 'damageNp' or func['funcType'] == 'damageNpIndividual' or func['funcType'] == 'damageNpPierce':
-                    # print(f"firing NP of servant {servant}")
+                    logging.info(f"firing NP of servant {servant}")
                     servant.buffs.process_servant_buffs()
                     for enemy in self.gm.get_enemies():
                         enemy.buffs.process_enemy_buffs()
@@ -31,7 +37,6 @@ class npManager:
                         enemy.buffs.process_enemy_buffs()
                         self.apply_np_odd_damage(servant, enemy)
                 else:
-                    print("When do we even enter the 'funcTargetType' of 'enemyAll' or 'enemy'?")
                     if func['funcTargetType'] == 'enemyAll':
                         for enemy in self.gm.get_enemies():
                             self.sm.apply_effect(func, servant)
@@ -67,34 +72,27 @@ class npManager:
         power_mod = servant.stats.get_power_mod(target)
         self_damage_mod = 0
         np_damage_mod = servant.stats.get_np_damage_mod()
-        np_damage_multiplier, np_correction_target, super_effective_modifier = servant.nps.get_np_damage_values(np_level=servant.stats.get_np_level(), oc=servant.stats.get_oc_level())
-        is_super_effective = 1 if np_correction_target in target.traits else 0
+        np_damage_multiplier, np_damage_correction_init, np_correction, np_correction_id, np_correction_target = servant.nps.get_np_damage_values(np_level=servant.stats.get_np_level(), oc=servant.stats.get_oc_level())
+
         servant_atk = servant.stats.get_atk_at_level() * servant.stats.get_class_base_multiplier()
 
         # Print all buffs and modifiers for debugging
-        """
-        print(f"Servant ATK: {servant_atk}")
-        print(f"NP Damage Multiplier: {np_damage_multiplier}")
-        print(f"Card Damage Value: {card_damage_value}")
-        print(f"Card Mod: {card_mod}")
-        print(f"Enemy Res Mod: {enemy_res_mod}")
-        print(f"Class Modifier: {class_modifier}")
-        print(f"Attribute Modifier: {attribute_modifier}")
-        print(f"ATK Mod: {atk_mod}")
-        print(f"Enemy Def Mod: {enemy_def_mod}")
-        print(f"Power Mod: {power_mod}")
-        print(f"Self Damage Mod: {self_damage_mod}")
-        print(f"NP Damage Mod: {np_damage_mod}")
-        print(f"Super Effective Modifier: {super_effective_modifier}")
-        print(f"Is Super Effective: {is_super_effective}")
-        """
+        logging.info(f"Servant ATK: {servant_atk}")
+        logging.info(f"NP Damage Multiplier: {np_damage_multiplier}")
+        logging.info(f"Card Damage Value: {card_damage_value}")
+        logging.info(f"Card Mod: {card_mod}")
+        logging.info(f"Enemy Res Mod: {enemy_res_mod}")
+        logging.info(f"Class Modifier: {class_modifier}")
+        logging.info(f"Attribute Modifier: {attribute_modifier}")
+        logging.info(f"ATK Mod: {atk_mod}")
+        logging.info(f"Enemy Def Mod: {enemy_def_mod}")
+        logging.info(f"Power Mod: {power_mod}")
+        logging.info(f"Self Damage Mod: {self_damage_mod}")
+        logging.info(f"NP Damage Mod: {np_damage_mod}")
 
         total_damage = (servant_atk * np_damage_multiplier * (card_damage_value * (1 + card_mod - enemy_res_mod)) *
                         class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
-                        (1 + self_damage_mod + np_damage_mod + power_mod) * 
-                        (1 + (((super_effective_modifier if super_effective_modifier else 0) - 1) * is_super_effective)))
-
-        print(f"Total Damage: {total_damage}")
+                        (1 + self_damage_mod + np_damage_mod + power_mod))
 
         servant.stats.set_npgauge(0)
         np_gain = servant.stats.get_npgain() * servant.stats.get_np_gain_mod()
@@ -115,10 +113,11 @@ class npManager:
                 servant.set_npgauge(np_per_hit)
 
             target.set_hp(hit_damage)
-            print(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np")
+            logging.info(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np")
 
             if target.get_hp() <= 0:
-                print(f"{target.get_name()} has been defeated by hit {i+1}!")
+                logging.info(f"{target.get_name()} has been defeated by hit {i+1}!")
+        print(f"{servant.name} deals {total_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np")
 
     def apply_np_odd_damage(self, servant, target):
         card_damage_value = None
@@ -166,37 +165,34 @@ class npManager:
                             cum += 1
                     super_effective_modifier += cum * np_correction
 
-             # Print all buffs and modifiers for debugging  
-     
+        # Print all buffs and modifiers for debugging  
+        logging.info(f"Servant ATK: {servant_atk}")
+        logging.info(f"NP Damage Multiplier: {np_damage_multiplier}")
+        logging.info(f"initial np correction amount: {np_damage_correction_init}")
+        logging.info(f"np correction: {np_correction}")
+        logging.info(f"what id is used for the correction {np_correction_id}")
+        logging.info(f"target or buff that effects np_correction amounts:{np_correction_target}")
+        logging.info(f"Card Damage Value: {card_damage_value}")
+        logging.info(f"Card Mod: {card_mod}")
+        logging.info(f"Enemy Res Mod: {enemy_res_mod}")
+        logging.info(f"Class Modifier: {class_modifier}")
+        logging.info(f"Attribute Modifier: {attribute_modifier}")
+        logging.info(f"ATK Mod: {atk_mod}")
+        logging.info(f"Enemy Def Mod: {enemy_def_mod}")
+        logging.info(f"Power Mod: {power_mod}")
+        logging.info(f"Self Damage Mod: {self_damage_mod}")
+        logging.info(f"NP Damage Mod: {np_damage_mod}")
+        logging.info(f"Super Effective Modifier: {super_effective_modifier}")
+        logging.info(f"Is Super Effective: {is_super_effective}")
 
-        # print(f"Servant ATK: {servant_atk}")
-        # print(f"NP Damage Multiplier: {np_damage_multiplier}")
-        # print(f"initial np correction amount: {np_damage_correction_init}")
-        # print(f"np correction: {np_correction}")
-        # print(f"what id is used for the correction {np_correction_id}")
-        # print(f"target or buff that effects np_correction amounts:{np_correction_target}")
-
-        # print(f"Card Damage Value: {card_damage_value}")
-        # print(f"Card Mod: {card_mod}")
-        # print(f"Enemy Res Mod: {enemy_res_mod}")
-        # print(f"Class Modifier: {class_modifier}")
-        # print(f"Attribute Modifier: {attribute_modifier}")
-        # print(f"ATK Mod: {atk_mod}")
-        # print(f"Enemy Def Mod: {enemy_def_mod}")
-        # print(f"Power Mod: {power_mod}")
-        # print(f"Self Damage Mod: {self_damage_mod}")
-        # print(f"NP Damage Mod: {np_damage_mod}")
-        # print(f"Super Effective Modifier: {super_effective_modifier}")
-        # print(f"Is Super Effective: {is_super_effective}")
-
-        print(f"does this enemy {target.name} with traits {target.traits} get super effected with this servants np who is SE against {np_correction_id}? {any(trait in target.traits for trait in np_correction_id)}")
+        logging.info(f"does this enemy {target.name} with traits {target.traits} get super effected with this servants np who is SE against {np_correction_id}? {any(trait in target.traits for trait in np_correction_id)}")
 
         total_damage = (servant_atk * np_damage_multiplier * (card_damage_value * (1 + card_mod - enemy_res_mod)) *
             class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
             (1 + self_damage_mod + np_damage_mod + power_mod) * 
             (1 + (((super_effective_modifier if super_effective_modifier else 0) - 1) * is_super_effective)))
 
-        print(f"Total Damage: {total_damage}")
+        logging.info(f"Total Damage: {total_damage}")
 
         np_gain = servant.stats.get_npgain() * servant.stats.get_np_gain_mod()
         np_distribution = servant.stats.get_npdist()
@@ -216,8 +212,8 @@ class npManager:
                 servant.set_npgauge(np_per_hit)
 
             target.set_hp(hit_damage)
-            # print(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np")
+            logging.info(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np")
 
             if target.get_hp() <= 0:
-                print(f"{target.get_name()} has been defeated by hit {i+1}!")
+                logging.info(f"{target.get_name()} has been defeated by hit {i+1}!")
         print(f"{servant.stats.get_name()} attacks {target.get_name()} with Noble Phantasm for {'%.0f' % total_damage} total damage! {target.get_name()} is left with {target.hp} hp")

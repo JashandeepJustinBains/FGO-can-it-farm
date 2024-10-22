@@ -10,6 +10,11 @@ import json
 import itertools
 import random
 
+import logging
+
+# Configure logging
+logging.basicConfig(filename='./outputs/token_execution_output.md', level=logging.INFO,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
 
 class Driver:
     def __init__(self, servant_ids, quest_id, mc_id):
@@ -51,7 +56,7 @@ class Driver:
         self.all_tokens.append(mystic_code_tokens)
 
         self.usable_tokens = [token for sublist in self.all_tokens for token in sublist]
-        print(f"Generated tokens: {self.usable_tokens}")  # Debugging
+        logging.info(f"Generated tokens: {self.usable_tokens}")  # Debugging
 
 
 
@@ -127,7 +132,7 @@ class Driver:
 
     def append_np_tokens(self):
         for i, servant in enumerate(self.game_manager.servants):
-            print(f'{servant.name} has NP gauge of {servant.np_gauge}')
+            logging.info(f'{servant.name} has NP gauge of {servant.np_gauge}')
             if servant.np_gauge >= 100:
                 self.execute_token(str(4 + i))
 
@@ -142,16 +147,16 @@ class Driver:
                     servant_tokens.extend(tokens)
             self.all_tokens.append(servant_tokens)
         self.usable_tokens = [token for sublist in self.all_tokens for token in sublist]
-        print(f"Regenerated tokens: {[token for token in self.usable_tokens]}")  # Debugging
+        logging.info(f"Regenerated tokens: {[token for token in self.usable_tokens]}")  # Debugging
 
     def explore_permutation(self, perm):
         self.reset_state()
-        print(f"Exploring permutation: {perm}")
+        logging.info(f"Exploring permutation: {perm}")
         self.used_tokens = []  # Track used tokens in current permutation
         for token in perm:
             self.used_tokens.append(token)
             if self.execute_token(token) == False:
-                print(f"Invalid permutation: {self.used_tokens}")
+                logging.info(f"Invalid permutation: {self.used_tokens}")
                 return False
             if self.is_goal_state():
                 print("Goal state reached.")
@@ -251,13 +256,13 @@ class Driver:
         self.used_tokens.append(token)
         action = token_actions.get(token)
         if action:
-            print(f"Executing token: {token}")
+            logging.info(f"Executing token: {token}")
             retval = action()
             if retval == False:
-                print(f"bad token permutation: {self.used_tokens}")
+                logging.info(f"bad token permutation: {self.used_tokens}")
                 return False
         else:
-            print(f"Invalid token: {token}")
+            logging.info(f"Invalid token: {token}")
 
     def decrement_cooldowns(self):
         for servant in self.game_manager.servants:
@@ -301,14 +306,18 @@ if __name__ == '__main__':
     # test: Does transformations work correctly? First test on Melusine then Aoko
     """
     servant_ids = [314,314,312,316] # Melusine stage 1 start
-    quest_id = 94137201
+    quest_id = 93040101
     driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
     driver.reset_state()
+    print(driver.game_manager.enemies)
     # a b c
     # d e f 
     # g h i
     # j k l/x
-    tokens = ["b3","c3","e3","f3","g", "i", "6", "#", "a3", "d3", "6", "#", "g", "i", "j", "x11", "a", "b3", "c3", "6", "#"]
+    # tokens = ["b3","c3","e3","f3","g", "i", "6", "#", "a3", "d3", "6", "#", "g", "i", "j", "x11", "a", "b3", "c3", "6", "#"]
+    tokens = ["b3","c3","e3","f3","g", "i", "6", "j", "#", "a3", "d3", "g", "i", "x11", "a", "b3", "c3", "6", "#"]
+
+    driver.execute_token("c")
     for token in tokens:
         driver.execute_token(token)
 

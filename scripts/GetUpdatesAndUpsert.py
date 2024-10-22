@@ -21,7 +21,7 @@ password = os.getenv('MONGO_PASS')
 # Connect to MongoDB
 host = 'localhost'
 port = 27017
-db_name = 'FGOCanItFarmDatabase'
+db_name = 'yourDatabase'
 client = MongoClient(f"mongodb://{username}:{password}@{host}:{port}/")
 db = client[db_name]
 
@@ -145,10 +145,10 @@ def retrieve_servants():
 
 def main():
     # retrieve_quests()
-    import_quests('./Quest')
+    # import_quests('./Quest')
 
     # retrieve_servants()
-    # import_servants('./ServantData')
+    import_servants('./ServantData')
 
 if __name__ == '__main__':
     main()

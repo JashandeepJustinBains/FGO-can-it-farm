@@ -9,6 +9,7 @@ class Servant:
     special_servants = [312, 394, 391, 413, 385, 350, 306, 305]
 
     def __init__(self, collectionNo, np=5, np_gauge=20, CE=None): # TODO np is at test value of 5 for now
+        self.id = collectionNo
         self.data = select_character(collectionNo)
         self.name = self.data.get('name')
         self.class_name = self.data.get('className')
@@ -32,7 +33,7 @@ class Servant:
         self.a_up = 0
         self.q_up = 0
         self.power_mod = {}
-        self.np_damage_mod = 0 
+        self.np_damage_mod = 0
         self.card_type = self.nps.nps[0]['card'] #if self.nps.nps else None
         self.class_base_multiplier = base_multipliers[self.class_name]
 

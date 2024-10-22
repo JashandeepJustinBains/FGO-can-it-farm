@@ -1,13 +1,14 @@
 class Skills:
     def __init__(self, skills_data, mystic_code=None):
         self.skills = self.parse_skills(skills_data)
-        self.cooldowns = {0: 0, 1: 0, 2: 0}
+        self.cooldowns = {1: 0, 2: 0, 3: 0}
         self.max_cooldowns = self.initialize_max_cooldowns()
-        self.cooldown_reduction_applied = {0: False, 1: False, 2: False}
+        self.cooldown_reduction_applied = {1: False, 2: False, 3: False}
         self.mystic_code = mystic_code  # Initialize Mystic Code
+        self.melusine_skill = False
 
     def parse_skills(self, skills_data):
-        skills = []
+        skills = {1:[], 2:[], 3:[]}
         for skill in skills_data:
             parsed_skill = {
                 'id': skill.get('id'),
@@ -34,21 +35,25 @@ class Skills:
                     }
                     parsed_function['buffs'].append(parsed_buff)
                 parsed_skill['functions'].append(parsed_function)
-            skills.append(parsed_skill)
+            skills[int(skill['num'])].append(parsed_skill)
         return skills
 
     def initialize_max_cooldowns(self):
         max_cooldowns = {}
-        for i in range(3):
+        for i in range(1,4):
             if i < len(self.skills):
-                max_cooldowns[i] = self.skills[i]['cooldown'] - 1
+                max_cooldowns[i] = self.skills[i][-1]['cooldown'] - 1
             else:
                 max_cooldowns[i] = 0
         return max_cooldowns
 
     def get_skill_by_num(self, num):
-        if 0 <= num < len(self.skills):
-            return self.skills[num]
+        if 1 <= num < len(self.skills) + 1:
+            if self.melusine_skill == False and self.skills[num][0]['id'] == 888550:
+                self.melusine_skill = True
+                return self.skills[num][0]
+            else:
+                return self.skills[num][-1]
         else:
             raise IndexError(f"Skill number {num} is out of range")
 
@@ -60,12 +65,6 @@ class Skills:
 
     def get_skill_cooldowns(self):
         return self.cooldowns
-
-    def get_skill_details(self, skill_num):
-        if 0 <= skill_num < len(self.skills):
-            return self.skills[skill_num]
-        else:
-            raise IndexError(f"Skill number {skill_num} is out of range")
 
     def decrement_cooldowns(self, turns: int):
         for skill_num in self.cooldowns:
