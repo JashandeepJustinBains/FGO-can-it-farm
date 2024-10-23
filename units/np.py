@@ -24,79 +24,77 @@ class NP:
                 return np
         raise ValueError(f"No NP found with new_id {new_id}")
 
-    def parse_np_functions(self, functions_data):
-        np_values_list = []
-        for func in functions_data:
-            func_dict = {
-                'funcId': func['funcId'],
-                'funcType': func['funcType'],
-                'funcTargetType': func['funcTargetType'],
-                'fieldReq': func.get('funcquestTvals', {}),
-                'condTarget': func.get('functvals', {}),
-                'values': {
-                    1: {i+1: func['svals'][i] for i in range(5)},
-                    2: {i+1: func['svals2'][i] for i in range(5)},
-                    3: {i+1: func['svals3'][i] for i in range(5)},
-                    4: {i+1: func['svals4'][i] for i in range(5)},
-                    5: {i+1: func['svals5'][i] for i in range(5)}
-                },
-                'buffs': self.parse_np_buffs(func.get('buffs', []), func.get('svals', {}))
-            }
-            np_values_list.append(func_dict)
-        return np_values_list
-
-
-
-    def parse_np_functions(self, functions_data):
-        np_values_list = []
-        for func in functions_data:
-            # print("Debug Func: ", func)  # Debug print
-            func_dict = {
-                'funcId': func['funcId'],
-                'funcType': func['funcType'],
-                'funcTargetType': func['funcTargetType'],
-                'fieldReq': func.get('funcquestTvals', {}),
-                'condTarget': func.get('functvals', {}),
-                'values': {
-                    1: {i+1: func.get('svals', [{}])[i] for i in range(5)},  # Ensure func.get('svals', [{}]) returns a list
-                    2: {i+1: func.get('svals2', [{}])[i] for i in range(5)},  # Same for other svals
-                    3: {i+1: func.get('svals3', [{}])[i] for i in range(5)},
-                    4: {i+1: func.get('svals4', [{}])[i] for i in range(5)},
-                    5: {i+1: func.get('svals5', [{}])[i] for i in range(5)}
-                },
-                'buffs': self.parse_np_buffs(func.get('buffs', []), func.get('svals', {}))
-            }
-            np_values_list.append(func_dict)
-        return np_values_list
+    # def get_np_values(self, np_level=1, overcharge_level=1, new_id=None):
+    #     np = self.get_np_by_id(new_id)
+    #     result = []
+    #     for func in np['functions']:
+    #         # print("Debug Func Values: ", func)  # Debug print
+    #         if overcharge_level == 1:
+    #             svals_key = f'svals'  # Determine the key dynamically
+    #         else:
+    #             svals_key = f'svals{overcharge_level}'  # Determine the key dynamically
+    #         if svals_key in func:
+    #             func_values = func[svals_key][np_level - 1]  # Access the correct list element
+    #         else:
+    #             func_values = {}  # Default to an empty dict if key not found
+    #         buffs = [
+    #             {
+    #                 'name': buff['name'],
+    #                 'functvals': buff.get('functvals', ''),
+    #                 'tvals': buff['tvals'],
+    #                 'svals': buff.get('svals', {}),  # Use .get to avoid KeyError
+    #                 'value' = buff.get('svals', {}).get('Value', 0)
+    #                 'turns' = buff.get('svals', {}).get('Turn', 0)
+    #             }
+    #             for buff in func['buffs']
+    #         ]
+    #         result.append({
+    #             'funcId': func['funcId'],
+    #             'funcType': func['funcType'],
+    #             'funcTargetType': func['funcTargetType'],
+    #             'fieldReq': func.get('fieldReq', {}),
+    #             'condTarget': func.get('condTarget', {}),
+    #             'svals': func_values,
+    #             'buffs': buffs
+    #         })
+    #     return result
 
     def get_np_values(self, np_level=1, overcharge_level=1, new_id=None):
         np = self.get_np_by_id(new_id)
         result = []
         for func in np['functions']:
-            # print("Debug Func Values: ", func)  # Debug print
-            svals_key = f'svals{overcharge_level}'  # Determine the key dynamically
-            if svals_key in func:
-                func_values = func[svals_key][np_level - 1]  # Access the correct list element
-            else:
-                func_values = {}  # Default to an empty dict if key not found
+            # Determine the key dynamically
+            svals_key = f'svals{overcharge_level}' if overcharge_level > 1 else 'svals'
+            
+            func_values = func[svals_key][np_level - 1] if svals_key in func else {}
+
+            # Parse buffs with the same value names as parse_skills
             buffs = [
                 {
-                    'type': buff['type'],
-                    'tvals': buff['tvals'],
-                    'svals': buff.get('svals', {})  # Use .get to avoid KeyError
+                    'name': buff.get('name'),
+                    'functvals': buff.get('functvals', ''),
+                    'tvals': buff.get('tvals', []),
+                    'svals': buff.get('svals', [None])[9] if len(buff.get('svals', [])) > 9 else None,
+                    'value': buff.get('svals', [{}])[9].get('Value', 0) if len(buff.get('svals', [])) > 9 else 0,
+                    'turns': buff.get('svals', [{}])[9].get('Turn', 0) if len(buff.get('svals', [])) > 9 else 0
                 }
-                for buff in func['buffs']
+                for buff in func.get('buffs', [])
             ]
-            result.append({
-                'funcId': func['funcId'],
-                'funcType': func['funcType'],
-                'funcTargetType': func['funcTargetType'],
-                'fieldReq': func.get('fieldReq', {}),
-                'condTarget': func.get('condTarget', {}),
-                'svals': func_values,
-                'buffs': buffs
-            })
+            
+            result.append(
+                {
+                    'funcType': func['funcType'],
+                    'funcTargetType': func['funcTargetType'],
+                    'functvals': func.get('functvals', []),
+                    'fieldReq': func.get('fieldReq', []),
+                    'condTarget': func.get('condTarget', []),
+                    'svals': func_values,
+                    'buffs': buffs
+                }
+            )
+        
         return result
+
 
     def get_np_damage_values(self, oc=1, np_level=1, new_id=None):
         np = self.get_np_by_id(new_id)

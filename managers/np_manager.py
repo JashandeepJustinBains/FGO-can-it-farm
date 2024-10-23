@@ -12,8 +12,11 @@ class npManager:
         self.gm = self.tm.gm
 
     def use_np(self, servant):
+
         if servant.stats.get_npgauge() >= 99:
             functions = servant.nps.get_np_values(servant.stats.get_np_level(), servant.stats.get_oc_level())
+            for func in functions:
+                print(func)
             servant.stats.set_npgauge(0)  # Reset NP gauge after use
             maintarget = None
             max_hp = 0
@@ -42,7 +45,9 @@ class npManager:
                             self.sm.apply_effect(func, servant)
                     if func['funcTargetType'] == 'enemy':
                         self.sm.apply_effect(func, maintarget)
-                    else:
+                    if func['funcTargetType'] == 'self':
+                        print("HELLLOOOO")
+                        print(f"what are we adding here? {func}")
                         self.sm.apply_effect(func, servant)
         else:
             print(f"{servant.name} does not have enough NP gauge: {servant.get_npgauge()}")

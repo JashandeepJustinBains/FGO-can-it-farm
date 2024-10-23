@@ -97,7 +97,7 @@ class SkillManager:
         functvals = state['functvals']
         tvals = [tval['id'] for tval in state.get('tvals', [])]
         turns = state['turns']
-
+        logging.info(f"added buff {buff} to {target}")
         target.buffs.add_buff({'buff': buff, 'functvals': functvals, 'value': value, 'tvals': tvals, 'turns': turns})
 
     def skill_available(self, servant, skill_num):

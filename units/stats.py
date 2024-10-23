@@ -51,8 +51,7 @@ class Stats:
             return self.servant.power_mod
 
     def get_np_damage_mod(self):
-        #TODO TEST VALUE OF 120% NP DAMAGE UP
-        return 1.20
+        return self.servant.np_damage_mod
 
     def get_np_level(self):
         return self.servant.np_level

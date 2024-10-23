@@ -49,6 +49,7 @@ class Skills:
 
     def get_skill_by_num(self, num):
         if 1 <= num < len(self.skills) + 1:
+
             if self.melusine_skill == False and self.skills[num][0]['id'] == 888550:
                 self.melusine_skill = True
                 return self.skills[num][0]

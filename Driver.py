@@ -287,6 +287,7 @@ if __name__ == '__main__':
     """
     # test: Does transformations work correctly for Aoko? including ability timers? Also testing servants who have death on end of turn like habetrot
     # what about event CE's?
+    """
     servant_ids = [413, 414, 284, 284, 312] # Aoko Soujurou castoria castoria oberon
     quest_id = 94095710 # witch on the holy night 90+
     driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
@@ -298,13 +299,11 @@ if __name__ == '__main__':
     tokens = [a, b3, c3, x12, a, c3, d, e, g, i3, ]
     for token in tokens:
         driver.execute_token(token)
-    """
-
 
 
     """
     # test: Does transformations work correctly? First test on Melusine then Aoko
-    """
+    
     servant_ids = [314,314,312,316] # Melusine stage 1 start
     quest_id = 93040101
     driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
@@ -314,13 +313,12 @@ if __name__ == '__main__':
     # d e f 
     # g h i
     # j k l/x
-    # tokens = ["b3","c3","e3","f3","g", "i", "6", "#", "a3", "d3", "6", "#", "g", "i", "j", "x11", "a", "b3", "c3", "6", "#"]
-    tokens = ["b3","c3","e3","f3","g", "i", "6", "j", "#", "a3", "d3", "g", "i", "x11", "a", "b3", "c3", "6", "#"]
-
+    tokens = ["b3","c3","e3","f3","g", "i", "6","j", "#", "a3", "d3", "g", "i", "x11", "a", "b3", "c3", "6", "#"]
     driver.execute_token("c")
     for token in tokens:
         driver.execute_token(token)
-
+    """
+    
     """
     # test: Does SE work based on Roman trait work?, also tested 2 waves of enemies!
     servant_ids = [314,314,280,316] # romulus-quirinus
