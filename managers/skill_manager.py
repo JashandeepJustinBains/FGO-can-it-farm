@@ -1,7 +1,7 @@
 import logging
 
 # Configure logging TODO ADD LOGGING HERE
-logging.basicConfig(filename='./outputs/skill_output.md', level=logging.INFO,
+logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 class SkillManager:
@@ -98,7 +98,7 @@ class SkillManager:
         functvals = state['functvals']
         tvals = [tval['id'] for tval in state.get('tvals', [])]
         turns = state['turns']
-        logging.info(f"added buff {buff} to {target}")
+        logging.info(f"added buff {buff} to {target.name}")
         target.buffs.add_buff({'buff': buff, 'functvals': functvals, 'value': value, 'tvals': tvals, 'turns': turns})
 
     def skill_available(self, servant, skill_num):
@@ -129,6 +129,7 @@ class SkillManager:
 
 
     def use_skill(self, servant, skill_num, target=None):
+        logging.info(f"BEGINNING USE_SKILL OF {servant.name}' SKILL {servant.skills.get_skill_by_num(skill_num+1)}")
         skill_num += 1
         if self.skill_available(servant, skill_num):
             skill = servant.skills.get_skill_by_num(skill_num)
@@ -170,7 +171,7 @@ class SkillManager:
         self.add_field(state)
 
     def apply_multiply_np(self, effect, target):
-        target.set_npgauge(target.get_npgauge() * 2)
+        target.set_npgauge(target.get_npgauge())
 
     def apply_self_kill(self, effect, target):
         target.kill = True

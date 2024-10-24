@@ -40,11 +40,8 @@ class Skills:
 
     def initialize_max_cooldowns(self):
         max_cooldowns = {}
-        for i in range(1,4):
-            if i < len(self.skills):
-                max_cooldowns[i] = self.skills[i][-1]['cooldown'] - 1
-            else:
-                max_cooldowns[i] = 0
+        for i in range(1, len(self.skills) + 1):
+            max_cooldowns[i] = self.skills[i][-1]['cooldown']
         return max_cooldowns
 
     def get_skill_by_num(self, num):
@@ -77,10 +74,12 @@ class Skills:
 
     def set_skill_cooldown(self, skill_num):
         if not self.cooldown_reduction_applied[skill_num]:
-            self.cooldowns[skill_num] = self.max_cooldowns[skill_num]
+            print(f"the cooldown of the {self.get_skill_by_num(skill_num)['name']} is currently {self.cooldowns[skill_num]} and the max cooldown is {self.max_cooldowns[skill_num]}")
+            self.cooldowns[skill_num] = self.max_cooldowns[skill_num] - 1
+            print(f"the cooldown of the {self.get_skill_by_num(skill_num)['name']} is currently {self.cooldowns[skill_num]} and the max cooldown is {self.max_cooldowns[skill_num]}")
             self.cooldown_reduction_applied[skill_num] = True
         else:
-            self.cooldowns[skill_num] = self.max_cooldowns[skill_num] + 1
+            self.cooldowns[skill_num] = self.max_cooldowns[skill_num]
 
     def use_mystic_code_skill(self, skill_num):
         if self.mystic_code and 0 <= skill_num < len(self.mystic_code.skills):

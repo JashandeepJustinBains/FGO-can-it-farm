@@ -1,3 +1,9 @@
+import logging
+
+# Configure logging
+logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
+
 magic_bullet_buff = {'buff': 'Magic Bullet', 'functvals': [], 'value': 9999, 'tvals': [], 'turns': -1}
 
 class Buffs:
@@ -10,14 +16,25 @@ class Buffs:
             self.buffs = []
 
     def process_end_turn_skills(self):
-        for buff in self.buffs:
+        add_magic_bullets = False
+        logging.info(f"PROCESSING END TURN SKILLS")
+        for i, buff in enumerate(self.buffs):
+            # logging.info(f"step 2.{i}")
             if buff['buff'] == 'NP Gain Each Turn':
+                # logging.info(f"step 3.{i} checking for NP GAIN PER TURN")
                 self.servant.set_npgauge(buff['value'])
             if buff['buff'] == 'Delayed Effect (Death)':
+                # logging.info(f"step 4.{i} checking for delayed effect of instant death")
                 self.servant.kill = True
             if self.servant.name == 'Super Aoko':
-                self.add_buff(magic_bullet_buff)
-                self.add_buff(magic_bullet_buff)
+                # logging.info(f"step 5.{i} checking if we are SUPER AOKO, IF true add 2 magic bullets")
+                add_magic_bullets = True
+
+        if add_magic_bullets == True:
+            self.add_buff(magic_bullet_buff) # adds 4 per turn for some reason when both are added
+            self.add_buff(magic_bullet_buff)
+
+
 
     def process_enemy_buffs(self):
         # Reset modifiers
@@ -89,16 +106,18 @@ class Buffs:
                 elif buff['buff'] == 'Power Up':
                     self.servant.power_mod += buff['value'] / 1000
                 elif buff['buff'] in ['NP Overcharge Level Up', 'Overcharge Lv. Up']:
-                    self.servant.oc_level += buff['value']
+                    self.servant.oc_level = min(self.servant.oc_level + buff['value'], 5)
                 elif "STR Up" in buff["buff"] or "Strength Up" in buff["buff"]:
                     for tval in buff['tvals']:
                         if tval not in self.servant.power_mod:
                             self.servant.power_mod[tval] = 0
                         self.servant.power_mod[tval] += buff.get("value", 0)
-                elif 'Triggers Each Turn' in buff['buff']:
+                elif 'Triggers Each Turn (Increase NP)' in buff['buff'] or 'Triggers Each Turn (NP Absorb)' in buff['buff']: # TODO assumes all Triggers Each Turn buffs are for NP gain
                     self.servant.np_gauge += buff['value']
                 elif buff['buff'] == 'NP Gain Up':
                     self.servant.np_gain_mod += buff['value'] / 1000
+
+
 
     def parse_passive(self, passives_data):
         passives = []
@@ -126,6 +145,11 @@ class Buffs:
 
     def add_buff(self, buff: dict):
         self.buffs.append(buff)
+
+    def remove_buff(self, buff: dict):
+        for i, b in enumerate(self.buffs):
+            if buff == b:
+                self.buffs.pop(i)
 
     def decrement_buffs(self):
         for buff in self.buffs[:]:

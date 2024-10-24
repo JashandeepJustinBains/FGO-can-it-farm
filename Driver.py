@@ -13,7 +13,7 @@ import random
 import logging
 
 # Configure logging
-logging.basicConfig(filename='./outputs/token_execution_output.md', level=logging.INFO,
+logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 class Driver:
@@ -253,7 +253,7 @@ class Driver:
         self.used_tokens.append(token)
         action = token_actions.get(token)
         if action:
-            logging.info(f"Executing token: {token}")
+            logging.info(f"Executing TOKEN: {token}")
             retval = action()
             if retval == False:
                 logging.info(f"bad token permutation: {self.used_tokens}")

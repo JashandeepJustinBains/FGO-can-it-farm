@@ -1,7 +1,7 @@
 import logging
 
 # Configure logging
-logging.basicConfig(filename='./outputs/np_output.md', level=logging.INFO,
+logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 # needed to increase consecutivly used NPs OC levels
@@ -14,8 +14,13 @@ class npManager:
         self.gm = self.tm.gm
 
     def use_np(self, servant):
-
+        logging.info("\n BEGINNING NP LOG \n")
         if servant.stats.get_npgauge() >= 99:
+            for i in range(int(servant.stats.get_npgauge() // 100)-1):
+                print(f"Servant {servant.name} has {servant.np_gauge} NP% and can apply OVERCHARGE UP 1 * {servant.stats.servant.stats.get_npgauge() // 100} times")
+                self.sm.apply_effect(np_oc_1_turn, servant)
+                servant.buffs.process_servant_buffs()
+
             functions = servant.nps.get_np_values(servant.stats.get_np_level(), servant.stats.get_oc_level())
             servant.stats.set_npgauge(0)  # Reset NP gauge after use
             maintarget = None
@@ -73,7 +78,13 @@ class npManager:
                 if s is not servant:
                     self.sm.apply_effect(np_oc_1_turn, s)
             if servant.id == 413:
-                self.gm.transform_aoko()
+                self.gm.transform_aoko(aoko_buffs=servant.buffs.buffs, aoko_cooldowns=servant.skills.cooldowns)
+            if servant.id == 4132: # remove upto 10 magic bullets per NP
+                for i in range(10):
+                    servant.buffs.remove_buff({'buff': 'Magic Bullet', 'functvals': [], 'value': 9999, 'tvals': [], 'turns': -1})
+
+
+            logging.info("\n ENDING NP LOG \n")
         else:
             print(f"{servant.name} does not have enough NP gauge: {servant.get_npgauge()}")
 
@@ -193,7 +204,7 @@ class npManager:
                     if servant.name == "Super Aoko":
                         for buff in servant.buffs.buffs:
                             if buff['buff'] == "Magic Bullet":
-                                cum += 1
+                                cum = min(10, cum + 1)
                         super_effective_modifier += cum * np_correction
                         if super_effective_modifier > 0:
                             is_super_effective = 1
@@ -217,6 +228,9 @@ class npManager:
         logging.info(f"NP Damage Mod: {np_damage_mod}")
         logging.info(f"Super Effective Modifier: {super_effective_modifier}")
         logging.info(f"Is Super Effective: {is_super_effective}")
+        
+        if super_effective_modifier:
+            is_super_effective = 1
 
         if np_correction_id:
             logging.info(f"does this enemy {target.name} with traits {target.traits} get super effected with this servants np who is SE against {np_correction_id}? {any(trait in target.traits for trait in np_correction_id)}")
@@ -226,7 +240,7 @@ class npManager:
         total_damage = (servant_atk * np_damage_multiplier * (card_damage_value * (1 + card_mod - enemy_res_mod)) *
             class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
             (1 + self_damage_mod + np_damage_mod + power_mod) * 
-            (1 + (((super_effective_modifier if super_effective_modifier else 0) - 1) * is_super_effective)))
+            (1 + (((super_effective_modifier if is_super_effective == 1 else 0) - 1))))
 
         logging.info(f"Total Damage: {total_damage}")
 

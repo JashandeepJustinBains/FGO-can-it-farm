@@ -5,6 +5,12 @@ from .buffs import Buffs
 from .np import NP
 from connectDB import db
 
+import logging
+
+# Configure logging
+logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
+
 class Servant:
     special_servants = [312, 394, 391, 413, 385, 350, 306, 305]
 
@@ -45,6 +51,7 @@ class Servant:
         return f"Servant(name={self.name}, class_id={self.class_name}, attribute={self.attribute}, \n {self.buffs})"
 
     def set_npgauge(self, value):
+        logging.info(f"INCREASING NP GAUGE OF {self.name} TO {self.np_gauge + value}")
         self.np_gauge += value
     def get_npgauge(self):
         return self.np_gauge

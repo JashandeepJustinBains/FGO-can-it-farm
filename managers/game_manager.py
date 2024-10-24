@@ -2,6 +2,11 @@ from .Quest import Quest
 from units.Servant import Servant
 from .MysticCode import MysticCode
 import copy
+import logging
+
+# Configure logging
+logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
 
 class GameManager:
     def __init__(self, servant_ids, quest_id, mc_id, gm_copy=None):
@@ -34,16 +39,22 @@ class GameManager:
     def swap_servants(self, frontline_idx, backline_idx):
         self.servants[frontline_idx], self.servants[backline_idx] = self.servants[backline_idx], self.servants[frontline_idx]
 
-    def transform_aoko(self):
+    def transform_aoko(self, aoko_buffs, aoko_cooldowns):
         print("What? \nAoko is transforming!")
+        servants_list = [servant.name for servant in self.servants]
+        logging.info(f"servants are: {servants_list}")
         for i, servant in enumerate(self.servants):
             if servant.id == 413:
-                self.saoko.buffs = servant.buffs
-                self.saoko.skills.cooldowns = servant.skills.cooldowns
+                self.saoko.buffs.buffs = copy.deepcopy(aoko_buffs)
+                self.saoko.skills.cooldowns = copy.deepcopy(aoko_cooldowns)
                 self.servants[i] = self.saoko
-                self.servants[i].set_npgauge(0)
+                self.servants[i].set_npgauge(-20)
                 print(f"Contratulations! Your 'Aoko Aozaki' transformed into '{self.servants[i].name}' ")
-            
+        servants_list = [servant.name for servant in self.servants]
+        logging.info(f"servants are: {servants_list}")
+    
+    
+    
     def init_quest(self):
         self.quest = Quest(self.quest_id)
         self.total_waves = self.quest.total_waves
