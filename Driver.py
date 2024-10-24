@@ -233,8 +233,6 @@ class Driver:
             'l3': lambda: self.skill_manager.use_mystic_code_skill(2, self.game_manager.servants[2]),
 
             'x11': lambda: self.skill_manager.swap_servants(1,1),
-
-            """
             'x12': lambda: self.skill_manager.swap_servants(1,2),
             'x13': lambda: self.skill_manager.swap_servants(1,3),
             'x21': lambda: self.skill_manager.swap_servants(2,1),
@@ -243,7 +241,6 @@ class Driver:
             'x31': lambda: self.skill_manager.swap_servants(3,1),
             'x32': lambda: self.skill_manager.swap_servants(3,2),
             'x33': lambda: self.skill_manager.swap_servants(3,3),
-            """
             
             # NPs
             '4': lambda:  self.np_manager.use_np(self.game_manager.servants[0]),
@@ -274,29 +271,23 @@ class Driver:
 # Example usage
 if __name__ == '__main__':
     # to check ordeal call quests use this link https://apps.atlasacademy.io/db/JP/war/401
-    # servant_ids = [284,284,280,316] # romulus-quirinus
-    # quest_id = 94089601
-    # driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
-    # driver.reset_state()
-    # driver.generate_tokens_for_positions()
-    # tokens = ["b3","c3","e3","f3","i", "a3", "d3", "6", "#", "h", "i", "g", "j", "x11", "a", "b3", "c3", "6", "#"]
-    # for token in tokens:
-    #     driver.execute_token(token)
-    # # driver.find_valid_permutation()
 
     """
-    # test: Does transformations work correctly for Aoko? including ability timers? Also testing servants who have death on end of turn like habetrot
-    # what about event CE's?
+    # multitest:
+    # 1. Aoko transformation
+    # 2. aoko end of turn buff
+    # 3. Soujurou after NP death
+    # ?. possibly implement CEs as well
     """
-    servant_ids = [413, 414, 284, 284, 312] # Aoko Soujurou castoria castoria oberon
+    servant_ids = [413, 414, 284, 284, 316] # Aoko Soujurou castoria oberon castoria
     quest_id = 94095710 # witch on the holy night 90+
     driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
     driver.reset_state()
     # a b c
     # d e f
     # g h i
-    # j k l/x
-    tokens = [a, b3, c3, x12, a, c3, d, e, g, i3, ]
+    # j k l or j k x{servant123}{servant123}
+    tokens = ["a", "c1", "g", "h1", "i1", "x32", "h1", "g", "i2", "d", "e", "4", "5", "#", "b", "4", "#", "a", "d", "g", "h1", "j", "4", "#"]
     for token in tokens:
         driver.execute_token(token)
 

@@ -24,41 +24,6 @@ class NP:
                 return np
         raise ValueError(f"No NP found with new_id {new_id}")
 
-    # def get_np_values(self, np_level=1, overcharge_level=1, new_id=None):
-    #     np = self.get_np_by_id(new_id)
-    #     result = []
-    #     for func in np['functions']:
-    #         # print("Debug Func Values: ", func)  # Debug print
-    #         if overcharge_level == 1:
-    #             svals_key = f'svals'  # Determine the key dynamically
-    #         else:
-    #             svals_key = f'svals{overcharge_level}'  # Determine the key dynamically
-    #         if svals_key in func:
-    #             func_values = func[svals_key][np_level - 1]  # Access the correct list element
-    #         else:
-    #             func_values = {}  # Default to an empty dict if key not found
-    #         buffs = [
-    #             {
-    #                 'name': buff['name'],
-    #                 'functvals': buff.get('functvals', ''),
-    #                 'tvals': buff['tvals'],
-    #                 'svals': buff.get('svals', {}),  # Use .get to avoid KeyError
-    #                 'value' = buff.get('svals', {}).get('Value', 0)
-    #                 'turns' = buff.get('svals', {}).get('Turn', 0)
-    #             }
-    #             for buff in func['buffs']
-    #         ]
-    #         result.append({
-    #             'funcId': func['funcId'],
-    #             'funcType': func['funcType'],
-    #             'funcTargetType': func['funcTargetType'],
-    #             'fieldReq': func.get('fieldReq', {}),
-    #             'condTarget': func.get('condTarget', {}),
-    #             'svals': func_values,
-    #             'buffs': buffs
-    #         })
-    #     return result
-
     def get_np_values(self, np_level=1, overcharge_level=1, new_id=None):
         np = self.get_np_by_id(new_id)
         result = []
@@ -111,7 +76,7 @@ class NP:
                 else:
                     np_damage = func[f'svals{oc}'][np_level - 1].get('Value', 0)
                 return np_damage / 1000, None, None, None, None
-            elif func['funcType'] == 'damageNpIndividual':
+            elif func['funcType'] in ['damageNpIndividual', 'damageNpStateIndividualFix']:
                 np_damage = func['svals'][np_level - 1].get('Value', 0)
                 np_correction_target = func['svals'][np_level - 1].get('Target', 0)
                 np_correction = func['svals'][np_level - 1].get('Correction', 0)
@@ -131,7 +96,7 @@ class NP:
 
     def get_npgain(self, card_type, new_id=None):
         np = self.get_np_by_id(new_id)
-        np_gain = np.get('npgain', {}).get(card_type, [0])[0]  # Safely get npgain and divide by 100
+        np_gain = np.get('npGain', {}).get(card_type, [0])[0]  # Safely get npgain and divide by 100
         return np_gain / 100
 
 

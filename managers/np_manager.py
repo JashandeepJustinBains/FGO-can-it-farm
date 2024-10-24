@@ -4,6 +4,8 @@ import logging
 logging.basicConfig(filename='./outputs/np_output.md', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
+# needed to increase consecutivly used NPs OC levels
+np_oc_1_turn = {'funcType': 'addStateShort', 'funcTargetType': 'ptAll', 'functvals': [], 'fieldReq': [], 'condTarget': [], 'svals': {'Rate': 1000, 'Turn': 1, 'Count': 1, 'Value': 1}, 'buffs': [{'name': 'Overcharge Lv. Up', 'functvals': '', 'tvals': [], 'svals': None, 'value': 0, 'turns': 1}]}
 
 class npManager:
     def __init__(self, skill_manager):
@@ -15,8 +17,6 @@ class npManager:
 
         if servant.stats.get_npgauge() >= 99:
             functions = servant.nps.get_np_values(servant.stats.get_np_level(), servant.stats.get_oc_level())
-            for func in functions:
-                print(func)
             servant.stats.set_npgauge(0)  # Reset NP gauge after use
             maintarget = None
             max_hp = 0
@@ -26,29 +26,54 @@ class npManager:
                 if enemy.hp > max_hp:
                     max_hp = enemy.hp
                     maintarget = enemy
+                    
             # Apply effects and damage
             for i, func in enumerate(functions):
-                if func['funcType'] == 'damageNp' or func['funcType'] == 'damageNpIndividual' or func['funcType'] == 'damageNpPierce':
-                    logging.info(f"firing NP of servant {servant}")
-                    servant.buffs.process_servant_buffs()
-                    for enemy in self.gm.get_enemies():
-                        enemy.buffs.process_enemy_buffs()
-                        self.apply_np_damage(servant, enemy)
-                elif func['funcType'] == 'damageNpIndividualSum':
-                    servant.buffs.process_servant_buffs()
-                    for enemy in self.gm.get_enemies():
-                        enemy.buffs.process_enemy_buffs()
-                        self.apply_np_odd_damage(servant, enemy)
-                else:
-                    if func['funcTargetType'] == 'enemyAll':
+                if func['funcType'] in ['damageNp', 'damageNpPierce']:
+                    logging.info(f"firing basic ST or AOE NP of servant {servant}")
+                    # if non-SE NP check for AoE or ST    
+                    if (func['funcTargetType'] == 'enemyAll'):
+                        servant.buffs.process_servant_buffs()
                         for enemy in self.gm.get_enemies():
-                            self.sm.apply_effect(func, servant)
+                            enemy.buffs.process_enemy_buffs()
+                            self.apply_np_damage(servant, enemy)
+                    
+                    elif (func['funcTargetType'] == 'enemy'):
+                        servant.buffs.process_servant_buffs()
+                        for enemy in self.gm.get_enemies():
+                            enemy.buffs.process_enemy_buffs()
+                        self.apply_np_damage(servant, maintarget)
+
+                elif func['funcType'] in ['damageNpIndividualSum', 'damageNpStateIndividualFix', 'damageNpIndividual']:
+                    # SE NPs
+                    logging.info(f"firing SE NP of servant {servant}")
+                    if (func['funcTargetType'] == 'enemyAll'):
+                        servant.buffs.process_servant_buffs()
+                        for enemy in self.gm.get_enemies():
+                            enemy.buffs.process_enemy_buffs()
+                            self.apply_np_odd_damage(servant, enemy)
+ 
+                    elif (func['funcTargetType'] == 'enemy'):
+                        servant.buffs.process_servant_buffs()
+                        for enemy in self.gm.get_enemies():
+                            enemy.buffs.process_enemy_buffs()
+                        self.apply_np_odd_damage(servant, maintarget)
+                
+                else:
+                    # non-damaging NP effects
+                    if func['funcTargetType'] == 'enemyAll':
+                        self.sm.apply_effect(func, servant)
                     if func['funcTargetType'] == 'enemy':
                         self.sm.apply_effect(func, maintarget)
                     if func['funcTargetType'] == 'self':
-                        print("HELLLOOOO")
-                        print(f"what are we adding here? {func}")
                         self.sm.apply_effect(func, servant)
+                    if func['funcTargetType'] == 'ptAll':
+                        self.sm.apply_effect(func, servant)
+            for s in self.gm.servants[0:2]:
+                if s is not servant:
+                    self.sm.apply_effect(np_oc_1_turn, s)
+            if servant.id == 413:
+                self.gm.transform_aoko()
         else:
             print(f"{servant.name} does not have enough NP gauge: {servant.get_npgauge()}")
 
@@ -79,7 +104,7 @@ class npManager:
         np_damage_mod = servant.stats.get_np_damage_mod()
         np_damage_multiplier, np_damage_correction_init, np_correction, np_correction_id, np_correction_target = servant.nps.get_np_damage_values(np_level=servant.stats.get_np_level(), oc=servant.stats.get_oc_level())
 
-        servant_atk = servant.stats.get_atk_at_level() * servant.stats.get_class_base_multiplier()
+        servant_atk = servant.stats.get_base_atk()
 
         # Print all buffs and modifiers for debugging
         logging.info(f"Servant ATK: {servant_atk}")
@@ -156,19 +181,22 @@ class npManager:
         is_super_effective = 1
         super_effective_modifier = 1
         is_super_effective = 1 if np_correction_target in target.traits else 0
-        servant_atk = servant.stats.get_atk_at_level() * servant.stats.get_class_base_multiplier()
+        servant_atk = servant.stats.get_base_atk()
         
-        if np_correction_target == 1:
-            for id in np_correction_id:
-                super_effective_modifier += np_correction * target.traits.count(id)
-        else:
-            for id in np_correction_id:
-                cum = 0
-                if servant.name == "Super Aoko":
-                    for buff in servant.buffs:
-                        if buff['buff'] == "Magic Bullet":
-                            cum += 1
-                    super_effective_modifier += cum * np_correction
+        if np_correction_id:
+            if np_correction_target == 1:
+                for id in np_correction_id:
+                    super_effective_modifier += np_correction * target.traits.count(id)
+            else:
+                for id in np_correction_id:
+                    cum = 0
+                    if servant.name == "Super Aoko":
+                        for buff in servant.buffs.buffs:
+                            if buff['buff'] == "Magic Bullet":
+                                cum += 1
+                        super_effective_modifier += cum * np_correction
+                        if super_effective_modifier > 0:
+                            is_super_effective = 1
 
         # Print all buffs and modifiers for debugging  
         logging.info(f"Servant ATK: {servant_atk}")
@@ -190,7 +218,10 @@ class npManager:
         logging.info(f"Super Effective Modifier: {super_effective_modifier}")
         logging.info(f"Is Super Effective: {is_super_effective}")
 
-        logging.info(f"does this enemy {target.name} with traits {target.traits} get super effected with this servants np who is SE against {np_correction_id}? {any(trait in target.traits for trait in np_correction_id)}")
+        if np_correction_id:
+            logging.info(f"does this enemy {target.name} with traits {target.traits} get super effected with this servants np who is SE against {np_correction_id}? {any(trait in target.traits for trait in np_correction_id)}")
+        else: 
+            logging.info(f"does this enemy {target.name} with traits {target.traits} get super effected with this servants np who is SE against")
 
         total_damage = (servant_atk * np_damage_multiplier * (card_damage_value * (1 + card_mod - enemy_res_mod)) *
             class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
@@ -201,7 +232,6 @@ class npManager:
 
         np_gain = servant.stats.get_npgain() * servant.stats.get_np_gain_mod()
         np_distribution = servant.stats.get_npdist()
-        
         damage_per_hit = [total_damage * value/100 for value in np_distribution]
 
         cumulative_damage = 0

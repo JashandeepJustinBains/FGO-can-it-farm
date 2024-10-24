@@ -1,3 +1,5 @@
+magic_bullet_buff = {'buff': 'Magic Bullet', 'functvals': [], 'value': 9999, 'tvals': [], 'turns': -1}
+
 class Buffs:
     def __init__(self, servant=None, enemy=None):
         if servant:
@@ -11,6 +13,11 @@ class Buffs:
         for buff in self.buffs:
             if buff['buff'] == 'NP Gain Each Turn':
                 self.servant.set_npgauge(buff['value'])
+            if buff['buff'] == 'Delayed Effect (Death)':
+                self.servant.kill = True
+            if self.servant.name == 'Super Aoko':
+                self.add_buff(magic_bullet_buff)
+                self.add_buff(magic_bullet_buff)
 
     def process_enemy_buffs(self):
         # Reset modifiers
@@ -81,7 +88,7 @@ class Buffs:
                     self.servant.q_up += buff['value'] / 1000
                 elif buff['buff'] == 'Power Up':
                     self.servant.power_mod += buff['value'] / 1000
-                elif buff['buff'] == 'NP Overcharge Level Up':
+                elif buff['buff'] in ['NP Overcharge Level Up', 'Overcharge Lv. Up']:
                     self.servant.oc_level += buff['value']
                 elif "STR Up" in buff["buff"] or "Strength Up" in buff["buff"]:
                     for tval in buff['tvals']:

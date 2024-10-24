@@ -19,6 +19,8 @@ class GameManager:
             self.total_waves = 0
             self.enemies = []
             self.init_quest()
+            if 413 in servant_ids:
+                self.saoko = Servant(collectionNo=4132)
 
     def add_field(self, state):
         name = state.get('field_name', 'Unknown')
@@ -30,8 +32,18 @@ class GameManager:
         self.fields = []
 
     def swap_servants(self, frontline_idx, backline_idx):
-        self.servants[frontline_idx], self.servants[backline_idx + 3] = self.servants[backline_idx + 3], self.servants[frontline_idx]
+        self.servants[frontline_idx], self.servants[backline_idx] = self.servants[backline_idx], self.servants[frontline_idx]
 
+    def transform_aoko(self):
+        print("What? \nAoko is transforming!")
+        for i, servant in enumerate(self.servants):
+            if servant.id == 413:
+                self.saoko.buffs = servant.buffs
+                self.saoko.skills.cooldowns = servant.skills.cooldowns
+                self.servants[i] = self.saoko
+                self.servants[i].set_npgauge(0)
+                print(f"Contratulations! Your 'Aoko Aozaki' transformed into '{self.servants[i].name}' ")
+            
     def init_quest(self):
         self.quest = Quest(self.quest_id)
         self.total_waves = self.quest.total_waves

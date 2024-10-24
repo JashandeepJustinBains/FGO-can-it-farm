@@ -35,10 +35,11 @@ class Servant:
         self.power_mod = {}
         self.np_damage_mod = 0
         self.card_type = self.nps.nps[0]['card'] #if self.nps.nps else None
-        self.class_base_multiplier = base_multipliers[self.class_name]
+        self.class_base_multiplier = 1 if self.id == 426 else base_multipliers[self.class_name]
 
         self.passives = self.buffs.parse_passive(self.data.get('classPassive', []))
         self.apply_passive_buffs()
+        self.kill = False
 
     def __repr__(self):
         return f"Servant(name={self.name}, class_id={self.class_name}, attribute={self.attribute}, \n {self.buffs})"

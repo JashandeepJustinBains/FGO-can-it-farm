@@ -4,6 +4,22 @@ class TurnManager:
 
 
     def end_turn(self):
+        
+        for i, servant in enumerate(self.gm.servants[:3]):  # Only check the frontline servants
+            if servant.kill:
+                # Remove servant from front line and replace with backline servant
+                print(f"Servant {servant.name} has died.")
+                if len(self.gm.servants) > 3:
+                    swap = self.gm.servants[3]
+                    self.gm.servants[i] = swap
+                    self.gm.servants.pop(3)
+                    print(f"Servant {swap.name} has moved to the front line.")
+                else:
+                    print("No backline servants available.")
+                    return False        
+                # Reset the servant's kill status
+                servant.kill = False
+            
         # Check if all enemies are defeated
         if all(enemy.get_hp() <= 0 for enemy in self.gm.enemies):
             # End the turn and decrement buffs if all enemies are defeated
