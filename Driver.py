@@ -25,7 +25,6 @@ class Driver:
         self.skill_manager = None
         self.np_manager = None
         self.game_manager = GameManager(self.servant_ids, self.quest_id, self.mc_id)
-        self.permutations_file = "test_permutations.json"
         self.all_tokens = []
         self.usable_tokens = []  # Track currently usable tokens
         self.used_tokens = []
@@ -66,7 +65,7 @@ class Driver:
         token = skill_tokens[servant_index][skill_num]
         skill = servant.skills.get_skill_by_num(skill_num)
         has_ptOne = any(func['funcTargetType'] == 'ptOne' for func in skill['functions'])
-        
+        # TODO MAKE 4 COPIES OF EACH SKILL TOKEN EVEN THOUGH IT IS INNEFFICIENT
         if has_ptOne:
             return [(f"{token}{i}") for i in range(1, 4)]
         else:
@@ -274,11 +273,10 @@ if __name__ == '__main__':
 
     """
     # multitest:
-    # 1. Aoko transformation
-    # 2. aoko end of turn buff
-    # 3. Soujurou after NP death
-    # ?. possibly implement CEs as well
-    """
+    # 1. Aoko transformation :check:
+    # 2. aoko end of turn buff :check:
+    # 3. Soujurou after NP death :check:
+    # ?. DID NOT IMPLEMENT CE YET possibly implement CEs as well
     servant_ids = [413, 414, 284, 284, 316] # Aoko Soujurou castoria oberon castoria
     quest_id = 94095710 # witch on the holy night 90+
     driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
@@ -290,6 +288,7 @@ if __name__ == '__main__':
     tokens = ["a", "c1", "g", "h1", "i1", "x32", "h1", "g", "i2", "d", "e", "4", "5", "#", "b", "4", "#", "a", "d", "g", "h1", "j", "4", "#"]
     for token in tokens:
         driver.execute_token(token)
+    """
 
 
     """
