@@ -2,12 +2,14 @@ from .buffs import Buffs
 
 class Enemy:
     def __init__(self, enemydata):
+        print(enemydata)
         self.name = enemydata[0]
         self.hp = enemydata[1]
-        self.class_name = enemydata[2]
-        self.traits = enemydata[3]
-        self.attribute = enemydata[4]
-        self.state = enemydata[5]
+        self.death_rate = enemydata[2]
+        self.class_name = enemydata[3]
+        self.traits = enemydata[4]
+        self.attribute = enemydata[5]
+        self.state = enemydata[6]
         self.defense = 0
         self.b_resdown = 0
         self.a_resdown = 0
@@ -30,6 +32,7 @@ class Enemy:
     def get_hp(self):
         return self.hp
     def set_hp(self, decrement):
+        print(f"{self.name} takes {decrement} damage. HP remaining: {self.hp-decrement}")
         self.hp -= decrement
     def get_class(self):
         return self.class_name

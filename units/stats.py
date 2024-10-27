@@ -59,7 +59,7 @@ class Stats:
             return self.servant.power_mod
 
     def get_np_damage_mod(self):
-        return self.servant.np_damage_mod
+        return self.servant.np_damage_mod 
 
     def get_np_level(self):
         return self.servant.np_level
@@ -78,9 +78,6 @@ class Stats:
 
     def get_npdist(self):
         return self.servant.nps.get_npdist()
-
-    # def get_cardtype(self):
-    #     return self.servant.nps[0]['card']
 
     def get_npgauge(self):
         return self.servant.np_gauge

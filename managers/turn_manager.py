@@ -12,39 +12,41 @@ class TurnManager:
     def end_turn(self):
         logging.info(f"preparing to end turn")
 
-        servants_list = [servant.name for servant in self.gm.servants]
-        logging.info(f"BEFORE INSTANTDEATH servants are: {servants_list}")
-
-        for i, servant in enumerate(self.gm.servants[:3]):  # Only check the frontline servants
-            if servant.kill:
-                logging.info(f"killing servant {servant} who has flag kill={servant.kill}")
-
-                # Remove servant from front line and replace with backline servant
-                print(f"Servant {servant.name} has died.")
-                print(self.gm.servants[:3])
-                if len(self.gm.servants) > 3:
-                    swap = self.gm.servants[3]
-                    self.gm.servants[i] = swap
-                    self.gm.servants.pop(3)
-                    print(f"Servant {swap.name} has moved to the front line.")
-                else:
-                    print("No backline servants available.")
-                    return False        
-                # Reset the servant's kill status
-                servant.kill = False
-        
-        servants_list = [servant.name for servant in self.gm.servants]
-        logging.info(f"AFTER INSTANTDEATH servants are: {servants_list}")
-        
         # Check if all enemies are defeated
         if all(enemy.get_hp() <= 0 for enemy in self.gm.get_enemies()):
             logging.info(f"checking if all enemies are dead")
-            # End the turn and decrement buffs if all enemies are defeated
-            self.decrement_buffs()
-            self.decrement_cooldowns()
 
             for servant in self.gm.servants[:3]:
                 servant.buffs.process_end_turn_skills()
+
+            # check for selfsac and reorganize party
+            servants_list = [servant.name for servant in self.gm.servants]
+            logging.info(f"BEFORE INSTANTDEATH servants are: {servants_list}")
+            for i, servant in enumerate(self.gm.servants[:3]):  # Only check the frontline servants
+                if servant.kill:
+                    logging.info(f"killing servant {servant} who has flag kill={servant.kill}")
+
+                    # Remove servant from front line and replace with backline servant
+                    print(f"Servant {servant.name} has died.")
+                    print(self.gm.servants[:3])
+                    if len(self.gm.servants) > 3:
+                        swap = self.gm.servants[3]
+                        self.gm.servants[i] = swap
+                        self.gm.servants.pop(3)
+                        print(f"Servant {swap.name} has moved to the front line.")
+                    else:
+                        print("No backline servants available.")
+                        return False        
+                    # Reset the servant's kill status
+                    servant.kill = False
+            
+            servants_list = [servant.name for servant in self.gm.servants]
+            logging.info(f"AFTER INSTANTDEATH servants are: {servants_list}")
+
+            # End the turn and decrement buffs if all enemies are defeated
+            self.decrement_buffs()
+            self.decrement_cooldowns()
+            
             print(f"Wave {self.gm.wave} completed.")
             
             # Check if it's the last wave

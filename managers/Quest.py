@@ -28,6 +28,7 @@ class Quest:
                 enemydata = [
                     enemy['name'],
                     enemy['hp'],
+                    enemy['deathRate'],
                     enemy['svt']['className'],
                     [trait['id'] for trait in enemy['svt']['traits']],
                     enemy['svt']['attribute'],

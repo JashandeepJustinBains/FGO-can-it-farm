@@ -17,7 +17,7 @@ logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 class Driver:
-    def __init__(self, servant_ids, quest_id, mc_id):
+    def __init__(self, servant_ids, quest_id, mc_id=260):
         self.servant_ids = servant_ids
         self.quest_id = quest_id
         self.mc_id = mc_id
@@ -38,7 +38,6 @@ class Driver:
     def generate_tokens_for_positions(self):
         self.all_tokens = []  # Initialize the list to store all tokens
         on_field = self.game_manager.servants[0:3]
-
         for i, servant in enumerate(on_field):
             servant_tokens = []
             for skill_num in range(len(servant.skills.skills)):
@@ -57,96 +56,69 @@ class Driver:
         self.usable_tokens = [token for sublist in self.all_tokens for token in sublist]
         logging.info(f"Generated tokens: {self.usable_tokens}")  # Debugging
 
-
-
     def generate_tokens_for_skill(self, servant, skill_num):
         skill_tokens = [['a', 'b', 'c'], ['d', 'e', 'f'], ['g', 'h', 'i']]
         servant_index = self.game_manager.servants.index(servant)
         token = skill_tokens[servant_index][skill_num]
         skill = servant.skills.get_skill_by_num(skill_num)
         has_ptOne = any(func['funcTargetType'] == 'ptOne' for func in skill['functions'])
-        # TODO MAKE 4 COPIES OF EACH SKILL TOKEN EVEN THOUGH IT IS INNEFFICIENT
+
         if has_ptOne:
-            return [(f"{token}{i}") for i in range(1, 4)]
+            return [(f"{token}{i}") for i in range(1, 5)]
         else:
-            return [(token)]
+            return [token] * 4
 
     def generate_tokens_for_mystic_code(self, mystic_code, skill_num):
         if self.mc_id == 260 or self.mc_id == 20:
             skill_tokens = [['j', 'k', 'x']]  # Adjust according to the condition
         else:
             skill_tokens = [['j', 'k', 'l']]
-        
         token = skill_tokens[0][skill_num]  # Use the first (and only) sub-array
         skill = mystic_code.skills[skill_num]
-        
+
         has_ptOne = any(func['funcTargetType'] == 'ptOne' for func in skill['functions'])
         has_ptAll = any(func['funcTargetType'] == 'ptAll' for func in skill['functions'])
         has_orderChange = any(func['funcTargetType'] == 'positionalSwap' for func in skill['functions'])
-        
-        if has_ptOne:
-            return [(f"{token}{i}") for i in range(1, 4)]
-        elif has_ptAll:
-            return [(f"{token}")]
-        elif has_orderChange:
-            return [(f"{token}_swap_x31")]
-        else:
-            return [(token)]
 
+        if has_ptOne:
+            return [(f"{token}{i}") for i in range(1, 5)]
+        elif has_ptAll:
+            return [token] * 4
+        elif has_orderChange:
+            return [f"{token}_swap_{i}{j}" for i in range(1, 4) for j in range(1, 4)]
+        else:
+            return [token] * 4
 
     def find_valid_permutation(self):
         self.reset_state()
         self.generate_tokens_for_positions()
-        
-        # Generate combinations of skill variations
-        skills = {}
-        for token in self.usable_tokens:
-            key = token[0]
-            if key in skills:
-                skills[key].append(token)
-            else:
-                skills[key] = [token]
 
-        # Combine the lists into a single list of lists
-        combined_lists = [skills[key] for key in skills]
+        # Generate all possible permutations of tokens
+        permutations = list(itertools.permutations(self.usable_tokens))
+        random.shuffle(permutations)
 
-        # Shuffle the combined lists to introduce randomness
-        for lst in combined_lists:
-            random.shuffle(lst)
+        # Split into smaller chunks and save to files
+        chunk_size = 1000  # Or any other manageable size
+        chunk_files = []
+        for i in range(0, len(permutations), chunk_size):
+            chunk = permutations[i:i + chunk_size]
+            filename = f"permutations_chunk_{i // chunk_size}.txt"
+            chunk_files.append(filename)
+            with open(filename, 'w') as f:
+                for perm in chunk:
+                    f.write(f"{','.join(perm)}\n")
 
-        # Generator function to yield permutations
-        def generate_permutations(combined_lists):
-            for combination in itertools.product(*combined_lists):
-                for perm in itertools.permutations(combination):
-                    yield perm
+        # Process each chunk file
+        for chunk_file in chunk_files:
+            with open(chunk_file, 'r') as f:
+                for line in f:
+                    perm = tuple(line.strip().split(','))
+                    if self.explore_permutation(perm):
+                        print(f"Valid permutation found: {perm}")
+                        return perm
 
-        # Use the generator to process permutations
-        for perm in generate_permutations(combined_lists):
-            if self.explore_permutation(perm):
-                print(f"Valid permutation found: {perm}")
-                return perm
-        
         print("No valid permutation found.")
         return None
-
-    def append_np_tokens(self):
-        for i, servant in enumerate(self.game_manager.servants):
-            logging.info(f'{servant.name} has NP gauge of {servant.np_gauge}')
-            if servant.np_gauge >= 100:
-                self.execute_token(str(4 + i))
-
-    def regenerate_tokens_based_on_cooldowns(self):
-        self.all_tokens = []  # Reinitialize the list to store all tokens
-        on_field = self.game_manager.servants[0:3]
-        for i, servant in enumerate(on_field):
-            servant_tokens = []
-            for skill_num in range(len(servant.skills.skills)):
-                if servant.skills.skill_available(skill_num):
-                    tokens = self.generate_tokens_for_skill(servant, skill_num)
-                    servant_tokens.extend(tokens)
-            self.all_tokens.append(servant_tokens)
-        self.usable_tokens = [token for sublist in self.all_tokens for token in sublist]
-        logging.info(f"Regenerated tokens: {[token for token in self.usable_tokens]}")  # Debugging
 
     def explore_permutation(self, perm):
         self.reset_state()
@@ -154,15 +126,10 @@ class Driver:
         self.used_tokens = []  # Track used tokens in current permutation
         for token in perm:
             self.used_tokens.append(token)
-            if self.execute_token(token) == False:
+            if not self.execute_token(token):
                 logging.info(f"Invalid permutation: {self.used_tokens}")
                 return False
-            if self.is_goal_state():
-                print("Goal state reached.")
-                return True
-            self.append_np_tokens()
-            self.regenerate_tokens_based_on_cooldowns()
-        return False
+        return True
 
 
     def execute_token(self, token):
@@ -271,79 +238,5 @@ class Driver:
 if __name__ == '__main__':
     # to check ordeal call quests use this link https://apps.atlasacademy.io/db/JP/war/401
 
-    """
-    # multitest:
-    # 1. Aoko transformation :check:
-    # 2. aoko end of turn buff :check:
-    # 3. Soujurou after NP death :check:
-    # ?. DID NOT IMPLEMENT CE YET possibly implement CEs as well
-    servant_ids = [413, 414, 284, 284, 316] # Aoko Soujurou castoria oberon castoria
-    quest_id = 94095710 # witch on the holy night 90+
-    driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
-    driver.reset_state()
-    # a b c
-    # d e f
-    # g h i
-    # j k l or j k x{servant123}{servant123}
-    tokens = ["a", "c1", "g", "h1", "i1", "x32", "h1", "g", "i2", "d", "e", "4", "5", "#", "b", "4", "#", "a", "d", "g", "h1", "j", "4", "#"]
-    for token in tokens:
-        driver.execute_token(token)
-    """
 
-
-    """
-    # test: Does transformations work correctly? First test on Melusine then Aoko
     
-    servant_ids = [314,314,312,316] # Melusine stage 1 start
-    quest_id = 93040101
-    driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
-    driver.reset_state()
-    print(driver.game_manager.enemies)
-    # a b c
-    # d e f 
-    # g h i
-    # j k l/x
-    tokens = ["b3","c3","e3","f3","g", "i", "6","j", "#", "a3", "d3", "g", "i", "x11", "a", "b3", "c3", "6", "#"]
-    driver.execute_token("c")
-    for token in tokens:
-        driver.execute_token(token)
-    """
-    
-    """
-    # test: Does SE work based on Roman trait work?, also tested 2 waves of enemies!
-    servant_ids = [314,314,280,316] # romulus-quirinus
-    quest_id = 94089601
-    driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
-    driver.reset_state()
-    driver.generate_tokens_for_positions()
-    tokens = ["b3","c3","e3","f3","i", "a3", "d3", "6", "#", "h", "i", "g", "j", "x11", "a", "b3", "c3", "6", "#"]
-    for token in tokens:
-        driver.execute_token(token)
-    """
-
-    """
-    # test: token string that should defeat enemy in quest 94086602
-    driver = Driver(servant_ids=[51, 314, 314, 316], quest_id=94086602, mc_id=260)
-    driver.reset_state()
-    # driver.generate_tokens_for_positions()
-    # Define the tokens to be used in the battle
-    tokens = ["a","b","c","d1","e1","f1","g1","h1","i1","a", "x31", "g", "h1", "i1", "j", "4", "#"]
-    for token in tokens:
-        driver.execute_token(token)
-    """
-    
-    """
-    # test: Servant is correctly initialized 
-    # servant = Servant(collectionNo=400)
-    # print(f"is this servant Uesugi Kenshin? {servant.name == "Uesugi Kenshin"}")
-    """
-
-    """
-    # test: Quest correctly instantiates correct enemy data
-    # quest = Quest(94086602)
-    # wave = quest.get_wave()
-    # print(f"printing wave :{wave}")
-    # for enemy in wave:
-    #     print(wave[enemy])
-    """
- 

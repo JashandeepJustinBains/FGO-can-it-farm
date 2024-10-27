@@ -146,8 +146,11 @@ class SkillManager:
 
     def swap_servants(self, frontline_idx, backline_idx):
         # Perform the swap operation
-        self.gm.swap_servants(frontline_idx - 1, 2 + backline_idx)  # Adjust for 0-based indexing
-        print(f"Swapped frontline servant {frontline_idx}:{self.gm.servants[frontline_idx].name} with backline servant {backline_idx}:{self.gm.servants[backline_idx].name}")
+        if (backline_idx == 1 and len(self.gm.servants) > 4) or (backline_idx == 2 and len(self.gm.servants) > 4) or (backline_idx == 3 and len(self.gm.servants) > 5):
+            self.gm.swap_servants(frontline_idx - 1, 2 + backline_idx)  # Adjust for 0-based indexing
+            print(f"Swapped frontline servant {frontline_idx}:{self.gm.servants[frontline_idx - 1].name} with backline servant {backline_idx + 2}:{self.gm.servants[backline_idx + 2].name}")
+        else:
+            return False
 
 
     def apply_gain_np(self, effect, target):
@@ -176,6 +179,22 @@ class SkillManager:
     def apply_self_kill(self, effect, target):
         target.kill = True
 
+    def apply_instant_death(self, effect, target):
+        print(f"hellllllllllllllooooooooooooooooooooooo DEATH CHANCE CALC??? {effect['funcType']}")
+        if effect['funcType'] == "instantDeath":
+            deathchance = effect.get('svals', '').get('Rate', '') / 1000
+            for i, s in enumerate(self.gm.servants[:3]):
+                if s.id == 297:
+                    deathchance *= 1.2
+                if s.id == 92:
+                    deathchance *= 2
+            deathrate = target.death_rate / 1000
+
+            print(f"DEATH CHANCE ={deathchance} and DEATHRATE = {deathrate} \n INSTANT DEATH SUCCESS?{True if deathchance*deathrate > 0.5 else False}")
+
+            if deathchance * deathrate > 0.5:
+                target.set_hp(target.get_hp())
+
     effect_functions = {
         'addState': apply_add_state,
         'gainNp': apply_gain_np,
@@ -185,4 +204,5 @@ class SkillManager:
         'transformServant': apply_transform, 
         'gainMultiplyNp': apply_multiply_np,
         'forceInstantDeath': apply_self_kill,
+        'instantDeath': apply_instant_death,
     }
