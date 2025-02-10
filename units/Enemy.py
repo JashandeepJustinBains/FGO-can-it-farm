@@ -1,17 +1,20 @@
+from .buffs import Buffs
 
 class Enemy:
     def __init__(self, enemydata):
+        print(enemydata)
         self.name = enemydata[0]
         self.hp = enemydata[1]
-        self.class_name = enemydata[2]
-        self.traits = enemydata[3]
-        self.attribute = enemydata[4]
-        self.state = enemydata[5]
+        self.death_rate = enemydata[2]
+        self.class_name = enemydata[3]
+        self.traits = enemydata[4]
+        self.attribute = enemydata[5]
+        self.state = enemydata[6]
         self.defense = 0
         self.b_resdown = 0
         self.a_resdown = 0
         self.q_resdown = 0  
-        self.buffs = []
+        self.buffs = Buffs(servant=None, enemy=self)
         self.np_per_hit_mult = self.np_gain_per_hit()
 
     def get_def(self):
@@ -29,6 +32,7 @@ class Enemy:
     def get_hp(self):
         return self.hp
     def set_hp(self, decrement):
+        print(f"{self.name} takes {decrement} damage. HP remaining: {self.hp-decrement}")
         self.hp -= decrement
     def get_class(self):
         return self.class_name
@@ -37,31 +41,8 @@ class Enemy:
 
     def add_buff(self, buff : dict):
         self.buffs.append(buff)
-        self.process_buffs()
+        self.buffs.process_enemy_buffs()
     
-    def process_buffs(self):
-        # Reset modifiers
-        self.defense = 0
-        self.b_resdown = 0
-        self.a_resdown = 0
-        self.q_resdown = 0
-        self.roman = self.traits.count(2004)
-        # Process buffs and update modifiers
-        # print(f"{self.name} has the following effects applied: {self.buffs}")
-        for buff in self.buffs:
-            if buff['buff'] == 'DEF Down':
-                self.defense -= buff['value'] / 1000
-            elif buff['buff'] == 'Buster Card Resist Down':
-                self.b_resdown -= buff['value'] / 1000
-            elif buff['buff'] == 'Arts Card Resist Down':
-                self.a_resdown -= buff['value'] / 1000
-            elif buff['buff'] == 'Quick Card Resist Down':
-                self.q_resdown -= buff['value'] / 1000
-            elif buff['buff'] == 'Apply Trait (Rome)':
-                self.traits.append(2004)
-            # Add more buff processing as needed
-        # print(buff)
-
     def np_gain_per_hit(self):
         initial = 1
         if self.class_name == 'rider': 

@@ -631,7 +631,7 @@ base_multipliers = {
     "ruler":        1.1,
     "avenger":      1.1,
     "moonCancer":   1.0,
-    "alterego":     1.0,
+    "alterEgo":     1.0,
     "foreigner":    1.0,
     "pretender":    1.0,
 }

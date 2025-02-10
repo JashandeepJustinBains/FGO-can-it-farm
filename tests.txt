@@ -1,0 +1,76 @@
+
+    # multitest:
+    # 1. Aoko transformation :check:
+    # 2. aoko end of turn buff :check:
+    # 3. Soujurou after NP death :check:
+    # ?. DID NOT IMPLEMENT CE YET possibly implement CEs as well
+    servant_ids = [413, 414, 284, 284, 316] # Aoko Soujurou castoria oberon castoria
+    quest_id = 94095710 # witch on the holy night 90+
+    driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
+    driver.reset_state()
+    # a b c
+    # d e f
+    # g h i
+    # j k l or j k x{servant123}{servant123}
+    tokens = ["a", "c1", "g", "h1", "i1", "x32", "h1", "g", "i2", "d", "e", "4", "5", "#", "b", "4", "#", "a", "d", "g", "h1", "j", "4", "#"]
+    for token in tokens:
+        driver.execute_token(token)
+    
+
+
+    
+    # test: Does transformations work correctly? First test on Melusine then Aoko
+    
+    servant_ids = [314,314,312,316] # Melusine stage 1 start
+    quest_id = 93040101
+    driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
+    driver.reset_state()
+    print(driver.game_manager.enemies)
+    # a b c
+    # d e f 
+    # g h i
+    # j k l/x
+    tokens = ["b3","c3","e3","f3","g", "i", "6","j", "#", "a3", "d3", "g", "i", "x11", "a", "b3", "c3", "6", "#"]
+    driver.execute_token("c")
+    for token in tokens:
+        driver.execute_token(token)
+    
+    
+    
+    # test: Does SE work based on Roman trait work?, also tested 2 waves of enemies!
+    servant_ids = [314,314,280,316] # romulus-quirinus
+    quest_id = 94089601
+    driver = Driver(servant_ids=servant_ids, quest_id=quest_id, mc_id=260)
+    driver.reset_state()
+    driver.generate_tokens_for_positions()
+    tokens = ["b3","c3","e3","f3","i", "a3", "d3", "6", "#", "h", "i", "g", "j", "x11", "a", "b3", "c3", "6", "#"]
+    for token in tokens:
+        driver.execute_token(token)
+    
+
+    
+    # test: token string that should defeat enemy in quest 94086602
+    driver = Driver(servant_ids=[51, 314, 314, 316], quest_id=94086602, mc_id=260)
+    driver.reset_state()
+    # driver.generate_tokens_for_positions()
+    # Define the tokens to be used in the battle
+    tokens = ["a","b","c","d1","e1","f1","g1","h1","i1","a", "x31", "g", "h1", "i1", "j", "4", "#"]
+    for token in tokens:
+        driver.execute_token(token)
+    
+    
+    
+    # test: Servant is correctly initialized 
+    # servant = Servant(collectionNo=400)
+    # print(f"is this servant Uesugi Kenshin? {servant.name == "Uesugi Kenshin"}")
+    
+
+    
+    # test: Quest correctly instantiates correct enemy data
+    # quest = Quest(94086602)
+    # wave = quest.get_wave()
+    # print(f"printing wave :{wave}")
+    # for enemy in wave:
+    #     print(wave[enemy])
+    
+ 

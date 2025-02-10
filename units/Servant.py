@@ -5,10 +5,17 @@ from .buffs import Buffs
 from .np import NP
 from connectDB import db
 
+import logging
+
+# Configure logging
+logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
+
 class Servant:
     special_servants = [312, 394, 391, 413, 385, 350, 306, 305]
 
     def __init__(self, collectionNo, np=5, np_gauge=20, CE=None): # TODO np is at test value of 5 for now
+        self.id = collectionNo
         self.data = select_character(collectionNo)
         self.name = self.data.get('name')
         self.class_name = self.data.get('className')
@@ -32,17 +39,19 @@ class Servant:
         self.a_up = 0
         self.q_up = 0
         self.power_mod = {}
-        self.np_damage_mod = 100 # TODO this is a test value
-        self.card_type = self.nps.nps[0]['card'] if self.nps.nps else None
-        self.class_base_multiplier = base_multipliers[self.class_name]
+        self.np_damage_mod = 0
+        self.card_type = self.nps.nps[0]['card'] #if self.nps.nps else None
+        self.class_base_multiplier = 1 if self.id == 426 else base_multipliers[self.class_name]
 
         self.passives = self.buffs.parse_passive(self.data.get('classPassive', []))
         self.apply_passive_buffs()
+        self.kill = False
 
     def __repr__(self):
         return f"Servant(name={self.name}, class_id={self.class_name}, attribute={self.attribute}, \n {self.buffs})"
 
     def set_npgauge(self, value):
+        logging.info(f"INCREASING NP GAUGE OF {self.name} TO {self.np_gauge + value}")
         self.np_gauge += value
     def get_npgauge(self):
         return self.np_gauge

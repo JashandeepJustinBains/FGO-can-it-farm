@@ -9,6 +9,10 @@ class Stats:
             if self.servant.cooldowns[skill] > 0:
                 self.servant.cooldowns[skill] = max(self.servant.cooldowns[skill] - effect['svals']['Value'], 0)
 
+    def get_base_atk(self):
+        # 1000atk from silver fous
+        return ( self.CE_get_atk() + 1000 + self.get_atk_at_level() ) * self.servant.stats.get_class_base_multiplier()
+
     def get_atk_at_level(self, level=0):
         if level == 0:
             if self.servant.rarity == 1:
@@ -23,6 +27,10 @@ class Stats:
                 level = 90
         atk = self.servant.atk_growth[level-1] if level <= 120 else None
         return atk
+
+    def CE_get_atk(self):
+        #TODO IMPLEMENT CE
+        return 0
 
     def get_name(self):
         return self.servant.name
@@ -51,7 +59,7 @@ class Stats:
             return self.servant.power_mod
 
     def get_np_damage_mod(self):
-        return self.servant.np_damage_mod
+        return self.servant.np_damage_mod 
 
     def get_np_level(self):
         return self.servant.np_level
@@ -63,16 +71,13 @@ class Stats:
         self.servant.oc_level = oc
 
     def get_npgain(self):
-        return self.servant.nps[0]['npgain'][self.servant.card_type][0] / 100
+        return self.servant.nps.get_npgain(self.servant.card_type)
 
     def get_np_gain_mod(self):
         return self.servant.np_gain_mod
 
     def get_npdist(self):
-        return self.servant.nps[0]['npdist']
-
-    # def get_cardtype(self):
-    #     return self.servant.nps[0]['card']
+        return self.servant.nps.get_npdist()
 
     def get_npgauge(self):
         return self.servant.np_gauge
