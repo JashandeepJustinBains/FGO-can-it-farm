@@ -9,8 +9,10 @@ from itertools import permutations, product
 import json
 import itertools
 import random
-
+from collections import deque
 import logging
+import time
+import heapq
 
 # Configure logging
 logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
@@ -24,24 +26,23 @@ class Driver:
         self.turn_manager = None
         self.skill_manager = None
         self.np_manager = None
-        self.game_manager = GameManager(self.servant_ids, self.quest_id, self.mc_id)
+        self.game_manager = GameManager(servant_ids=self.servant_ids, quest_id=self.quest_id, mc_id=self.mc_id)
         self.all_tokens = []
-        self.usable_tokens = []  # Track currently usable tokens
-        self.used_tokens = []
+        self.usable_tokens = self.generate_tokens_for_positions()
 
     def reset_state(self):
-        self.game_manager = GameManager(self.servant_ids, self.quest_id, self.mc_id)
-        self.turn_manager = TurnManager(self.game_manager)
-        self.skill_manager = SkillManager(self.turn_manager)
-        self.np_manager = npManager(self.skill_manager)
+        self.game_manager = GameManager(servant_ids=self.servant_ids, quest_id=self.quest_id, mc_id=self.mc_id)
+        self.turn_manager = TurnManager(game_manager=self.game_manager)
+        self.skill_manager = SkillManager(turn_manager=self.turn_manager)
+        self.np_manager = npManager(skill_manager=self.skill_manager)
 
     def generate_tokens_for_positions(self):
         self.all_tokens = []  # Initialize the list to store all tokens
         on_field = self.game_manager.servants[0:3]
         for i, servant in enumerate(on_field):
             servant_tokens = []
-            for skill_num in range(len(servant.skills.skills)):
-                tokens = self.generate_tokens_for_skill(servant, skill_num)
+            for skill_num, skill in enumerate(servant.skills.skills):
+                tokens = self.generate_tokens_for_skill(servant, skill)
                 servant_tokens.extend(tokens)
             self.all_tokens.append(servant_tokens)
 
@@ -53,20 +54,26 @@ class Driver:
             mystic_code_tokens.extend(tokens)
         self.all_tokens.append(mystic_code_tokens)
 
-        self.usable_tokens = [token for sublist in self.all_tokens for token in sublist]
-        logging.info(f"Generated tokens: {self.usable_tokens}")  # Debugging
+        # Create multiple instances of each token
+        self.all_tokens.append('#')
+        self.all_tokens.append('#')
+        self.all_tokens.append('#')
+        self.usable_tokens = [token for sublist in self.all_tokens for token in sublist for _ in range(2)]
+
+        return self.usable_tokens
 
     def generate_tokens_for_skill(self, servant, skill_num):
         skill_tokens = [['a', 'b', 'c'], ['d', 'e', 'f'], ['g', 'h', 'i']]
         servant_index = self.game_manager.servants.index(servant)
-        token = skill_tokens[servant_index][skill_num]
+         # skill_num is '1:' '2:' or '3:' so just subtract 1 instead of adding a new parameter
+        token = skill_tokens[servant_index][skill_num-1]
         skill = servant.skills.get_skill_by_num(skill_num)
         has_ptOne = any(func['funcTargetType'] == 'ptOne' for func in skill['functions'])
 
         if has_ptOne:
-            return [(f"{token}{i}") for i in range(1, 5)]
+            return [(f"{token}{i}") for i in range(1, 4)]
         else:
-            return [token] * 4
+            return [token]
 
     def generate_tokens_for_mystic_code(self, mystic_code, skill_num):
         if self.mc_id == 260 or self.mc_id == 20:
@@ -77,59 +84,42 @@ class Driver:
         skill = mystic_code.skills[skill_num]
 
         has_ptOne = any(func['funcTargetType'] == 'ptOne' for func in skill['functions'])
-        has_ptAll = any(func['funcTargetType'] == 'ptAll' for func in skill['functions'])
         has_orderChange = any(func['funcTargetType'] == 'positionalSwap' for func in skill['functions'])
 
         if has_ptOne:
-            return [(f"{token}{i}") for i in range(1, 5)]
-        elif has_ptAll:
-            return [token] * 4
+            return [(f"{token}{i}") for i in range(1, 4)]
         elif has_orderChange:
             return [f"{token}_swap_{i}{j}" for i in range(1, 4) for j in range(1, 4)]
         else:
-            return [token] * 4
+            return [token]
 
-    def find_valid_permutation(self):
-        self.reset_state()
-        self.generate_tokens_for_positions()
 
-        # Generate all possible permutations of tokens
-        permutations = list(itertools.permutations(self.usable_tokens))
-        random.shuffle(permutations)
+    def decrement_cooldowns(self):
+        for servant in self.game_manager.servants:
+            for i in range(len(servant.skills.cooldowns)):
+                if servant.skills.cooldowns[i] > 0:
+                    servant.skills.cooldowns[i] -= 1
 
-        # Split into smaller chunks and save to files
-        chunk_size = 1000  # Or any other manageable size
-        chunk_files = []
-        for i in range(0, len(permutations), chunk_size):
-            chunk = permutations[i:i + chunk_size]
-            filename = f"permutations_chunk_{i // chunk_size}.txt"
-            chunk_files.append(filename)
-            with open(filename, 'w') as f:
-                for perm in chunk:
-                    f.write(f"{','.join(perm)}\n")
+    def save_tree_to_json(self, filename):
+        with open(filename, 'w') as f:
+            json.dump(self.root.to_dict(), f, indent=4)
 
-        # Process each chunk file
-        for chunk_file in chunk_files:
-            with open(chunk_file, 'r') as f:
-                for line in f:
-                    perm = tuple(line.strip().split(','))
-                    if self.explore_permutation(perm):
-                        print(f"Valid permutation found: {perm}")
-                        return perm
-
-        print("No valid permutation found.")
-        return None
-
-    def explore_permutation(self, perm):
-        self.reset_state()
-        logging.info(f"Exploring permutation: {perm}")
+    # heuristic for randomized permutation scoring
+    def evaluate_permutation(self, perm):
         self.used_tokens = []  # Track used tokens in current permutation
+        total_score = 0
+
+        logging.info(f"\n ATTEMPTING TO RUN PERMUTATION:\n {perm}")
+        print(f"\n ATTEMPTING TO RUN PERMUTATION:\n {perm}")
+
         for token in perm:
-            self.used_tokens.append(token)
             if not self.execute_token(token):
-                logging.info(f"Invalid permutation: {self.used_tokens}")
-                return False
-        return True
+                break
+            # Evaluate the current state (e.g., check if a wave is cleared, calculate damage)
+            total_score += self.turn_manager.get_score()
+
+        return total_score
+
 
 
     def execute_token(self, token):
@@ -207,6 +197,7 @@ class Driver:
             'x31': lambda: self.skill_manager.swap_servants(3,1),
             'x32': lambda: self.skill_manager.swap_servants(3,2),
             'x33': lambda: self.skill_manager.swap_servants(3,3),
+            'x'  : lambda: self.skill_manager.swap_servants(),
             
             # NPs
             '4': lambda:  self.np_manager.use_np(self.game_manager.servants[0]),
@@ -215,28 +206,36 @@ class Driver:
             '#': lambda:  self.turn_manager.end_turn(),
         }
 
-        # action = token_actions.get(token, lambda: print(f"Unknown token: {token}"))
         self.used_tokens.append(token)
         action = token_actions.get(token)
         if action:
+            print(f"Executing TOKEN: {token}")
             logging.info(f"Executing TOKEN: {token}")
             retval = action()
-            if retval == False:
+            if retval is False:
                 logging.info(f"bad token permutation: {self.used_tokens}")
                 return False
         else:
             logging.info(f"Invalid token: {token}")
-
-    def decrement_cooldowns(self):
-        for servant in self.game_manager.servants:
-            for i in range(len(servant.skills.cooldowns)):
-                if servant.skills.cooldowns[i] > 0:
-                    servant.skills.cooldowns[i] -= 1
+        return True
 
 
-# Example usage
 if __name__ == '__main__':
-    # to check ordeal call quests use this link https://apps.atlasacademy.io/db/JP/war/401
+    servant_ids = [413, 414, 284, 284, 316]  # Aoko Soujurou castoria oberon castoria
+    quest_id = 94095710  # witch on the holy night 90+
 
 
-    
+
+    print(f"Simulations completed. Results saved to 'simulation_results.json'.")
+
+
+
+# TODO
+#   Need to seperate running the program using the "randomized token list" because it appears to not reset the 
+#       skill cooldowns correctly. 
+#   if we instead run the entire program again it will have a fresh set to use.
+
+# TODO
+#   create assumptions for speresh's changing damage multiplier maybe Turn 1: 1.3, Turn 2: 1.4, Turn 3: 1.6?
+#   program kazuradrop's class change to chose the highest HP target on the turn that the skill is used similar to how twink swordsperson's np is programmed
+#   incorporate "chosable" skills, such as DuBBai's np change, space ishtar, etc

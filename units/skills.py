@@ -74,9 +74,9 @@ class Skills:
 
     def set_skill_cooldown(self, skill_num):
         if not self.cooldown_reduction_applied[skill_num]:
-            print(f"the cooldown of the {self.get_skill_by_num(skill_num)['name']} is currently {self.cooldowns[skill_num]} and the max cooldown is {self.max_cooldowns[skill_num]}")
+            # print(f"BEFORE SKILL USE: {self.get_skill_by_num(skill_num)['name']} is currently {self.cooldowns[skill_num]} and the max cooldown is {self.max_cooldowns[skill_num]}")
             self.cooldowns[skill_num] = self.max_cooldowns[skill_num] - 1
-            print(f"the cooldown of the {self.get_skill_by_num(skill_num)['name']} is currently {self.cooldowns[skill_num]} and the max cooldown is {self.max_cooldowns[skill_num]}")
+            # print(f"AFTER SKILL USE: {self.get_skill_by_num(skill_num)['name']} is currently {self.cooldowns[skill_num]} and the max cooldown is {self.max_cooldowns[skill_num]}")
             self.cooldown_reduction_applied[skill_num] = True
         else:
             self.cooldowns[skill_num] = self.max_cooldowns[skill_num]

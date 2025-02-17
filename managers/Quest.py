@@ -1,5 +1,5 @@
 from units.Enemy import Enemy
-from connectDB import db
+from scripts.connectDB import db
 import numpy as np
 
 class Quest:

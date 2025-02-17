@@ -3,7 +3,7 @@ from .stats import Stats
 from .skills import Skills
 from .buffs import Buffs
 from .np import NP
-from connectDB import db
+from scripts.connectDB import db
 
 import logging
 

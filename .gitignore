@@ -7,5 +7,6 @@ output.txt
 test.txt
 .env
 __pycache__
+__pycache__/
 .vscode
 env

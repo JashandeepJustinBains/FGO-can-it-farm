@@ -5,7 +5,7 @@ logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 class SkillManager:
-    def __init__(self, turn_manager):
+    def __init__(self, turn_manager, sm_copy=None):
         self.tm = turn_manager
         self.gm = self.tm.gm
 
@@ -149,6 +149,20 @@ class SkillManager:
         if (backline_idx == 1 and len(self.gm.servants) > 4) or (backline_idx == 2 and len(self.gm.servants) > 4) or (backline_idx == 3 and len(self.gm.servants) > 5):
             self.gm.swap_servants(frontline_idx - 1, 2 + backline_idx)  # Adjust for 0-based indexing
             print(f"Swapped frontline servant {frontline_idx}:{self.gm.servants[frontline_idx - 1].name} with backline servant {backline_idx + 2}:{self.gm.servants[backline_idx + 2].name}")
+        else:
+            return False
+        
+    
+    def swap_servants(self):
+        # simplified swap operations: swaps backline 2 with frontline 3 if possible, otherwise backline 1 and frontline 3 
+        if (len(self.gm.servants) > 5):
+            self.gm.swap_servants(2, 4)  # Adjust for 0-based indexing
+            print(f"Swapped frontline servant {3}:{self.gm.servants[2].name} with backline servant {2}:{self.gm.servants[4].name}")
+            f"Swapped frontline servant {3}:{self.gm.servants[2].name} with backline servant {2}:{self.gm.servants[4].name}"
+        if (len(self.gm.servants) > 4):
+            self.gm.swap_servants(2, 3)  # Adjust for 0-based indexing
+            print(f"Swapped frontline servant {3}:{self.gm.servants[2].name} with backline servant {1}:{self.gm.servants[3].name}")
+            logging.info(f"Swapped frontline servant {3}:{self.gm.servants[2].name} with backline servant {1}:{self.gm.servants[3].name}")
         else:
             return False
 

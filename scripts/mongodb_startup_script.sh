@@ -16,7 +16,7 @@ use admin
 db.createUser({
   user: "secureUser",
   pwd: "securePassword",
-  roles: [{ role: "readWrite", db: "yourDatabase" }]
+  roles: [{ role: "readWrite", db: "FGOCanItFarmDatabase" }]
 })
 EOF
 

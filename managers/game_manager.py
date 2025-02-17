@@ -10,22 +10,20 @@ logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
 
 class GameManager:
     def __init__(self, servant_ids, quest_id, mc_id, gm_copy=None):
-        if gm_copy:
-            self.__dict__ = copy.deepcopy(gm_copy.__dict__)
-        else:
-            self.servant_ids = servant_ids
-            self.quest_id = quest_id
-            self.mc_id = mc_id
-            self.servants = [Servant(collectionNo=servant_id) for servant_id in servant_ids]
-            self.mc = MysticCode(mc_id)
-            self.fields = []
-            self.quest = None  # Initialize the Quest instance
-            self.wave = 1
-            self.total_waves = 0
-            self.enemies = []
-            self.init_quest()
-            if 413 in servant_ids:
-                self.saoko = Servant(collectionNo=4132)
+        self.servant_ids = servant_ids
+        self.quest_id = quest_id
+        self.mc_id = mc_id
+        self.servants = [Servant(collectionNo=servant_id) for servant_id in servant_ids]
+        self.mc = MysticCode(mc_id)
+        self.fields = []
+        self.quest = None  # Initialize the Quest instance
+        self.wave = 1
+        self.total_waves = 0
+        self.enemies = []
+        self.init_quest()
+        if 413 in servant_ids:
+            self.saoko = Servant(collectionNo=4132)
+
 
     def add_field(self, state):
         name = state.get('field_name', 'Unknown')
@@ -76,5 +74,3 @@ class GameManager:
     def get_enemies(self):
         return self.enemies
 
-    def copy(self):
-        return GameManager(self.servant_ids, self.quest_id, gm_copy=self)

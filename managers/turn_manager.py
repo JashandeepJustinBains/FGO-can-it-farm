@@ -5,8 +5,20 @@ logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 class TurnManager:
-    def __init__(self, game_manager) -> None:
+    def __init__(self, game_manager, tm_copy=None) -> None:
         self.gm = game_manager
+    
+    def get_score(self):
+        logging.info(f"calculating heuristic for wave: {self.gm.wave}")
+        _score = 0
+        for enemy in self.gm.get_enemies():
+            _score += enemy.get_hp() / enemy.get_max_hp()
+
+        # Add a penalty for not reaching or defeating subsequent waves
+        if _score > 0:
+            _score += self.gm.total_waves - self.gm.wave
+
+        return _score
 
 
     def end_turn(self):
