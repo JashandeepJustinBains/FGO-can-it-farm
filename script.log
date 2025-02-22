@@ -1,0 +1,567 @@
+2025-02-22 12:34:26,576:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94004754
+2025-02-22 12:34:27,998:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94004750
+2025-02-22 12:34:29,550:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94004751
+2025-02-22 12:34:31,019:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94004752
+2025-02-22 12:34:32,455:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94004753
+2025-02-22 12:34:33,887:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94004755
+2025-02-22 12:34:35,508:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94005627
+2025-02-22 12:34:36,953:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94005621
+2025-02-22 12:34:38,390:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94005615
+2025-02-22 12:34:40,463:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94005633
+2025-02-22 12:34:41,922:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94005639
+2025-02-22 12:34:43,401:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94005645
+2025-02-22 12:34:44,835:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94006116
+2025-02-22 12:34:46,354:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94006122
+2025-02-22 12:34:47,773:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94006128
+2025-02-22 12:34:49,198:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94006140
+2025-02-22 12:34:50,598:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94006134
+2025-02-22 12:34:52,006:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94006146
+2025-02-22 12:34:53,401:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94007806
+2025-02-22 12:34:54,810:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94007812
+2025-02-22 12:34:56,285:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94007818
+2025-02-22 12:34:57,700:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94007824
+2025-02-22 12:34:59,162:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94007830
+2025-02-22 12:35:00,557:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94007836
+2025-02-22 12:35:01,969:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94007842
+2025-02-22 12:35:03,448:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94007848
+2025-02-22 12:35:04,919:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012023
+2025-02-22 12:35:06,426:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012024
+2025-02-22 12:35:07,866:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012025
+2025-02-22 12:35:09,349:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012026
+2025-02-22 12:35:10,804:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012027
+2025-02-22 12:35:12,261:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012028
+2025-02-22 12:35:13,701:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012029
+2025-02-22 12:35:15,147:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94013254
+2025-02-22 12:35:16,602:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94013250
+2025-02-22 12:35:18,037:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94013251
+2025-02-22 12:35:19,467:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94013252
+2025-02-22 12:35:20,928:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94013253
+2025-02-22 12:35:22,373:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94013255
+2025-02-22 12:35:23,971:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94013727
+2025-02-22 12:35:25,397:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94013721
+2025-02-22 12:35:26,849:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94013715
+2025-02-22 12:35:28,299:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94013733
+2025-02-22 12:35:29,818:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94013739
+2025-02-22 12:35:31,212:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94013745
+2025-02-22 12:35:32,593:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94014016
+2025-02-22 12:35:33,995:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94014022
+2025-02-22 12:35:35,521:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94014028
+2025-02-22 12:35:36,928:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94014040
+2025-02-22 12:35:38,325:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94014034
+2025-02-22 12:35:39,722:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94014046
+2025-02-22 12:35:41,134:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015104
+2025-02-22 12:35:42,537:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015108
+2025-02-22 12:35:43,997:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015112
+2025-02-22 12:35:45,412:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015116
+2025-02-22 12:35:46,812:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015120
+2025-02-22 12:35:48,211:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015124
+2025-02-22 12:35:49,618:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015128
+2025-02-22 12:35:51,005:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015132
+2025-02-22 12:35:52,426:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015136
+2025-02-22 12:35:53,913:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015140
+2025-02-22 12:35:55,359:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015144
+2025-02-22 12:35:56,851:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015148
+2025-02-22 12:35:58,284:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015152
+2025-02-22 12:35:59,710:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015156
+2025-02-22 12:36:01,180:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015160
+2025-02-22 12:36:02,625:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015164
+2025-02-22 12:36:04,034:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015168
+2025-02-22 12:36:05,518:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015172
+2025-02-22 12:36:06,980:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015176
+2025-02-22 12:36:09,525:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015180
+2025-02-22 12:36:12,225:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015184
+2025-02-22 12:36:13,621:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015188
+2025-02-22 12:36:15,015:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015192
+2025-02-22 12:36:16,428:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015196
+2025-02-22 12:36:17,858:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015501
+2025-02-22 12:36:19,305:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015502
+2025-02-22 12:36:20,736:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015503
+2025-02-22 12:36:22,231:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015504
+2025-02-22 12:36:23,648:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015505
+2025-02-22 12:36:25,142:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015506
+2025-02-22 12:36:27,724:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015507
+2025-02-22 12:36:30,334:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015508
+2025-02-22 12:36:33,022:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015509
+2025-02-22 12:36:35,614:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015510
+2025-02-22 12:36:38,304:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015511
+2025-02-22 12:36:40,859:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015512
+2025-02-22 12:36:43,523:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015513
+2025-02-22 12:36:46,103:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015514
+2025-02-22 12:36:48,692:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015515
+2025-02-22 12:36:50,099:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015516
+2025-02-22 12:36:52,760:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015517
+2025-02-22 12:36:55,358:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015518
+2025-02-22 12:36:57,912:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015519
+2025-02-22 12:36:59,344:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015520
+2025-02-22 12:37:00,739:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015521
+2025-02-22 12:37:02,161:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015522
+2025-02-22 12:37:03,561:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015523
+2025-02-22 12:37:04,980:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94015524
+2025-02-22 12:37:06,382:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94017006
+2025-02-22 12:37:07,770:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94017012
+2025-02-22 12:37:09,161:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94017018
+2025-02-22 12:37:10,582:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94017024
+2025-02-22 12:37:13,138:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94017030
+2025-02-22 12:37:15,784:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94017036
+2025-02-22 12:37:18,307:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94017042
+2025-02-22 12:37:19,693:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94017048
+2025-02-22 12:37:21,092:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94017647
+2025-02-22 12:37:22,509:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94017646
+2025-02-22 12:37:23,914:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94023335
+2025-02-22 12:37:26,437:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94023341
+2025-02-22 12:37:27,829:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94023338
+2025-02-22 12:37:29,251:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94023344
+2025-02-22 12:37:30,829:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94023345
+2025-02-22 12:37:32,226:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94025504
+2025-02-22 12:37:35,227:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94025508
+2025-02-22 12:37:36,645:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94025512
+2025-02-22 12:37:38,044:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94025516
+2025-02-22 12:37:40,671:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94026004
+2025-02-22 12:37:43,350:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94026008
+2025-02-22 12:37:46,378:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94026012
+2025-02-22 12:37:48,935:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94026016
+2025-02-22 12:37:51,399:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94027804
+2025-02-22 12:37:54,014:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94027812
+2025-02-22 12:37:56,719:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94027808
+2025-02-22 12:37:59,454:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94027816
+2025-02-22 12:38:02,472:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94027820
+2025-02-22 12:38:03,952:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94027837
+2025-02-22 12:38:05,377:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94027838
+2025-02-22 12:38:08,127:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94027824
+2025-02-22 12:38:09,510:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94027828
+2025-02-22 12:38:10,893:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94027832
+2025-02-22 12:38:12,290:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94027839
+2025-02-22 12:38:13,710:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94027836
+2025-02-22 12:38:15,117:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94029647
+2025-02-22 12:38:16,562:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94029646
+2025-02-22 12:38:17,960:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94030303
+2025-02-22 12:38:19,368:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94030208
+2025-02-22 12:38:20,798:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94030209
+2025-02-22 12:38:22,204:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94030210
+2025-02-22 12:38:23,592:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94030211
+2025-02-22 12:38:24,997:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94032507
+2025-02-22 12:38:26,471:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94032508
+2025-02-22 12:38:28,945:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94032509
+2025-02-22 12:38:30,346:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94034123
+2025-02-22 12:38:31,733:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94034124
+2025-02-22 12:38:33,121:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94034125
+2025-02-22 12:38:34,520:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94034126
+2025-02-22 12:38:35,901:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94034127
+2025-02-22 12:38:37,299:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94034128
+2025-02-22 12:38:38,724:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94034129
+2025-02-22 12:38:40,124:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94037502
+2025-02-22 12:38:41,519:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94037505
+2025-02-22 12:38:42,903:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94037508
+2025-02-22 12:38:45,555:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94037511
+2025-02-22 12:38:48,053:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94037514
+2025-02-22 12:38:50,494:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94036301
+2025-02-22 12:38:52,943:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94036306
+2025-02-22 12:38:55,417:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94036304
+2025-02-22 12:38:57,849:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94036302
+2025-02-22 12:38:59,287:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94036303
+2025-02-22 12:39:00,684:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94036305
+2025-02-22 12:39:02,091:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94036307
+2025-02-22 12:39:03,524:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94036308
+2025-02-22 12:39:04,918:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94036649
+2025-02-22 12:39:06,330:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94036650
+2025-02-22 12:39:07,793:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94036651
+2025-02-22 12:39:09,315:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94039404
+2025-02-22 12:39:10,695:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94039412
+2025-02-22 12:39:12,082:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94039408
+2025-02-22 12:39:13,520:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94039416
+2025-02-22 12:39:14,922:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94039420
+2025-02-22 12:39:16,304:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94039437
+2025-02-22 12:39:17,691:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94039438
+2025-02-22 12:39:19,091:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94039424
+2025-02-22 12:39:20,496:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94039428
+2025-02-22 12:39:23,211:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94039432
+2025-02-22 12:39:25,529:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94039439
+2025-02-22 12:39:30,982:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94039436
+2025-02-22 12:39:33,434:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94040157
+2025-02-22 12:39:34,887:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94040418
+2025-02-22 12:39:36,307:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94042703
+2025-02-22 12:39:37,727:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94042608
+2025-02-22 12:39:39,211:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94042609
+2025-02-22 12:39:40,646:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94042610
+2025-02-22 12:39:42,089:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94042611
+2025-02-22 12:39:43,693:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94042007
+2025-02-22 12:39:45,196:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94042008
+2025-02-22 12:39:46,582:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94042009
+2025-02-22 12:39:47,975:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94042010
+2025-02-22 12:39:49,371:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94044607
+2025-02-22 12:39:50,768:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94044608
+2025-02-22 12:39:52,160:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94044609
+2025-02-22 12:39:53,563:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047035
+2025-02-22 12:39:54,966:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047041
+2025-02-22 12:39:56,385:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047038
+2025-02-22 12:39:57,783:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047044
+2025-02-22 12:39:59,190:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047045
+2025-02-22 12:40:00,648:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047907
+2025-02-22 12:40:02,056:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047908
+2025-02-22 12:40:03,602:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050102
+2025-02-22 12:40:05,020:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050105
+2025-02-22 12:40:07,704:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050115
+2025-02-22 12:40:09,089:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050108
+2025-02-22 12:40:10,495:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050116
+2025-02-22 12:40:12,066:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050111
+2025-02-22 12:40:13,482:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050117
+2025-02-22 12:40:14,900:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050114
+2025-02-22 12:40:16,304:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050257
+2025-02-22 12:40:17,675:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050260
+2025-02-22 12:40:19,071:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050518
+2025-02-22 12:40:20,458:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050521
+2025-02-22 12:40:21,872:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050258
+2025-02-22 12:40:24,446:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050519
+2025-02-22 12:40:27,345:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050259
+2025-02-22 12:40:29,921:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94050520
+2025-02-22 12:40:31,307:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94051725
+2025-02-22 12:40:32,766:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94051727
+2025-02-22 12:40:34,154:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94051726
+2025-02-22 12:40:35,552:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94051728
+2025-02-22 12:40:37,127:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94051755
+2025-02-22 12:40:38,572:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94051756
+2025-02-22 12:40:41,094:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94051729
+2025-02-22 12:40:43,686:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94051757
+2025-02-22 12:40:46,202:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94051758
+2025-02-22 12:40:47,632:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94051730
+2025-02-22 12:40:49,040:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94049407
+2025-02-22 12:40:50,486:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94049408
+2025-02-22 12:40:51,929:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053467
+2025-02-22 12:40:53,382:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053468
+2025-02-22 12:40:54,772:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053469
+2025-02-22 12:40:56,167:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053470
+2025-02-22 12:40:57,587:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053471
+2025-02-22 12:40:59,095:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053472
+2025-02-22 12:41:00,655:INFO:Inserted new entry with query: {'id': 94054907}
+2025-02-22 12:41:02,109:INFO:Inserted new entry with query: {'id': 94054908}
+2025-02-22 12:41:03,530:INFO:Inserted new entry with query: {'id': 94054909}
+2025-02-22 12:41:04,978:INFO:Inserted new entry with query: {'id': 94054910}
+2025-02-22 12:41:06,381:INFO:Inserted new entry with query: {'id': 94054911}
+2025-02-22 12:41:07,821:INFO:Inserted new entry with query: {'id': 94055415}
+2025-02-22 12:41:09,373:INFO:Inserted new entry with query: {'id': 94055417}
+2025-02-22 12:41:11,050:INFO:Inserted new entry with query: {'id': 94055418}
+2025-02-22 12:41:12,516:INFO:Inserted new entry with query: {'id': 94055416}
+2025-02-22 12:41:14,183:INFO:Inserted new entry with query: {'id': 94058108}
+2025-02-22 12:41:15,615:INFO:Inserted new entry with query: {'id': 94058109}
+2025-02-22 12:41:17,021:INFO:Inserted new entry with query: {'id': 94058110}
+2025-02-22 12:41:18,433:INFO:Inserted new entry with query: {'id': 94058112}
+2025-02-22 12:41:19,856:INFO:Inserted new entry with query: {'id': 94058111}
+2025-02-22 12:41:21,266:INFO:Inserted new entry with query: {'id': 94058113}
+2025-02-22 12:41:22,666:INFO:Inserted new entry with query: {'id': 94059425}
+2025-02-22 12:41:25,311:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94059427
+2025-02-22 12:41:26,729:INFO:Inserted new entry with query: {'id': 94059426}
+2025-02-22 12:41:29,340:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94059428
+2025-02-22 12:41:30,735:INFO:Inserted new entry with query: {'id': 94059455}
+2025-02-22 12:41:32,152:INFO:Inserted new entry with query: {'id': 94059456}
+2025-02-22 12:41:33,567:INFO:Inserted new entry with query: {'id': 94059429}
+2025-02-22 12:41:34,981:INFO:Inserted new entry with query: {'id': 94059457}
+2025-02-22 12:41:36,374:INFO:Inserted new entry with query: {'id': 94059458}
+2025-02-22 12:41:37,787:INFO:Inserted new entry with query: {'id': 94059430}
+2025-02-22 12:41:39,202:INFO:Inserted new entry with query: {'id': 94060609}
+2025-02-22 12:41:40,706:INFO:Inserted new entry with query: {'id': 94060610}
+2025-02-22 12:41:42,377:INFO:Inserted new entry with query: {'id': 94062607}
+2025-02-22 12:41:43,831:INFO:Inserted new entry with query: {'id': 94062608}
+2025-02-22 12:41:45,238:INFO:Inserted new entry with query: {'id': 94063012}
+2025-02-22 12:41:46,685:INFO:Inserted new entry with query: {'id': 94063013}
+2025-02-22 12:41:48,098:INFO:Inserted new entry with query: {'id': 94063014}
+2025-02-22 12:41:49,624:INFO:Inserted new entry with query: {'id': 94063011}
+2025-02-22 12:41:51,050:INFO:Inserted new entry with query: {'id': 94063911}
+2025-02-22 12:41:52,469:INFO:Inserted new entry with query: {'id': 94063913}
+2025-02-22 12:41:53,890:INFO:Inserted new entry with query: {'id': 94063909}
+2025-02-22 12:41:55,312:INFO:Inserted new entry with query: {'id': 94063912}
+2025-02-22 12:41:56,721:INFO:Inserted new entry with query: {'id': 94063907}
+2025-02-22 12:41:58,147:INFO:Inserted new entry with query: {'id': 94063908}
+2025-02-22 12:41:59,551:INFO:Inserted new entry with query: {'id': 94063910}
+2025-02-22 12:42:00,942:INFO:Inserted new entry with query: {'id': 94065102}
+2025-02-22 12:42:02,319:INFO:Inserted new entry with query: {'id': 94065103}
+2025-02-22 12:42:03,695:INFO:Inserted new entry with query: {'id': 94065105}
+2025-02-22 12:42:05,062:INFO:Inserted new entry with query: {'id': 94065106}
+2025-02-22 12:42:06,492:INFO:Inserted new entry with query: {'id': 94065127}
+2025-02-22 12:42:07,922:INFO:Inserted new entry with query: {'id': 94065128}
+2025-02-22 12:42:09,339:INFO:Inserted new entry with query: {'id': 94065129}
+2025-02-22 12:42:10,720:INFO:Inserted new entry with query: {'id': 94065116}
+2025-02-22 12:42:12,079:INFO:Inserted new entry with query: {'id': 94065117}
+2025-02-22 12:42:13,450:INFO:Inserted new entry with query: {'id': 94065118}
+2025-02-22 12:42:14,821:INFO:Inserted new entry with query: {'id': 94065119}
+2025-02-22 12:42:16,190:INFO:Inserted new entry with query: {'id': 94065120}
+2025-02-22 12:42:17,560:INFO:Inserted new entry with query: {'id': 94065121}
+2025-02-22 12:42:18,939:INFO:Inserted new entry with query: {'id': 94065122}
+2025-02-22 12:42:20,312:INFO:Inserted new entry with query: {'id': 94065123}
+2025-02-22 12:42:21,687:INFO:Inserted new entry with query: {'id': 94065124}
+2025-02-22 12:42:23,193:INFO:Inserted new entry with query: {'id': 94065125}
+2025-02-22 12:42:24,555:INFO:Inserted new entry with query: {'id': 94065126}
+2025-02-22 12:42:25,953:INFO:Inserted new entry with query: {'id': 94065552}
+2025-02-22 12:42:27,366:INFO:Inserted new entry with query: {'id': 94065549}
+2025-02-22 12:42:28,791:INFO:Inserted new entry with query: {'id': 94065550}
+2025-02-22 12:42:30,218:INFO:Inserted new entry with query: {'id': 94065551}
+2025-02-22 12:42:31,660:INFO:Inserted new entry with query: {'id': 94068909}
+2025-02-22 12:42:33,064:INFO:Inserted new entry with query: {'id': 94068910}
+2025-02-22 12:42:34,450:INFO:Inserted new entry with query: {'id': 94068911}
+2025-02-22 12:42:35,858:INFO:Inserted new entry with query: {'id': 94068907}
+2025-02-22 12:42:37,263:INFO:Inserted new entry with query: {'id': 94068908}
+2025-02-22 12:42:38,716:INFO:Inserted new entry with query: {'id': 94069711}
+2025-02-22 12:42:40,105:INFO:Inserted new entry with query: {'id': 94069712}
+2025-02-22 12:42:41,471:ERROR:Failed to download data from https://api.atlasacademy.io/nice/JP/quest/94071191/1?lang=en, status code: 404
+2025-02-22 12:42:42,949:ERROR:Failed to download data from https://api.atlasacademy.io/nice/JP/quest/94071191/1?lang=en, status code: 404
+2025-02-22 12:42:45,322:ERROR:Failed to download data from https://api.atlasacademy.io/nice/JP/quest/94071191/1?lang=en, status code: 404
+2025-02-22 12:42:49,323:ERROR:Failed to process quest ID: 94071191
+2025-02-22 12:42:50,654:ERROR:Failed to download data from https://api.atlasacademy.io/nice/JP/quest/94071192/1?lang=en, status code: 404
+2025-02-22 12:42:51,985:ERROR:Failed to download data from https://api.atlasacademy.io/nice/JP/quest/94071192/1?lang=en, status code: 404
+2025-02-22 12:42:54,373:ERROR:Failed to download data from https://api.atlasacademy.io/nice/JP/quest/94071192/1?lang=en, status code: 404
+2025-02-22 12:42:58,374:ERROR:Failed to process quest ID: 94071192
+2025-02-22 12:42:59,724:ERROR:Failed to download data from https://api.atlasacademy.io/nice/JP/quest/94071194/1?lang=en, status code: 404
+2025-02-22 12:43:01,081:ERROR:Failed to download data from https://api.atlasacademy.io/nice/JP/quest/94071194/1?lang=en, status code: 404
+2025-02-22 12:43:03,544:ERROR:Failed to download data from https://api.atlasacademy.io/nice/JP/quest/94071194/1?lang=en, status code: 404
+2025-02-22 12:43:07,544:ERROR:Failed to process quest ID: 94071194
+2025-02-22 12:43:08,957:INFO:Inserted new entry with query: {'id': 94073809}
+2025-02-22 12:43:10,349:INFO:Inserted new entry with query: {'id': 94073810}
+2025-02-22 12:43:11,747:INFO:Inserted new entry with query: {'id': 94073811}
+2025-02-22 12:43:13,376:INFO:Inserted new entry with query: {'id': 94074707}
+2025-02-22 12:43:14,788:INFO:Inserted new entry with query: {'id': 94074708}
+2025-02-22 12:43:16,214:INFO:Inserted new entry with query: {'id': 94074709}
+2025-02-22 12:43:17,613:INFO:Inserted new entry with query: {'id': 94074711}
+2025-02-22 12:43:19,577:INFO:Inserted new entry with query: {'id': 94074710}
+2025-02-22 12:43:20,965:INFO:Inserted new entry with query: {'id': 94082613}
+2025-02-22 12:43:22,387:INFO:Inserted new entry with query: {'id': 94082614}
+2025-02-22 12:43:23,805:INFO:Inserted new entry with query: {'id': 94082615}
+2025-02-22 12:43:25,219:INFO:Inserted new entry with query: {'id': 94087108}
+2025-02-22 12:43:26,601:INFO:Inserted new entry with query: {'id': 94087110}
+2025-02-22 12:43:28,013:INFO:Inserted new entry with query: {'id': 94087109}
+2025-02-22 12:43:29,424:INFO:Inserted new entry with query: {'id': 94088109}
+2025-02-22 12:43:30,813:INFO:Inserted new entry with query: {'id': 94088111}
+2025-02-22 12:43:32,239:INFO:Inserted new entry with query: {'id': 94088110}
+2025-02-22 12:43:33,654:INFO:Inserted new entry with query: {'id': 94090209}
+2025-02-22 12:43:35,230:INFO:Inserted new entry with query: {'id': 94090207}
+2025-02-22 12:43:36,670:INFO:Inserted new entry with query: {'id': 94090208}
+2025-02-22 12:43:38,047:INFO:Inserted new entry with query: {'id': 94090303}
+2025-02-22 12:43:39,417:INFO:Inserted new entry with query: {'id': 94090304}
+2025-02-22 12:43:40,829:INFO:Inserted new entry with query: {'id': 94090305}
+2025-02-22 12:43:42,199:INFO:Inserted new entry with query: {'id': 94090308}
+2025-02-22 12:43:43,578:INFO:Inserted new entry with query: {'id': 94090309}
+2025-02-22 12:43:44,973:INFO:Inserted new entry with query: {'id': 94090310}
+2025-02-22 12:43:46,374:INFO:Inserted new entry with query: {'id': 94090313}
+2025-02-22 12:43:47,759:INFO:Inserted new entry with query: {'id': 94090314}
+2025-02-22 12:43:49,303:INFO:Inserted new entry with query: {'id': 94090315}
+2025-02-22 12:43:50,700:INFO:Inserted new entry with query: {'id': 94090318}
+2025-02-22 12:43:52,072:INFO:Inserted new entry with query: {'id': 94090319}
+2025-02-22 12:43:53,447:INFO:Inserted new entry with query: {'id': 94090320}
+2025-02-22 12:43:54,848:INFO:Inserted new entry with query: {'id': 94090323}
+2025-02-22 12:43:56,216:INFO:Inserted new entry with query: {'id': 94090324}
+2025-02-22 12:43:57,592:INFO:Inserted new entry with query: {'id': 94090325}
+2025-02-22 12:43:58,969:INFO:Inserted new entry with query: {'id': 94090328}
+2025-02-22 12:44:00,341:INFO:Inserted new entry with query: {'id': 94090329}
+2025-02-22 12:44:01,720:INFO:Inserted new entry with query: {'id': 94090330}
+2025-02-22 12:44:03,301:INFO:Inserted new entry with query: {'id': 94091610}
+2025-02-22 12:44:04,861:INFO:Inserted new entry with query: {'id': 94091611}
+2025-02-22 12:44:06,437:INFO:Inserted new entry with query: {'id': 94091609}
+2025-02-22 12:44:07,952:INFO:Inserted new entry with query: {'id': 94095710}
+2025-02-22 12:44:09,490:INFO:Inserted new entry with query: {'id': 94095711}
+2025-02-22 12:44:11,007:INFO:Inserted new entry with query: {'id': 94095709}
+2025-02-22 12:44:12,466:INFO:Inserted new entry with query: {'id': 94095803}
+2025-02-22 12:44:13,880:INFO:Inserted new entry with query: {'id': 94095836}
+2025-02-22 12:44:15,304:INFO:Inserted new entry with query: {'id': 94095806}
+2025-02-22 12:44:16,724:INFO:Inserted new entry with query: {'id': 94095824}
+2025-02-22 12:44:18,377:INFO:Inserted new entry with query: {'id': 94095848}
+2025-02-22 12:44:19,792:INFO:Inserted new entry with query: {'id': 94095809}
+2025-02-22 12:44:21,218:INFO:Inserted new entry with query: {'id': 94095833}
+2025-02-22 12:44:22,667:INFO:Inserted new entry with query: {'id': 94095854}
+2025-02-22 12:44:24,120:INFO:Inserted new entry with query: {'id': 94095812}
+2025-02-22 12:44:25,558:INFO:Inserted new entry with query: {'id': 94095830}
+2025-02-22 12:44:27,004:INFO:Inserted new entry with query: {'id': 94095851}
+2025-02-22 12:44:28,531:INFO:Inserted new entry with query: {'id': 94095815}
+2025-02-22 12:44:30,073:INFO:Inserted new entry with query: {'id': 94095827}
+2025-02-22 12:44:31,606:INFO:Inserted new entry with query: {'id': 94095845}
+2025-02-22 12:44:33,170:INFO:Inserted new entry with query: {'id': 94095818}
+2025-02-22 12:44:34,872:INFO:Inserted new entry with query: {'id': 94095842}
+2025-02-22 12:44:36,466:INFO:Inserted new entry with query: {'id': 94095857}
+2025-02-22 12:44:37,850:INFO:Inserted new entry with query: {'id': 94095821}
+2025-02-22 12:44:39,225:INFO:Inserted new entry with query: {'id': 94095839}
+2025-02-22 12:44:40,605:INFO:Inserted new entry with query: {'id': 94095860}
+2025-02-22 12:44:42,990:INFO:Inserted new entry with query: {'id': 94096909}
+2025-02-22 12:44:46,342:INFO:Inserted new entry with query: {'id': 94096911}
+2025-02-22 12:44:48,787:INFO:Inserted new entry with query: {'id': 94096910}
+2025-02-22 12:44:50,868:INFO:Inserted new entry with query: {'id': 94097713}
+2025-02-22 12:44:52,903:INFO:Inserted new entry with query: {'id': 94097714}
+2025-02-22 12:44:55,269:INFO:Inserted new entry with query: {'id': 94097715}
+2025-02-22 12:44:56,717:INFO:Inserted new entry with query: {'id': 94098808}
+2025-02-22 12:44:58,139:INFO:Inserted new entry with query: {'id': 94098809}
+2025-02-22 12:44:59,566:INFO:Inserted new entry with query: {'id': 94098810}
+2025-02-22 12:45:00,983:INFO:Inserted new entry with query: {'id': 94099812}
+2025-02-22 12:45:02,520:INFO:Inserted new entry with query: {'id': 94099811}
+2025-02-22 12:45:04,057:INFO:Inserted new entry with query: {'id': 94099810}
+2025-02-22 12:45:05,465:INFO:Inserted new entry with query: {'id': 94101308}
+2025-02-22 12:45:06,858:INFO:Inserted new entry with query: {'id': 94101309}
+2025-02-22 12:45:08,269:INFO:Inserted new entry with query: {'id': 94101307}
+2025-02-22 12:45:09,663:INFO:Inserted new entry with query: {'id': 94101310}
+2025-02-22 12:45:11,125:INFO:Inserted new entry with query: {'id': 94136709}
+2025-02-22 12:45:12,542:INFO:Inserted new entry with query: {'id': 94136710}
+2025-02-22 12:45:13,996:INFO:Inserted new entry with query: {'id': 94136711}
+2025-02-22 12:45:15,447:INFO:Inserted new entry with query: {'id': 94136712}
+2025-02-22 12:45:16,839:INFO:Inserted new entry with query: {'id': 94136714}
+2025-02-22 12:45:18,250:INFO:Inserted new entry with query: {'id': 94136713}
+2025-02-22 12:45:19,744:INFO:Inserted new entry with query: {'id': 94139407}
+2025-02-22 12:45:21,168:INFO:Inserted new entry with query: {'id': 94139408}
+2025-02-22 12:45:22,590:INFO:Inserted new entry with query: {'id': 94139409}
+2025-02-22 12:45:23,992:INFO:Inserted new entry with query: {'id': 94139411}
+2025-02-22 12:45:25,394:INFO:Inserted new entry with query: {'id': 94139410}
+2025-02-22 12:45:26,790:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94000931
+2025-02-22 12:45:28,182:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94001529
+2025-02-22 12:45:29,568:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94002820
+2025-02-22 12:45:30,952:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94003603
+2025-02-22 12:45:32,340:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94003606
+2025-02-22 12:45:33,736:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94003609
+2025-02-22 12:45:35,245:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94003612
+2025-02-22 12:45:36,695:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94003615
+2025-02-22 12:45:38,112:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94004009
+2025-02-22 12:45:39,560:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94007116
+2025-02-22 12:45:40,996:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94007122
+2025-02-22 12:45:42,461:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94007128
+2025-02-22 12:45:43,906:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94008603
+2025-02-22 12:45:45,323:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94008606
+2025-02-22 12:45:46,744:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94008609
+2025-02-22 12:45:48,269:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94008612
+2025-02-22 12:45:49,715:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94008615
+2025-02-22 12:45:51,146:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94008618
+2025-02-22 12:45:52,589:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012803
+2025-02-22 12:45:54,045:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012806
+2025-02-22 12:45:55,489:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012809
+2025-02-22 12:45:56,961:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012812
+2025-02-22 12:45:58,379:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012815
+2025-02-22 12:46:01,122:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94012818
+2025-02-22 12:46:04,054:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94024603
+2025-02-22 12:46:06,691:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94024606
+2025-02-22 12:46:09,296:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94024609
+2025-02-22 12:46:11,943:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94024612
+2025-02-22 12:46:14,594:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94024615
+2025-02-22 12:46:16,012:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94024618
+2025-02-22 12:46:17,450:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94038103
+2025-02-22 12:46:19,044:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94038106
+2025-02-22 12:46:20,479:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94038109
+2025-02-22 12:46:22,061:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94038112
+2025-02-22 12:46:23,485:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94038115
+2025-02-22 12:46:24,927:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94038118
+2025-02-22 12:46:27,526:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94043503
+2025-02-22 12:46:30,141:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94043506
+2025-02-22 12:46:32,719:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94043509
+2025-02-22 12:46:34,131:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94043512
+2025-02-22 12:46:35,529:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94043515
+2025-02-22 12:46:36,955:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94043518
+2025-02-22 12:46:38,354:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047603
+2025-02-22 12:46:39,754:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047606
+2025-02-22 12:46:41,207:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047609
+2025-02-22 12:46:42,626:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047612
+2025-02-22 12:46:44,013:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047615
+2025-02-22 12:46:45,395:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94047618
+2025-02-22 12:46:47,842:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94052103
+2025-02-22 12:46:50,276:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94052104
+2025-02-22 12:46:51,728:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94052107
+2025-02-22 12:46:53,162:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94052108
+2025-02-22 12:46:54,589:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94052111
+2025-02-22 12:46:55,987:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94052112
+2025-02-22 12:46:57,399:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94052115
+2025-02-22 12:46:58,839:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94052116
+2025-02-22 12:47:00,233:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94052119
+2025-02-22 12:47:01,624:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94052120
+2025-02-22 12:47:03,028:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94052123
+2025-02-22 12:47:04,441:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94052124
+2025-02-22 12:47:05,845:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053103
+2025-02-22 12:47:07,229:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053104
+2025-02-22 12:47:08,623:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053107
+2025-02-22 12:47:10,027:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053108
+2025-02-22 12:47:11,428:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053111
+2025-02-22 12:47:12,829:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053112
+2025-02-22 12:47:14,251:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053115
+2025-02-22 12:47:15,653:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053116
+2025-02-22 12:47:17,058:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053119
+2025-02-22 12:47:18,455:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053120
+2025-02-22 12:47:20,043:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053123
+2025-02-22 12:47:21,431:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94053124
+2025-02-22 12:47:22,850:INFO:Inserted new entry with query: {'id': 94058403}
+2025-02-22 12:47:24,233:INFO:Inserted new entry with query: {'id': 94058404}
+2025-02-22 12:47:25,635:INFO:Inserted new entry with query: {'id': 94058407}
+2025-02-22 12:47:27,030:INFO:Inserted new entry with query: {'id': 94058408}
+2025-02-22 12:47:28,461:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94058411
+2025-02-22 12:47:29,865:INFO:Inserted new entry with query: {'id': 94058412}
+2025-02-22 12:47:31,253:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94058415
+2025-02-22 12:47:32,804:INFO:Inserted new entry with query: {'id': 94058416}
+2025-02-22 12:47:34,210:ERROR:Quest data missing 'id' field or stages[0].enemies is empty for quest ID: 94058419
+2025-02-22 12:47:35,612:INFO:Inserted new entry with query: {'id': 94058420}
+2025-02-22 12:47:37,024:INFO:Inserted new entry with query: {'id': 94058423}
+2025-02-22 12:47:38,411:INFO:Inserted new entry with query: {'id': 94058424}
+2025-02-22 12:47:39,793:INFO:Inserted new entry with query: {'id': 94061803}
+2025-02-22 12:47:41,182:INFO:Inserted new entry with query: {'id': 94061804}
+2025-02-22 12:47:42,575:INFO:Inserted new entry with query: {'id': 94061807}
+2025-02-22 12:47:43,975:INFO:Inserted new entry with query: {'id': 94061808}
+2025-02-22 12:47:45,380:INFO:Inserted new entry with query: {'id': 94061811}
+2025-02-22 12:47:46,759:INFO:Inserted new entry with query: {'id': 94061812}
+2025-02-22 12:47:48,284:INFO:Inserted new entry with query: {'id': 94061815}
+2025-02-22 12:47:49,685:INFO:Inserted new entry with query: {'id': 94061816}
+2025-02-22 12:47:51,089:INFO:Inserted new entry with query: {'id': 94061819}
+2025-02-22 12:47:52,464:INFO:Inserted new entry with query: {'id': 94061820}
+2025-02-22 12:47:53,862:INFO:Inserted new entry with query: {'id': 94061823}
+2025-02-22 12:47:55,255:INFO:Inserted new entry with query: {'id': 94061824}
+2025-02-22 12:47:56,657:INFO:Inserted new entry with query: {'id': 94074403}
+2025-02-22 12:47:58,051:INFO:Inserted new entry with query: {'id': 94074404}
+2025-02-22 12:47:59,447:INFO:Inserted new entry with query: {'id': 94074407}
+2025-02-22 12:48:00,879:INFO:Inserted new entry with query: {'id': 94074408}
+2025-02-22 12:48:02,291:INFO:Inserted new entry with query: {'id': 94074411}
+2025-02-22 12:48:03,715:INFO:Inserted new entry with query: {'id': 94074412}
+2025-02-22 12:48:05,133:INFO:Inserted new entry with query: {'id': 94074415}
+2025-02-22 12:48:06,587:INFO:Inserted new entry with query: {'id': 94074416}
+2025-02-22 12:48:08,019:INFO:Inserted new entry with query: {'id': 94074419}
+2025-02-22 12:48:09,444:INFO:Inserted new entry with query: {'id': 94074420}
+2025-02-22 12:48:10,901:INFO:Inserted new entry with query: {'id': 94074423}
+2025-02-22 12:48:12,395:INFO:Inserted new entry with query: {'id': 94074424}
+2025-02-22 12:48:13,789:INFO:Inserted new entry with query: {'id': 94074427}
+2025-02-22 12:48:15,170:INFO:Inserted new entry with query: {'id': 94074428}
+2025-02-22 12:48:16,713:INFO:Inserted new entry with query: {'id': 94088703}
+2025-02-22 12:48:18,229:INFO:Inserted new entry with query: {'id': 94088704}
+2025-02-22 12:48:19,767:INFO:Inserted new entry with query: {'id': 94088705}
+2025-02-22 12:48:21,192:INFO:Inserted new entry with query: {'id': 94088708}
+2025-02-22 12:48:22,640:INFO:Inserted new entry with query: {'id': 94088709}
+2025-02-22 12:48:24,160:INFO:Inserted new entry with query: {'id': 94088710}
+2025-02-22 12:48:25,709:INFO:Inserted new entry with query: {'id': 94088713}
+2025-02-22 12:48:27,240:INFO:Inserted new entry with query: {'id': 94088714}
+2025-02-22 12:48:28,772:INFO:Inserted new entry with query: {'id': 94088715}
+2025-02-22 12:48:30,359:INFO:Inserted new entry with query: {'id': 94088718}
+2025-02-22 12:48:31,793:INFO:Inserted new entry with query: {'id': 94088719}
+2025-02-22 12:48:33,580:INFO:Inserted new entry with query: {'id': 94088720}
+2025-02-22 12:48:35,149:INFO:Inserted new entry with query: {'id': 94088723}
+2025-02-22 12:48:36,677:INFO:Inserted new entry with query: {'id': 94088724}
+2025-02-22 12:48:38,239:INFO:Inserted new entry with query: {'id': 94088725}
+2025-02-22 12:48:39,699:INFO:Inserted new entry with query: {'id': 94088728}
+2025-02-22 12:48:41,146:INFO:Inserted new entry with query: {'id': 94088729}
+2025-02-22 12:48:42,697:INFO:Inserted new entry with query: {'id': 94088730}
+2025-02-22 12:48:44,215:INFO:Inserted new entry with query: {'id': 94100103}
+2025-02-22 12:48:45,589:INFO:Inserted new entry with query: {'id': 94100104}
+2025-02-22 12:48:46,968:INFO:Inserted new entry with query: {'id': 94100105}
+2025-02-22 12:48:48,358:INFO:Inserted new entry with query: {'id': 94100108}
+2025-02-22 12:48:49,737:INFO:Inserted new entry with query: {'id': 94100109}
+2025-02-22 12:48:51,106:INFO:Inserted new entry with query: {'id': 94100110}
+2025-02-22 12:48:52,495:INFO:Inserted new entry with query: {'id': 94100113}
+2025-02-22 12:48:53,870:INFO:Inserted new entry with query: {'id': 94100114}
+2025-02-22 12:48:55,398:INFO:Inserted new entry with query: {'id': 94100115}
+2025-02-22 12:48:56,799:INFO:Inserted new entry with query: {'id': 94100118}
+2025-02-22 12:48:58,197:INFO:Inserted new entry with query: {'id': 94100119}
+2025-02-22 12:48:59,577:INFO:Inserted new entry with query: {'id': 94100120}
+2025-02-22 12:49:00,956:INFO:Inserted new entry with query: {'id': 94100123}
+2025-02-22 12:49:02,470:INFO:Inserted new entry with query: {'id': 94100124}
+2025-02-22 12:49:03,870:INFO:Inserted new entry with query: {'id': 94100125}
+2025-02-22 12:49:05,267:INFO:Inserted new entry with query: {'id': 94100128}
+2025-02-22 12:49:06,647:INFO:Inserted new entry with query: {'id': 94100129}
+2025-02-22 12:49:08,033:INFO:Inserted new entry with query: {'id': 94100130}
+2025-02-22 12:56:17,479:INFO:Inserted new entry with query: {'id': 94080108}
+2025-02-22 12:56:18,868:INFO:Inserted new entry with query: {'id': 94080109}
+2025-02-22 12:56:20,274:INFO:Inserted new entry with query: {'id': 94080110}
+2025-02-22 12:56:21,686:INFO:Inserted new entry with query: {'id': 94081908}
+2025-02-22 12:56:23,093:INFO:Inserted new entry with query: {'id': 94081909}
+2025-02-22 12:56:24,515:INFO:Inserted new entry with query: {'id': 94081910}
+2025-02-22 12:56:26,106:INFO:Inserted new entry with query: {'id': 94083705}
+2025-02-22 12:56:27,771:INFO:Inserted new entry with query: {'id': 94083706}
+2025-02-22 12:56:29,364:INFO:Inserted new entry with query: {'id': 94083707}
+2025-02-22 12:56:30,936:INFO:Inserted new entry with query: {'id': 94083712}
+2025-02-22 12:56:32,376:INFO:Inserted new entry with query: {'id': 94083713}
+2025-02-22 12:56:33,914:INFO:Inserted new entry with query: {'id': 94083714}
+2025-02-22 12:56:35,380:INFO:Inserted new entry with query: {'id': 94083719}
+2025-02-22 12:56:36,825:INFO:Inserted new entry with query: {'id': 94083720}
+2025-02-22 12:56:38,389:INFO:Inserted new entry with query: {'id': 94083721}
