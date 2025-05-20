@@ -67,6 +67,9 @@ class Buffs:
         self.servant.np_damage_mod = self.servant.user_np_damage_mod
         self.servant.oc_level = 1
         self.servant.np_gain_mod = 1
+        self.servant.buster_card_damage_up = self.servant.user_buster_damage_up
+        self.servant.arts_card_damage_up = self.servant.user_arts_damage_up
+        self.servant.quick_card_damage_up = self.servant.user_quick_damage_up
 
         # Store a flag for Boost NP Strength Up
         boost_np_strength_up_active = False
@@ -113,6 +116,12 @@ class Buffs:
                     self.servant.np_gauge += buff['value']
                 elif buff['buff'] == 'NP Gain Up':
                     self.servant.np_gain_mod += buff['value'] / 1000
+                elif buff['buff'] == 'Buster Card Damage Up':
+                    self.servant.buster_card_damage_up += buff['value'] / 1000
+                elif buff['buff'] == 'Arts Card Damage Up':
+                    self.servant.arts_card_damage_up += buff['value'] / 1000
+                elif buff['buff'] == 'Quick Card Damage Up':
+                    self.servant.quick_card_damage_up += buff['value'] / 1000
 
     def parse_passive(self, passives_data):
         passives = []

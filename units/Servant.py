@@ -79,6 +79,26 @@ class Servant:
     def get_npgauge(self):
         return self.np_gauge
 
+    def apply_bonus_buffs(self):
+        # Only apply if the value is nonzero
+        if self.user_atk_mod:
+            self.apply_buff({'buff_name': 'ATK Up', 'value': self.user_atk_mod, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_b_up:
+            self.apply_buff({'buff_name': 'Buster Up', 'value': self.user_b_up, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_a_up:
+            self.apply_buff({'buff_name': 'Arts Up', 'value': self.user_a_up, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_q_up:
+            self.apply_buff({'buff_name': 'Quick Up', 'value': self.user_q_up, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_np_damage_mod:
+            self.apply_buff({'buff_name': 'NP Strength Up', 'value': self.user_np_damage_mod, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_buster_damage_up:
+            self.apply_buff({'buff_name': 'Buster Card Damage Up', 'value': self.user_buster_damage_up, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_quick_damage_up:
+            self.apply_buff({'buff_name': 'Quick Card Damage Up', 'value': self.user_quick_damage_up, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_arts_damage_up:
+            self.apply_buff({'buff_name': 'Arts Card Damage Up', 'value': self.user_arts_damage_up, 'turns': -1, 'functvals': [], 'tvals': []})
+          
+
     def apply_passive_buffs(self):
         for passive in self.passives:
             for func in passive['functions']:

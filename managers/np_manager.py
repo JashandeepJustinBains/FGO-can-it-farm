@@ -98,16 +98,19 @@ class npManager:
         card_np_value = 1
         if card_type == 'buster':
             card_damage_value = 1.5
-            card_mod = servant.stats.get_b_up()
+            card_eff_mod = servant.stats.get_b_up()
+            card_damage_mod = servant.stats.get_b_up() + servant.stats.get_buster_damage_up()
             enemy_res_mod = target.get_b_resdown()
         elif card_type == 'quick':
             card_damage_value = 0.8
-            card_mod = servant.stats.get_q_up()
+            card_eff_mod = servant.stats.get_q_up()
+            card_damage_mod = servant.stats.get_q_up() + servant.stats.get_quick_damage_up()
             enemy_res_mod = target.get_q_resdown()
         elif card_type == 'arts':
             card_damage_value = 1
             card_np_value = 3
-            card_mod = servant.stats.get_a_up()
+            card_eff_mod = servant.stats.get_a_up()
+            card_damage_mod = servant.stats.get_a_up() + servant.stats.get_a_damage_up()
             enemy_res_mod = target.get_a_resdown()
 
         class_modifier = servant.stats.get_class_multiplier(target.get_class())
@@ -122,20 +125,9 @@ class npManager:
         servant_atk = servant.stats.get_base_atk()
 
         # Print all buffs and modifiers for debugging
-        logging.info(f"Servant ATK: {servant_atk}")
-        logging.info(f"NP Damage Multiplier: {np_damage_multiplier}")
-        logging.info(f"Card Damage Value: {card_damage_value}")
-        logging.info(f"Card Mod: {card_mod}")
-        logging.info(f"Enemy Res Mod: {enemy_res_mod}")
-        logging.info(f"Class Modifier: {class_modifier}")
-        logging.info(f"Attribute Modifier: {attribute_modifier}")
-        logging.info(f"ATK Mod: {atk_mod}")
-        logging.info(f"Enemy Def Mod: {enemy_def_mod}")
-        logging.info(f"Power Mod: {power_mod}")
-        logging.info(f"Self Damage Mod: {self_damage_mod}")
-        logging.info(f"NP Damage Mod: {np_damage_mod}")
+        logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | Card Damage Value: {card_damage_value} | Card damage Mod: {card_damage_mod} | Card eff Mod: {card_eff_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} | Self Damage Mod: {self_damage_mod} | NP Damage Mod: {np_damage_mod}")
 
-        total_damage = (servant_atk * np_damage_multiplier * (card_damage_value * (1 + card_mod - enemy_res_mod)) *
+        total_damage = (servant_atk * np_damage_multiplier * (card_damage_value * (1 + card_damage_mod - enemy_res_mod)) *
                         class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
                         (1 + self_damage_mod + np_damage_mod + power_mod))
 
@@ -152,7 +144,7 @@ class npManager:
             overkill_bonus = 1.5 if cumulative_damage > target.get_hp() else 1
             specific_enemy_modifier = target.np_per_hit_mult
 
-            np_per_hit = (np_gain * card_np_value * (1 + card_mod) * specific_enemy_modifier * overkill_bonus)
+            np_per_hit = (np_gain * card_np_value * (1 + card_eff_mod) * specific_enemy_modifier * overkill_bonus)
 
             if card_type != 'buster':
                 servant.set_npgauge(np_per_hit)
@@ -171,16 +163,19 @@ class npManager:
         
         if card_type == 'buster':
             card_damage_value = 1.5
-            card_mod = servant.stats.get_b_up()
+            card_eff_mod = servant.stats.get_b_up()
+            card_damage_mod = servant.stats.get_b_up() + servant.stats.get_buster_damage_up()
             enemy_res_mod = target.get_b_resdown()
         elif card_type == 'quick':
             card_damage_value = 0.8
-            card_mod = servant.stats.get_q_up()
+            card_eff_mod = servant.stats.get_q_up()
+            card_damage_mod = servant.stats.get_q_up() + servant.stats.get_quick_damage_up()
             enemy_res_mod = target.get_q_resdown()
         elif card_type == 'arts':
             card_damage_value = 1
             card_np_value = 3
-            card_mod = servant.stats.get_a_up()
+            card_eff_mod = servant.stats.get_a_up()
+            card_damage_mod = servant.stats.get_a_up() + servant.stats.get_a_damage_up()
             enemy_res_mod = target.get_a_resdown()
         
         class_modifier = servant.stats.get_class_multiplier(target.get_class())
@@ -214,24 +209,7 @@ class npManager:
                             is_super_effective = 1
 
         # Print all buffs and modifiers for debugging  
-        logging.info(f"Servant ATK: {servant_atk}")
-        logging.info(f"NP Damage Multiplier: {np_damage_multiplier}")
-        logging.info(f"initial np correction amount: {np_damage_correction_init}")
-        logging.info(f"np correction: {np_correction}")
-        logging.info(f"what id is used for the correction {np_correction_id}")
-        logging.info(f"target or buff that effects np_correction amounts:{np_correction_target}")
-        logging.info(f"Card Damage Value: {card_damage_value}")
-        logging.info(f"Card Mod: {card_mod}")
-        logging.info(f"Enemy Res Mod: {enemy_res_mod}")
-        logging.info(f"Class Modifier: {class_modifier}")
-        logging.info(f"Attribute Modifier: {attribute_modifier}")
-        logging.info(f"ATK Mod: {atk_mod}")
-        logging.info(f"Enemy Def Mod: {enemy_def_mod}")
-        logging.info(f"Power Mod: {power_mod}")
-        logging.info(f"Self Damage Mod: {self_damage_mod}")
-        logging.info(f"NP Damage Mod: {np_damage_mod}")
-        logging.info(f"Super Effective Modifier: {super_effective_modifier}")
-        logging.info(f"Is Super Effective: {is_super_effective}")
+        logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | initial np correction amount: {np_damage_correction_init} | np correction: {np_correction} | what id is used for the correction {np_correction_id} | target or buff that effects np_correction amounts:{np_correction_target} | Card Damage Value: {card_damage_value} | Card Mod: {card_eff_mod} | Card Damage Mod: {card_damage_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} | Self Damage Mod: {self_damage_mod} | NP Damage Mod: {np_damage_mod} | Super Effective Modifier: {super_effective_modifier} | Is Super Effective: {is_super_effective}")
         
         if super_effective_modifier:
             is_super_effective = 1
@@ -241,7 +219,7 @@ class npManager:
         else: 
             logging.info(f"does this enemy {target.name} with traits {target.traits} get super effected with this servants np who is SE against")
 
-        total_damage = (servant_atk * np_damage_multiplier * (card_damage_value * (1 + card_mod - enemy_res_mod)) *
+        total_damage = (servant_atk * np_damage_multiplier * (card_damage_value * (1 + card_damage_mod - enemy_res_mod)) *
             class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
             (1 + self_damage_mod + np_damage_mod + power_mod) * 
             (1 + (((super_effective_modifier if is_super_effective == 1 else 0) - 1))))
@@ -259,7 +237,7 @@ class npManager:
             overkill_bonus = 1.5 if cumulative_damage > target.get_hp() else 1
             specific_enemy_modifier = target.np_per_hit_mult
 
-            np_per_hit = (np_gain * card_np_value * (1 + card_mod) * specific_enemy_modifier * overkill_bonus)
+            np_per_hit = (np_gain * card_np_value * (1 + card_eff_mod) * specific_enemy_modifier * overkill_bonus)
 
             if card_type != 'buster':
                 servant.set_npgauge(np_per_hit)

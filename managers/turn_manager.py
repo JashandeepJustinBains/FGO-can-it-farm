@@ -26,11 +26,12 @@ class TurnManager:
 
         # Print buffs on all servants before ending the simulation
         if all(enemy.get_hp() <= 0 for enemy in self.gm.get_enemies()):
-            # print("=== Buffs on all servants before simulation ends ===")
-            # for servant in self.gm.servants:
-                # print(servant)
-                # print(servant.buffs.grouped_str())
-            # print("===============================================")
+            print("=== Buffs on all servants before simulation ends ===")
+            for servant in self.gm.servants:
+                print("===============================================")
+                print(servant)
+                print(servant.buffs.grouped_str())
+            print("===============================================")
 
             logging.info(f"checking if all enemies are dead")
 

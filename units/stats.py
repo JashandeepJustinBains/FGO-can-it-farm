@@ -85,13 +85,18 @@ class Stats:
             self.servant.np_gauge += val
 
     def get_current_buffs(self):
-        return [{'atk': self.get_atk_mod()},
-                {'buster+': self.get_b_up()},
-                {'arts+': self.get_a_up()},
-                {'quick+': self.get_q_up()},
-                {'power mods': self.get_power_mod()},
-                {'np gain': self.servant.np_gain_mod},
-                {'np damage': self.get_np_damage_mod()}]
+        return [
+            {'atk': self.get_atk_mod()},
+            {'buster+': self.get_b_up()},
+            {'arts+': self.get_a_up()},
+            {'quick+': self.get_q_up()},
+            {'buster card damage+': self.get_buster_card_damage_up()},
+            {'arts card damage+': self.get_arts_card_damage_up()},
+            {'quick card damage+': self.get_quick_card_damage_up()},
+            {'power mods': self.get_power_mod()},
+            {'np gain': self.servant.np_gain_mod},
+            {'np damage': self.get_np_damage_mod()}
+        ]
 
     def get_class_multiplier(self, defender_class):
         return class_advantage_matrix[class_indices[self.servant.class_name]][class_indices[defender_class]]
@@ -104,3 +109,12 @@ class Stats:
 
     def contains_trait(self, trait_id):
         return trait_id[0]['id'] in self.servant.traits
+
+    def get_buster_card_damage_up(self):
+        return getattr(self.servant, 'buster_card_damage_up', 0)
+
+    def get_arts_card_damage_up(self):
+        return getattr(self.servant, 'arts_card_damage_up', 0)
+
+    def get_quick_card_damage_up(self):
+        return getattr(self.servant, 'quick_card_damage_up', 0)
