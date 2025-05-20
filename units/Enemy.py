@@ -34,7 +34,7 @@ class Enemy:
     def get_hp(self):
         return self.hp
     def set_hp(self, decrement):
-        print(f"{self.name} takes {decrement} damage. HP remaining: {self.hp-decrement}")
+        # print(f"{self.name} takes {decrement} damage. HP remaining: {self.hp-decrement}")
         self.hp -= decrement
     def get_class(self):
         return self.class_name

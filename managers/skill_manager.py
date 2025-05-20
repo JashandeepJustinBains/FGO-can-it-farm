@@ -10,17 +10,21 @@ class SkillManager:
         self.gm = self.tm.gm
 
     def extract_state(self, effect):
+        svals = effect.get('svals', {})
+        # If svals is a list, try to use the first element, or default to {}
+        if isinstance(svals, list):
+            svals = svals[0] if svals else {}
         if effect['funcType'] == 'gainNp':
             state = {
                 'type': 'gainNp',
                 'functvals': effect.get('condTarget', []),
-                'value': effect['svals'].get('Value', 0)
+                'value': svals.get('Value', 0)
             }
         elif effect['funcType'] == 'addFieldChangeToField':
             state = {
                 'type': 'fieldChange',
-                'field_name': effect['svals']['FieldIndividuality'][0],
-                'turns': effect['svals'].get('Turn', 0),
+                'field_name': svals.get('FieldIndividuality', [None])[0],
+                'turns': svals.get('Turn', 0),
             }
         else:
             state = {}
@@ -29,17 +33,18 @@ class SkillManager:
             if buffs and buffs[0].get('name', 'Unknown') != "Unknown":
                 state['buff_name'] = buffs[0].get('name', 'Unknown')
                 state['functvals'] = effect.get('functvals', [])
-                state['tvals'] = buffs[0].get('tvals', [])  # Ensure tvals are included
+                state['tvals'] = buffs[0].get('tvals', [])
             else:
                 state['buff_name'] = buffs[0].get('type', 'Unknown') if buffs else 'Unknown'
-                tvals = buffs[0].get('tvals', [])
+                tvals = buffs[0].get('tvals', []) if buffs else []
                 state['functvals'] = tvals[0].get('id', 'Unknown') if tvals else 'Unknown'
-                state['tvals'] = tvals  # Ensure tvals are included
-
-            state['value'] = effect.get('svals', {}).get('Value', 0)
-            state['turns'] = effect.get('svals', {}).get('Turn', 0)
+                state['tvals'] = tvals
+            state['value'] = svals.get('Value', 0)
+            state['turns'] = svals.get('Turn', 0)
         return state
+    
 
+    
     def apply_effect(self, effect, servant, ally_target=None):
         if effect.get('funcType'):
             effect_type = effect['funcType']
@@ -106,26 +111,23 @@ class SkillManager:
 
 
     def use_mystic_code_skill(self, skill_num, target=None):
-        mystic_code = self.gm.mc  # Get the equipped mystic code
+        mystic_code = self.gm.mc
         if not hasattr(mystic_code, 'cooldowns'):
             mystic_code.cooldowns = {0: 0, 1: 0, 2: 0}
-
         if mystic_code.cooldowns[skill_num] == 0:
             skill = mystic_code.get_skill_by_num(skill_num)
-            print(f"Using Mystic Code skill {skill['name']}")
-
+            print(f"Using Mystic Code skill: {skill['name']}")
             for effect in skill['functions']:
-                if effect['funcType'] == 'swapServant':
-                    # Swap ability handling
-                    if target:
-                        self.swap_servants(target[0], target[1])
-                else:
-                    self.apply_effect(effect, target)
-            
-            # Set the cooldown for the used skill
+                # Always use the last svals if it's a list
+                svals = effect.get('svals', [])
+                if isinstance(svals, list) and svals:
+                    effect['svals'] = svals[-1]
+                # Pass None as servant; apply_effect will handle targeting
+                self.apply_effect(effect, None, target)
             mystic_code.cooldowns[skill_num] = skill['cooldown']
         else:
             print(f"Mystic Code skill {skill_num} is on cooldown: {mystic_code.cooldowns[skill_num]} turns remaining")
+
 
 
     def use_skill(self, servant, skill_num, target=None):
@@ -145,27 +147,21 @@ class SkillManager:
             return False
 
     def swap_servants(self, frontline_idx, backline_idx):
-        # Perform the swap operation
-        if (backline_idx == 1 and len(self.gm.servants) > 4) or (backline_idx == 2 and len(self.gm.servants) > 4) or (backline_idx == 3 and len(self.gm.servants) > 5):
-            self.gm.swap_servants(frontline_idx - 1, 2 + backline_idx)  # Adjust for 0-based indexing
-            print(f"Swapped frontline servant {frontline_idx}:{self.gm.servants[frontline_idx - 1].name} with backline servant {backline_idx + 2}:{self.gm.servants[backline_idx + 2].name}")
-        else:
-            return False
-        
-    
-    def swap_servants(self):
-        # simplified swap operations: swaps backline 2 with frontline 3 if possible, otherwise backline 1 and frontline 3 
-        if (len(self.gm.servants) > 5):
-            self.gm.swap_servants(2, 4)  # Adjust for 0-based indexing
-            print(f"Swapped frontline servant {3}:{self.gm.servants[2].name} with backline servant {2}:{self.gm.servants[4].name}")
-            f"Swapped frontline servant {3}:{self.gm.servants[2].name} with backline servant {2}:{self.gm.servants[4].name}"
-        if (len(self.gm.servants) > 4):
-            self.gm.swap_servants(2, 3)  # Adjust for 0-based indexing
-            print(f"Swapped frontline servant {3}:{self.gm.servants[2].name} with backline servant {1}:{self.gm.servants[3].name}")
-            logging.info(f"Swapped frontline servant {3}:{self.gm.servants[2].name} with backline servant {1}:{self.gm.servants[3].name}")
-        else:
+        # Convert to 0-based indices
+        frontline_index = frontline_idx - 1
+        backline_index = backline_idx + 2
+
+        # Check if indices are valid
+        if frontline_index < 0 or frontline_index > 2 or backline_index < 3 or backline_index >= len(self.gm.servants):
+            print(f"Invalid swap indices: frontline {frontline_idx}, backline {backline_idx}")
             return False
 
+        # Print before swap for clarity
+        print(f"Swapping frontline servant {frontline_idx}:{self.gm.servants[frontline_index].name} (ID {self.gm.servants[frontline_index].id}) "
+            f"with backline servant {backline_idx}:{self.gm.servants[backline_index].name} (ID {self.gm.servants[backline_index].id})")
+
+        self.gm.swap_servants(frontline_index, backline_index)
+        return True
 
     def apply_gain_np(self, effect, target):
         state = self.extract_state(effect)

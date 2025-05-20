@@ -15,14 +15,18 @@ class npManager:
 
     def use_np(self, servant):
         logging.info("\n BEGINNING NP LOG \n")
+                
         if servant.stats.get_npgauge() >= 99:
             for i in range(int(servant.stats.get_npgauge() // 100)-1):
-                print(f"Servant {servant.name} has {servant.np_gauge} NP% and can apply OVERCHARGE UP 1 * {servant.stats.servant.stats.get_npgauge() // 100} times")
+                print(f"Servant {servant.name} has {servant.np_gauge} NP% and can apply OVERCHARGE UP 1 * {servant.stats.get_npgauge() // 100} times")
                 self.sm.apply_effect(np_oc_1_turn, servant)
                 servant.buffs.process_servant_buffs()
 
             functions = servant.nps.get_np_values(servant.stats.get_np_level(), servant.stats.get_oc_level())
             servant.stats.set_npgauge(0)  # Reset NP gauge after use
+            
+            # initialize maintarget to None and max_hp to 0
+            # This is to ensure that the maintarget is set to the enemy with the highest HP next
             maintarget = None
             max_hp = 0
 

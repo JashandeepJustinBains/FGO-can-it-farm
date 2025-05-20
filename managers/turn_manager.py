@@ -24,8 +24,14 @@ class TurnManager:
     def end_turn(self):
         logging.info(f"preparing to end turn")
 
-        # Check if all enemies are defeated
+        # Print buffs on all servants before ending the simulation
         if all(enemy.get_hp() <= 0 for enemy in self.gm.get_enemies()):
+            # print("=== Buffs on all servants before simulation ends ===")
+            # for servant in self.gm.servants:
+                # print(servant)
+                # print(servant.buffs.grouped_str())
+            # print("===============================================")
+
             logging.info(f"checking if all enemies are dead")
 
             for servant in self.gm.servants[:3]:
@@ -64,7 +70,7 @@ class TurnManager:
             # Check if it's the last wave
             if self.gm.wave >= self.gm.total_waves:  # Correcting the comparison
                 print("All waves completed. Ending program.")
-                exit(0)  # Ends the program
+                return True
             else:
                 self.gm.get_next_wave()
             return True

@@ -34,8 +34,6 @@ class Buffs:
             self.add_buff(magic_bullet_buff) # adds 4 per turn for some reason when both are added
             self.add_buff(magic_bullet_buff)
 
-
-
     def process_enemy_buffs(self):
         # Reset modifiers
         self.enemy.defense = 0
@@ -59,15 +57,14 @@ class Buffs:
             # Add more buff processing as needed
         # print(buff)
 
-
     def process_servant_buffs(self):
         # Reset modifiers
-        self.servant.atk_mod = 0
-        self.servant.b_up = 0
-        self.servant.a_up = 0
-        self.servant.q_up = 0
+        self.servant.atk_mod = self.servant.user_atk_mod
+        self.servant.b_up = self.servant.user_b_up
+        self.servant.a_up = self.servant.user_a_up
+        self.servant.q_up = self.servant.user_q_up
         self.servant.power_mod = {}
-        self.servant.np_damage_mod = 0
+        self.servant.np_damage_mod = self.servant.user_np_damage_mod
         self.servant.oc_level = 1
         self.servant.np_gain_mod = 1
 
@@ -117,8 +114,6 @@ class Buffs:
                 elif buff['buff'] == 'NP Gain Up':
                     self.servant.np_gain_mod += buff['value'] / 1000
 
-
-
     def parse_passive(self, passives_data):
         passives = []
         for passive in passives_data:
@@ -161,9 +156,20 @@ class Buffs:
     def clear_buff(self, str):
         self.buffs = [i for i in self.buffs if i['buff'] != str]
 
-    def __repr__(self):
-        buff_name_value = []
+    def grouped_str(self):
+        from collections import defaultdict
+        grouped = defaultdict(list)
         for buff in self.buffs:
-            buff_name_value.append(f"{buff['buff']}: {buff['value']/1000 if (buff['value']/1000) != 0 else ''} {buff['functvals'] if buff['functvals'] else ''}")
-        return f"{buff_name_value}"
+            name = buff.get('buff', 'Unknown')
+            value = buff.get('value', 0)
+            turns = buff.get('turns', -1)
+            grouped[name].append((value, turns))
+        lines = []
+        for name, vals in grouped.items():
+            val_str = ', '.join([f"value={v/1000 if v else v}, turns={t}" for v, t in vals])
+            lines.append(f"{name}: [{val_str}]")
+        return "\n".join(lines) if lines else "No active buffs"
+
+    def __repr__(self):
+        return self.grouped_str()
 

@@ -11,7 +11,7 @@ class Stats:
 
     def get_base_atk(self):
         # 1000atk from silver fous
-        return ( self.CE_get_atk() + 1000 + self.get_atk_at_level() ) * self.servant.stats.get_class_base_multiplier()
+        return ( self.servant.ce_attack + 1000 + self.get_atk_at_level() ) * self.get_class_base_multiplier()
 
     def get_atk_at_level(self, level=0):
         if level == 0:
@@ -27,10 +27,6 @@ class Stats:
                 level = 90
         atk = self.servant.atk_growth[level-1] if level <= 120 else None
         return atk
-
-    def CE_get_atk(self):
-        #TODO IMPLEMENT CE
-        return 0
 
     def get_name(self):
         return self.servant.name
@@ -84,10 +80,8 @@ class Stats:
 
     def set_npgauge(self, val=0):
         if val == 0:
-            print(f"Setting NP gauge of {self.get_name()} to {val}%")
             self.servant.np_gauge = 0
         else:
-            print(f"Increasing NP gauge of {self.get_name()} to {self.servant.np_gauge + val}%")
             self.servant.np_gauge += val
 
     def get_current_buffs(self):

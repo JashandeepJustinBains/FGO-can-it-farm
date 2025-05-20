@@ -8,11 +8,17 @@ import sys
 load_dotenv()
 # Get the username and password from environment variables
 # Set the encoding to UTF-8
-username = os.getenv('MONGO_USER')
-password = os.getenv('MONGO_PASS')
-route = os.getenv('MONGO_ROUTE')
-# Connect to MongoDB
-client = MongoClient(f"mongodb+srv://{username}:{password}@{route}/")
+
+# MongoDB connection
+mongo_uri = os.getenv('MONGO_URI')
+if not mongo_uri:
+    raise ValueError("No MONGO_URI environment variable set")
+
+client = MongoClient(mongo_uri)
 db = client['FGOCanItFarmDatabase']
+servants_collection = db['servants']
+quests_collection = db['quests']
+mysticcode_collection = db['mysticcodes']
+
 # Set the encoding to UTF-8
 sys.stdout.reconfigure(encoding='utf-8')

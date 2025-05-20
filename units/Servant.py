@@ -14,9 +14,11 @@ logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
 class Servant:
     special_servants = [312, 394, 391, 413, 385, 350, 306, 305]
 
-    def __init__(self, collectionNo, np=5, np_gauge=20, CE=None): # TODO np is at test value of 5 for now
+    def __init__(self, collectionNo, np=1, initialCharge=0, attack=0, atkUp=0, artsUp=0, quickUp=0, busterUp=0, npUp=0, damageUp=0, busterDamageUp=0, quickDamageUp=0, artsDamageUp=0, append_5=False):
         self.id = collectionNo
         self.data = select_character(collectionNo)
+        if self.data is None:
+            raise ValueError(f"Servant data for collectionNo {collectionNo} not found.")
         self.name = self.data.get('name')
         self.class_name = self.data.get('className')
         self.class_id = self.data.get('classId')
@@ -25,20 +27,21 @@ class Servant:
         self.traits = [trait['id'] for trait in self.data.get('traits', [])]
         self.cards = self.data.get('cards', [])
         self.atk_growth = self.data.get('atkGrowth', [])
-        self.skills = Skills(self.data.get('skills', []))
+        self.skills = Skills(self.data.get('skills', []), append_5=append_5)
         self.np_level = np
         self.oc_level = 1
         self.nps = NP(self.data.get('noblePhantasms', []))
         self.rarity = self.data.get('rarity')
-        self.np_gauge = np_gauge
+        self.np_gauge = initialCharge
         self.np_gain_mod = 1
         self.buffs = Buffs(self)
         self.stats = Stats(self)
-        self.atk_mod = 0
-        self.b_up = 0
-        self.a_up = 0
-        self.q_up = 0
-        self.power_mod = {}
+        self.ce_attack = attack # TODO unused
+        self.atk_mod = atkUp
+        self.b_up = busterUp
+        self.a_up = artsUp
+        self.q_up = quickUp
+        self.power_mod = {damageUp}
         self.np_damage_mod = 0
         self.card_type = self.nps.nps[0]['card'] #if self.nps.nps else None
         self.class_base_multiplier = 1 if self.id == 426 else base_multipliers[self.class_name]
@@ -47,12 +50,32 @@ class Servant:
         self.apply_passive_buffs()
         self.kill = False
 
+        # Store user-inputted buffs separately
+        self.user_atk_mod = atkUp
+        self.user_b_up = busterUp
+        self.user_a_up = artsUp
+        self.user_q_up = quickUp
+        self.user_np_damage_mod = npUp
+        self.user_buster_damage_up = busterDamageUp
+        self.user_quick_damage_up = quickDamageUp
+        self.user_arts_damage_up = artsDamageUp
+
     def __repr__(self):
-        return f"Servant(name={self.name}, class_id={self.class_name}, attribute={self.attribute}, \n {self.buffs})"
+        return (
+            f"Servant(name={self.name}, class_id={self.class_name}, attribute={self.attribute})\n"
+            f"Buffs:\n{self.buffs.grouped_str()}"
+        )
+    
 
     def set_npgauge(self, value):
-        logging.info(f"INCREASING NP GAUGE OF {self.name} TO {self.np_gauge + value}")
-        self.np_gauge += value
+        
+        if value == 0:
+            logging.info(f"Setting NP GAUGE to 0 for {self.name}")
+            self.np_gauge = 0
+        else:
+            logging.info(f"INCREASING NP GAUGE OF {self.name} TO {self.np_gauge + value}")
+            self.np_gauge += value
+
     def get_npgauge(self):
         return self.np_gauge
 
@@ -76,6 +99,16 @@ class Servant:
         turns = state['turns']
 
         self.buffs.add_buff({'buff': buff, 'functvals': functvals, 'value': value, 'tvals': tvals, 'turns': turns})
+
+    def apply_ce_effects(self, ce_effects):
+        for effect in ce_effects:
+            state = {
+                'buff_name': effect.get('name', 'Unknown'),
+                'value': effect.get('value', 0),
+                'turns': -1,  # Infinite duration
+                'functvals': effect.get('functvals', [])
+            }
+            self.apply_buff(state)
 
 def select_character(character_id):
     servant = db.servants.find_one({'collectionNo': character_id})
