@@ -99,18 +99,18 @@ class npManager:
         if card_type == 'buster':
             card_damage_value = 1.5
             card_eff_mod = servant.stats.get_b_up()
-            card_damage_mod = servant.stats.get_b_up() + servant.stats.get_buster_damage_up()
+            card_damage_mod = servant.stats.get_b_up() + servant.stats.get_buster_card_damage_up()
             enemy_res_mod = target.get_b_resdown()
         elif card_type == 'quick':
             card_damage_value = 0.8
             card_eff_mod = servant.stats.get_q_up()
-            card_damage_mod = servant.stats.get_q_up() + servant.stats.get_quick_damage_up()
+            card_damage_mod = servant.stats.get_q_up() + servant.stats.get_quick_card_damage_up()
             enemy_res_mod = target.get_q_resdown()
         elif card_type == 'arts':
             card_damage_value = 1
             card_np_value = 3
             card_eff_mod = servant.stats.get_a_up()
-            card_damage_mod = servant.stats.get_a_up() + servant.stats.get_a_damage_up()
+            card_damage_mod = servant.stats.get_a_up() + servant.stats.get_arts_card_damage_up()
             enemy_res_mod = target.get_a_resdown()
 
         class_modifier = servant.stats.get_class_multiplier(target.get_class())
@@ -164,18 +164,18 @@ class npManager:
         if card_type == 'buster':
             card_damage_value = 1.5
             card_eff_mod = servant.stats.get_b_up()
-            card_damage_mod = servant.stats.get_b_up() + servant.stats.get_buster_damage_up()
+            card_damage_mod = servant.stats.get_b_up() + servant.stats.get_buster_card_damage_up()
             enemy_res_mod = target.get_b_resdown()
         elif card_type == 'quick':
             card_damage_value = 0.8
             card_eff_mod = servant.stats.get_q_up()
-            card_damage_mod = servant.stats.get_q_up() + servant.stats.get_quick_damage_up()
+            card_damage_mod = servant.stats.get_q_up() + servant.stats.get_quick_card_damage_up()
             enemy_res_mod = target.get_q_resdown()
         elif card_type == 'arts':
             card_damage_value = 1
             card_np_value = 3
             card_eff_mod = servant.stats.get_a_up()
-            card_damage_mod = servant.stats.get_a_up() + servant.stats.get_a_damage_up()
+            card_damage_mod = servant.stats.get_a_up() + servant.stats.get_arts_card_damage_up()
             enemy_res_mod = target.get_a_resdown()
         
         class_modifier = servant.stats.get_class_multiplier(target.get_class())
