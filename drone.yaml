@@ -1,0 +1,18 @@
+kind: pipeline
+type: docker
+name: default
+
+steps:
+  - name: build
+    image: node:18
+    commands:
+      - npm install
+      - npm run build
+
+  - name: deploy-to-k3s
+    image: bitnami/kubectl:latest
+    environment:
+      KUBECONFIG:
+        from_secret: kubeconfig
+    commands:
+      - kubectl apply -f k8s/deployment.yaml
