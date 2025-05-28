@@ -1,18 +1,18 @@
 kind: pipeline
 type: docker
-name: default
+name: build
 
 steps:
-  - name: build
-    image: node:18
+  - name: install-deps
+    image: python:3.12-slim
     commands:
-      - npm install
-      - npm run build
+      - python -m venv venv
+      - . venv/bin/activate
+      - pip install --upgrade pip
+      - pip install -r requirements.txt
 
-  - name: deploy-to-k3s
-    image: bitnami/kubectl:latest
-    environment:
-      KUBECONFIG:
-        from_secret: kubeconfig
+  - name: run-tests
+    image: python:3.12-slim
     commands:
-      - kubectl apply -f k8s/deployment.yaml
+      - . venv/bin/activate
+      - pytest

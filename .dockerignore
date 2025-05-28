@@ -1,0 +1,21 @@
+# .dockerignore file
+/Quests
+/Quest
+/ServantData
+/outputs
+output.txt
+test.txt
+.env
+__pycache__
+__pycache__/
+.vscode
+env
+tests/
+MiscJsons/
+MysticCodes/
+Jenkinsfile
+script.log
+templistofmulticorefarmers.py
+tests.txt
+whattoaskJeeves.md
+tests.txt

@@ -121,8 +121,7 @@ def simulated_annealing(driver, initial_permutations, max_iterations=1000, resta
 
     return best_permutation, best_score
 
-def run_simulations(quest_id, mc_id, servant_init_dicts):
-    num_permutations=10000, max_iterations=1000, restart_probability=0.1
+def run_simulations(quest_id, mc_id, servant_init_dicts, num_permutations=10000, max_iterations=1000, restart_probability=0.1):
     # Initialize driver and receive tokens
 
     # init servants using truth source dictionary
