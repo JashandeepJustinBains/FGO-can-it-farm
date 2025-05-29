@@ -13,6 +13,11 @@ steps:
 
   - name: run-tests
     image: python:3.12-slim
+    environment:
+      MONGO_URI: 
+        from_secret: MONGO_URI
+      MONGO_URI_READ:
+        from_secret: MONGO_URI_READ
     commands:
       - . venv/bin/activate
       - pytest

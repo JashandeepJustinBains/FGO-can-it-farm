@@ -17,7 +17,7 @@ load_dotenv()
 logging.getLogger('pymongo').setLevel(logging.WARNING)
 
 # MongoDB connection
-mongo_uri = os.getenv('MONGO_URI_READ')
+mongo_uri = os.getenv('MONGO_URI')
 if not mongo_uri:
     raise ValueError("No MONGO_URI environment variable set")
 
