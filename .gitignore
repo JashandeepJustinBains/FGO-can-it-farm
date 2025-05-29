@@ -10,7 +10,6 @@ __pycache__
 __pycache__/
 .vscode
 env
-tests/
 MiscJsons/
 MysticCodes/
 Jenkinsfile
