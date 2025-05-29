@@ -10,7 +10,7 @@ load_dotenv()
 # Set the encoding to UTF-8
 
 # MongoDB connection
-mongo_uri = os.getenv('MONGO_URI')
+mongo_uri = os.getenv('MONGO_URI_READ')
 if not mongo_uri:
     raise ValueError("No MONGO_URI environment variable set")
 
