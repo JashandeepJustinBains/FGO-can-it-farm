@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from sim_entry_points.TraverseAPIInput import traverse_api_input
+from sim_entry_points.traverse_api_input import traverse_api_input
 
 app = FastAPI()
 

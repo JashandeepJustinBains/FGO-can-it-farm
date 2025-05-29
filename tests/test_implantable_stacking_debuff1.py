@@ -1,5 +1,5 @@
 import pytest
-from sim_entry_points.TraverseAPIInput import traverse_api_input
+from sim_entry_points.traverse_api_input import traverse_api_input
 
 # test: Does SE work based on Roman trait work?, also tested 2 waves of enemies!
 def test_implantable_stacking_debuff1():

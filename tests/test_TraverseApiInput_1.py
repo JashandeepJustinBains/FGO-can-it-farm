@@ -1,5 +1,5 @@
 import pytest
-from sim_entry_points.TraverseAPIInput import traverse_api_input
+from sim_entry_points.traverse_api_input import traverse_api_input
 
 def test_traverse_api_input_runs_without_error():
     input_data = {

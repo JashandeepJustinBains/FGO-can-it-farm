@@ -1,4 +1,4 @@
-from tests.TraverseAPIInput import traverse_api_input
+from sim_entry_points.traverse_api_input import traverse_api_input
 
 def test_aoko_transformation():
     input_data = {
