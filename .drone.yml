@@ -24,10 +24,10 @@ steps:
 
         - name: deploy
         
+  - name: apply-all-manifests
     image: bitnami/kubectl:latest
     environment:
       KUBECONFIG:
-        from_secret: KUBECONFIG   # Store your kubeconfig as a Drone secret
+        from_secret: KUBECONFIG
     commands:
-      - kubectl apply -f k8s/deployment.yaml
-      - kubectl apply -f k8s/service.yaml   # Add this if you have a Service manifest
+      - kubectl apply -f k8s/
