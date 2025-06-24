@@ -21,3 +21,13 @@ steps:
     commands:
       - . venv/bin/activate
       - pytest
+
+        - name: deploy
+        
+    image: bitnami/kubectl:latest
+    environment:
+      KUBECONFIG:
+        from_secret: KUBECONFIG   # Store your kubeconfig as a Drone secret
+    commands:
+      - kubectl apply -f k8s/deployment.yaml
+      - kubectl apply -f k8s/service.yaml   # Add this if you have a Service manifest
