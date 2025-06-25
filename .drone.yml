@@ -31,3 +31,9 @@ steps:
         from_secret: KUBECONFIG
     commands:
       - kubectl apply -f k8s/
+
+  - name: build-and-push
+    image: plugins/docker
+    settings:
+      repo: 192.168.68.137:30500/flask-app
+      tags: latest
