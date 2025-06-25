@@ -21,8 +21,6 @@ steps:
     commands:
       - . venv/bin/activate
       - pytest
-
-        - name: deploy
         
   - name: apply-all-manifests
     image: bitnami/kubectl:latest
