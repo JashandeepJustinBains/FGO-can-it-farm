@@ -12,7 +12,7 @@ load_dotenv()
 # MongoDB connection
 mongo_uri = os.getenv('MONGO_URI_READ')
 if not mongo_uri:
-    raise ValueError("No MONGO_URI environment variable set")
+    raise ValueError("No MONGO_URI_READ environment variable set")
 
 client = MongoClient(mongo_uri)
 db = client['FGOCanItFarmDatabase']
