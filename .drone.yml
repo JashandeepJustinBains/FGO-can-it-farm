@@ -28,6 +28,11 @@ steps:
       KUBECONFIG:
         from_secret: KUBECONFIG
     commands:
+      - mkdir -p $HOME/.kube
+      - echo "$KUBECONFIG" > $HOME/.kube/config
+      - kubectl config view
+      - kubectl config current-context
+      - kubectl config get-contexts
       - kubectl apply -f k8s/
 
   - name: build-and-push
