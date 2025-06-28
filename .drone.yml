@@ -3,6 +3,7 @@ type: kubernetes
 name: build
 
 steps:
+
   - name: install-deps
     image: python:3.12-slim
     commands:
@@ -27,9 +28,11 @@ steps:
     environment:
       KUBECONFIG:
         from_secret: KUBECONFIG
+      HOME: /tmp
     commands:
       - mkdir -p $HOME/.kube
       - echo "$KUBECONFIG" > $HOME/.kube/config
+      - printf "%s" "$KUBECONFIG" > $HOME/.kube/config
       - kubectl config view
       - kubectl config current-context
       - kubectl config get-contexts
