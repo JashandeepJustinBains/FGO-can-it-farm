@@ -78,4 +78,19 @@ class GameManager:
 
     def get_enemies(self):
         return self.enemies
+    
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove database connection if present
+        if 'mc' in state and hasattr(state['mc'], '__dict__'):
+            mc_state = state['mc'].__dict__.copy()
+            if 'db' in mc_state:
+                mc_state['db'] = None
+            state['mc'].__dict__ = mc_state
+        if 'quest' in state and hasattr(state['quest'], '__dict__'):
+            quest_state = state['quest'].__dict__.copy()
+            if 'db' in quest_state:
+                quest_state['db'] = None
+            state['quest'].__dict__ = quest_state
+        return state
 

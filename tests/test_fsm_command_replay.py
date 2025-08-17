@@ -1,8 +1,8 @@
 import pytest
 import json
-from sim_entry_points.traverse_api_input import traverse_api_input
+from sim_entry_points.fsm_command_replay import main_with_commands
 
-def test_traverse_api_input_runs_without_error():
+def test_fsm_command_replay_runs_without_error():
     input_data = {
         "Team": [
             {"collectionNo": 373},
@@ -14,9 +14,8 @@ def test_traverse_api_input_runs_without_error():
         "Quest ID": 94091610,
         "Commands": ["a", "d", "g1", "h", "b", "c", "4", "#", "e", "f", "i1", "x23", "g1", "5", "#", "h", "i1", "4", "#", "Swap Servants", "x14"]
     }
-    servants = input_data["Team"]
-    mc_id = input_data["Mystic Code ID"]
-    quest_id = input_data["Quest ID"]
-    commands = input_data["Commands"]
-    # This will pass if no exception is raised
-    traverse_api_input(servants, mc_id, quest_id, commands)
+    input_json = json.dumps(input_data)
+    # This will pass if no exception is raised and a final state is returned
+    final_state = main_with_commands(input_json)
+    assert final_state is not None
+# ...existing code...

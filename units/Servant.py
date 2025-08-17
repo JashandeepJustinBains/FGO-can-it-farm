@@ -130,6 +130,13 @@ class Servant:
             }
             self.apply_buff(state)
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove database connection if present
+        if 'data' in state and hasattr(state['data'], 'collection'):  # crude check for pymongo object
+            state['data'] = None
+        return state
+
 def select_character(character_id):
     servant = db.servants.find_one({'collectionNo': character_id})
     return servant  # Ensure character_id is an integer

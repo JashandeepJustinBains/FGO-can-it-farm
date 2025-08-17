@@ -111,6 +111,20 @@ class Driver:
             logging.info(f"Invalid token: {token}")
         return self.game_manager
 
+    def copy(self):
+        import copy
+        return copy.deepcopy(self)
+
+    def get_all_possible_actions(self):
+        # TODO: Replace with actual logic for generating all possible actions
+        # For now, return a static list for test purposes
+        return ['#']
+
+    def apply_action(self, action):
+        # TODO: Replace with actual logic for applying an action
+        # For now, do nothing for test purposes
+        return
+
     """
     def print_all_tokens(self):
         tokens = []
@@ -157,4 +171,3 @@ class Driver:
         for token in tokens:
             print(token)
     """
-    
