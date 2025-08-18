@@ -48,27 +48,44 @@ def generate_fsm_graph(driver, max_depth=20):
     """Generate FSM graph for all reachable states from initial state."""
     G = nx.DiGraph()
     initial_state = serialize_state(driver)
-    queue = [(initial_state, driver.copy())]
+    queue = [(initial_state, driver.copy(), 0)]  # (state, driver, turn)
     visited = set()
-    depth = 0
-    while queue and depth < max_depth:
+    import logging
+    logging.basicConfig(filename='./outputs/output.log', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
+    step_counter = 0
+    while queue:
         next_queue = []
-        for state, drv in queue:
-            # Fix: ensure state is hashable, not a set
-            if state in visited:
+        for state, drv, turn in queue:
+            state_id = (state, turn)
+            if state_id in visited:
                 continue
-            visited.add(state)
-            G.add_node(state)
-            # Generate all possible actions (skills, NP, MC, etc.)
+            visited.add(state_id)
+            G.add_node(state_id)
+            step_counter += 1
+            if step_counter % 100 == 0:
+                logging.info(f"FSM Search Step {step_counter}: Turn={turn}, Action(s)={drv.get_all_possible_actions()}, State={state_id}")
+            if step_counter > 1000:
+                logging.error("FSM Search failed: Exceeded 1000 steps, possible infinite loop.")
+                print("FSM Search failed: Exceeded 1000 steps, possible infinite loop.")
+                return G
+            quest_complete = False
+            if hasattr(drv.game_manager, 'get_enemies') and all(e.get_hp() <= 0 for e in drv.game_manager.get_enemies()):
+                if hasattr(drv.game_manager, 'total_waves') and hasattr(drv.game_manager, 'wave'):
+                    if drv.game_manager.wave >= drv.game_manager.total_waves:
+                        quest_complete = True
+            if quest_complete or turn >= 3:
+                continue
             actions = drv.get_all_possible_actions()
+            if turn == 2 or quest_complete:
+                actions = ['#']
             for action in actions:
                 drv_next = drv.copy()
                 drv_next.apply_action(action)
                 next_state = serialize_state(drv_next)
-                G.add_edge(state, next_state, action=action)
-                next_queue.append((next_state, drv_next))
+                next_queue.append((next_state, drv_next, turn + 1))
+                G.add_edge(state_id, (next_state, turn + 1), action=action)
         queue = next_queue
-        depth += 1
+    logging.info(f"FSM Search completed after {step_counter} steps.")
     return G
 
 def save_fsm_graph_json(G, filename):

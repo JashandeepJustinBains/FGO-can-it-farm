@@ -122,8 +122,8 @@ class npManager:
         np_damage_mod = servant.stats.get_np_damage_mod()
         np_damage_multiplier, np_damage_correction_init, np_correction, np_correction_id, np_correction_target = servant.nps.get_np_damage_values(np_level=servant.stats.get_np_level(), oc=servant.stats.get_oc_level())
 
-        servant_atk = servant.stats.get_base_atk()
 
+        servant_atk = servant.stats.get_base_atk()
         # Print all buffs and modifiers for debugging
         logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | Card Damage Value: {card_damage_value} | Card damage Mod: {card_damage_mod} | Card eff Mod: {card_eff_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} | Self Damage Mod: {self_damage_mod} | NP Damage Mod: {np_damage_mod}")
 
@@ -131,10 +131,15 @@ class npManager:
                         class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
                         (1 + self_damage_mod + np_damage_mod + power_mod))
 
+        # Record initial HP before damage
+        initial_hp = getattr(target, 'initial_hp', None)
+        if initial_hp is None:
+            initial_hp = target.get_hp()
+            setattr(target, 'initial_hp', initial_hp)
+
         servant.stats.set_npgauge(0)
         np_gain = servant.stats.get_npgain() * servant.stats.get_np_gain_mod()
         np_distribution = servant.stats.get_npdist()
-        
         damage_per_hit = [total_damage * value/100 for value in np_distribution]
 
         cumulative_damage = 0
@@ -154,7 +159,25 @@ class npManager:
 
             if target.get_hp() <= 0:
                 logging.info(f"{target.get_name()} has been defeated by hit {i+1}!")
-        print(f"{servant.name} deals {total_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np")
+
+        # Store damage and HP info for FSM serialization
+        if hasattr(target, 'fsm_damage_log'):
+            target.fsm_damage_log.append({
+                'servant': servant.name,
+                'damage': total_damage,
+                'initial_hp': initial_hp,
+                'current_hp': target.get_hp(),
+                'fraction_remaining': round(target.get_hp()/initial_hp, 4) if initial_hp else None
+            })
+        else:
+            target.fsm_damage_log = [{
+                'servant': servant.name,
+                'damage': total_damage,
+                'initial_hp': initial_hp,
+                'current_hp': target.get_hp(),
+                'fraction_remaining': round(target.get_hp()/initial_hp, 4) if initial_hp else None
+            }]
+        print(f"{servant.name} deals {total_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np | HP: {target.get_hp()}/{initial_hp} | Fraction Remaining: {round(target.get_hp()/initial_hp, 4) if initial_hp else None}")
 
     def apply_np_odd_damage(self, servant, target):
         card_damage_value = None
