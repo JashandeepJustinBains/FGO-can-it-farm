@@ -9,8 +9,29 @@ import logging
 import hashlib
 from copy import deepcopy
 
-# Configure logging
-logging.basicConfig(filename='script.log', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
+# Configure logging: write to file and to console. LOG_LEVEL env can override.
+log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+try:
+    numeric_level = getattr(logging, log_level)
+except Exception:
+    numeric_level = logging.INFO
+
+formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s')
+
+# File handler
+file_handler = logging.FileHandler('script.log')
+file_handler.setFormatter(formatter)
+file_handler.setLevel(numeric_level)
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+console_handler.setLevel(numeric_level)
+
+root_logger = logging.getLogger()
+root_logger.setLevel(numeric_level)
+root_logger.addHandler(file_handler)
+root_logger.addHandler(console_handler)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -335,4 +356,18 @@ def main():
     retrieve_servants()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        logging.info("Interrupted by user (KeyboardInterrupt). Shutting down gracefully.")
+    except Exception as e:
+        logging.exception(f"Unhandled exception in main: {e}")
+    finally:
+        try:
+            session.close()
+        except Exception:
+            pass
+        try:
+            client.close()
+        except Exception:
+            pass
