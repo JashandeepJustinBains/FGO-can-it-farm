@@ -6,6 +6,8 @@ import time
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import logging
+import hashlib
+from copy import deepcopy
 
 # Configure logging
 logging.basicConfig(filename='script.log', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
@@ -27,20 +29,76 @@ servants_collection = db['servants']
 quests_collection = db['quests']
 mysticcode_collection = db['mysticcodes']
 
-def compare_and_upsert(collection, query, data):
+# Reuse a single session for connection pooling
+session = requests.Session()
+session.headers.update({
+    'Accept': 'application/json',
+    'User-Agent': 'FGO-CanItFarm-Updater/1.0'
+})
+
+# Rate limiting: seconds between requests (can be fractional). Default 1s.
+RATE_LIMIT_SECONDS = float(os.getenv('RATE_LIMIT_SECONDS', '1'))
+
+def _compute_source_hash(obj):
+    """Compute a stable hash for a JSON-serializable object.
+
+    We canonicalize by dumping with sorted keys so equivalent objects map to the same hash.
+    """
     try:
-        existing_entry = collection.find_one(query)
-        if existing_entry:
-            if existing_entry != data:
-                collection.update_one(query, {'$set': data}, upsert=True)
-                logging.info(f"Updated entry with query: {query}")
-            else:
-                logging.info(f"No update needed for entry with query: {query}")
+        canonical = json.dumps(obj, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+    except Exception:
+        # Fallback: deep copy and let json handle it
+        canonical = json.dumps(json.loads(json.dumps(obj)), sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode('utf-8')).hexdigest()
+
+
+def _normalize_query_types(query):
+    # Try to coerce numeric string values to ints to avoid type-mismatch when querying
+    newq = {}
+    for k, v in query.items():
+        if isinstance(v, str) and v.isdigit():
+            try:
+                newq[k] = int(v)
+            except Exception:
+                newq[k] = v
         else:
-            collection.update_one(query, {'$set': data}, upsert=True)
-            logging.info(f"Inserted new entry with query: {query}")
+            newq[k] = v
+    return newq
+
+
+def compare_and_replace(collection, query, data):
+    """Replace the document identified by `query` with `data` if changed.
+
+    Behavior:
+    - Compute a stable sourceHash for incoming data and store it in the document.
+    - If an existing document has the same sourceHash, skip the write.
+    - Use replace_one(..., upsert=True) so documents are truly replaced (not merged), keeping _id when matched.
+    """
+    try:
+        # Work on a deep copy so we don't mutate the caller's data
+        new_data = deepcopy(data)
+
+        # Remove any _id from incoming data to avoid accidental conflicts on replace/upsert
+        new_data.pop('_id', None)
+
+        source_hash = _compute_source_hash(new_data)
+        new_data['sourceHash'] = source_hash
+
+        norm_query = _normalize_query_types(query)
+        existing_entry = collection.find_one(norm_query)
+
+        if existing_entry and existing_entry.get('sourceHash') == source_hash:
+            logging.info(f"No update needed for query: {norm_query} (sourceHash match)")
+            return
+
+        # Use replace_one to truly replace the document; upsert will insert when not found
+        collection.replace_one(norm_query, new_data, upsert=True)
+        if existing_entry:
+            logging.info(f"Replaced document for query: {norm_query}")
+        else:
+            logging.info(f"Inserted new document for query: {norm_query}")
     except Exception as e:
-        logging.error(f"Error during upsert: {e}")
+        logging.error(f"Error during replace/upsert: {e}")
 
 def upsert_quest(data):
     quest_id = data.get('id')
@@ -48,22 +106,55 @@ def upsert_quest(data):
     
     # Check if stages[0].enemies contains at least one item
     if quest_id and stages and 'enemies' in stages[0] and len(stages[0]['enemies']) > 0:
-        compare_and_upsert(quests_collection, {'id': quest_id}, data)
+        # Normalize quest id to int where possible so queries match existing documents
+        try:
+            qid = int(quest_id)
+        except Exception:
+            qid = quest_id
+        compare_and_replace(quests_collection, {'id': qid}, data)
     else:
         logging.error(f"Quest data missing 'id' field or stages[0].enemies is empty for quest ID: {quest_id}")
 
 def upsert_servant(data):
     collection_no = data.get('collectionNo')
     if collection_no:
-        compare_and_upsert(servants_collection, {'collectionNo': collection_no}, data)
+        # Ensure numeric collectionNo uses int type to match existing docs
+        try:
+            cno = int(collection_no)
+        except Exception:
+            cno = collection_no
+        compare_and_replace(servants_collection, {'collectionNo': cno}, data)
     else:
         logging.error("Servant data missing 'collectionNo' field")
 
 def download_and_upsert(url, upsert_function):
-    retries = 3
-    for attempt in range(retries):
+    # Configurable retry/backoff
+    MAX_RETRIES = int(os.getenv('MAX_RETRIES', '4'))
+    BACKOFF_BASE = float(os.getenv('BACKOFF_BASE', '1.0'))  # base seconds for exponential backoff
+    MAX_BACKOFF = float(os.getenv('MAX_BACKOFF', '60'))
+
+    for attempt in range(MAX_RETRIES):
         try:
-            response = requests.get(url)
+            response = session.get(url, timeout=30)
+
+            # Handle rate limiting explicitly
+            if response.status_code == 429:
+                retry_after = response.headers.get('Retry-After')
+                if retry_after:
+                    try:
+                        sleep_seconds = float(retry_after)
+                    except Exception:
+                        sleep_seconds = BACKOFF_BASE * (2 ** attempt)
+                else:
+                    sleep_seconds = min(MAX_BACKOFF, BACKOFF_BASE * (2 ** attempt))
+
+                # jitter: +/-20%
+                jitter = sleep_seconds * 0.2 * (0.5 - os.urandom(1)[0] / 255.0)
+                sleep_seconds = max(0.1, sleep_seconds + jitter)
+                logging.warning(f"429 received for {url}, sleeping {sleep_seconds:.1f}s before retry")
+                time.sleep(sleep_seconds)
+                continue
+
             if response.status_code == 200:
                 try:
                     data = response.json()
@@ -73,23 +164,131 @@ def download_and_upsert(url, upsert_function):
                     logging.error(f"JSONDecodeError: {e}")
                     logging.error(f"Response content: {response.content}")
                     return False
-            else:
-                logging.error(f"Failed to download data from {url}, status code: {response.status_code}")
+
+            # Other non-200 responses are treated as transient; log and retry with backoff
+            logging.debug(f"Non-200 response {response.status_code} for {url}")
+
         except requests.RequestException as e:
-            logging.error(f"RequestException: {e}")
-        time.sleep(2 ** attempt)  # Exponential backoff
+            logging.warning(f"RequestException for {url}: {e}")
+
+        # Exponential backoff with jitter before next attempt
+        backoff = min(MAX_BACKOFF, BACKOFF_BASE * (2 ** attempt))
+        # jitter +/- 30%
+        jitter = backoff * 0.3 * (0.5 - os.urandom(1)[0] / 255.0)
+        sleep_seconds = max(0.1, backoff + jitter)
+        logging.debug(f"Sleeping {sleep_seconds:.1f}s before retrying {url} (attempt {attempt + 1}/{MAX_RETRIES})")
+        time.sleep(sleep_seconds)
+
+    logging.error(f"Exceeded max retries ({MAX_RETRIES}) for {url}")
     return False
 
 def retrieve_servants():
     servant_url = 'https://api.atlasacademy.io/nice/JP/servant/{}?lore=true&expand=true&lang=en'
     current_servant_id = 1
-    last_known_servant_id = 440
-    while current_servant_id <= last_known_servant_id:
+    # Allow a simple hardcoded mode: if LAST_KNOWN_SERVANT_ID is set in env, just iterate to that id.
+    last_known_env = os.getenv('LAST_KNOWN_SERVANT_ID')
+    if last_known_env:
+        try:
+            last_known_servant_id = int(last_known_env)
+        except Exception:
+            last_known_servant_id = None
+    else:
+        last_known_servant_id = None
+
+    # Hardcoded non-playable IDs that are known and rarely change. Keep this list short.
+    HARDCODED_NON_PLAYABLE_IDS = [
+        # Boss or NPC ids to skip (modify as needed). Added by user. 
+        # TODO update as new units are identified
+        240, 436, 83, 411, 149, 443, 333,
+    ]
+
+    # Allow overriding via env: comma-separated ids, e.g. "1001,1002,2003"
+    env_skip = os.getenv('NON_PLAYABLE_IDS')
+    if env_skip:
+        try:
+            env_list = [int(x.strip()) for x in env_skip.split(',') if x.strip()]
+        except Exception:
+            env_list = []
+    else:
+        env_list = []
+
+    skip_ids = set(HARDCODED_NON_PLAYABLE_IDS) | set(env_list)
+
+    # If last_known_servant_id is provided, use the simple loop (manual mode)
+    if last_known_servant_id:
+        while current_servant_id <= last_known_servant_id:
+            if current_servant_id in skip_ids:
+                logging.debug(f"Skipping hardcoded non-playable id {current_servant_id}")
+                current_servant_id += 1
+                continue
+
+            url = servant_url.format(current_servant_id)
+            if not download_and_upsert(url, upsert_servant):
+                logging.error(f"Failed to process servant ID: {current_servant_id}")
+            current_servant_id += 1
+            time.sleep(RATE_LIMIT_SECONDS)  # Adding a configurable delay between requests
+        return
+
+    # Otherwise fall back to auto-discovery (conservative defaults)
+    CONSECUTIVE_MISS_LIMIT = int(os.getenv('CONSECUTIVE_MISS_LIMIT', '5'))
+    # TODO: Consider adding a MAX_CHECKED_ID_LIMIT to cap the number of checked IDs
+    MAX_ID_LIMIT = int(os.getenv('MAX_ID_LIMIT', '500'))  # safety cap to avoid runaway loops
+
+    consecutive_misses = 0
+    max_checked_id = 0
+
+    while consecutive_misses < CONSECUTIVE_MISS_LIMIT and current_servant_id <= MAX_ID_LIMIT:
+        if current_servant_id in skip_ids:
+            logging.debug(f"Skipping hardcoded non-playable id {current_servant_id}")
+            current_servant_id += 1
+            continue
+
         url = servant_url.format(current_servant_id)
-        if not download_and_upsert(url, upsert_servant):
-            logging.error(f"Failed to process servant ID: {current_servant_id}")
+
+        try:
+            resp = session.get(url, timeout=30)
+        except requests.RequestException as e:
+            logging.error(f"RequestException while checking servant {current_servant_id}: {e}")
+            # treat network issues as a miss and continue with backoff logic
+            consecutive_misses += 1
+            current_servant_id += 1
+            time.sleep(RATE_LIMIT_SECONDS)
+            continue
+
+        if resp.status_code != 200:
+            # Not a valid servant page
+            logging.debug(f"Servant {current_servant_id} returned {resp.status_code}")
+            consecutive_misses += 1
+        else:
+            try:
+                data = resp.json()
+            except Exception:
+                logging.error(f"Invalid JSON for servant {current_servant_id}")
+                consecutive_misses += 1
+                current_servant_id += 1
+                time.sleep(RATE_LIMIT_SECONDS)
+                continue
+
+            # Heuristic: treat entries missing mstSkill as non-playable (bosses / NPCs)
+            collection_no = data.get('collectionNo')
+            mst_skill = data.get('mstSkill')
+
+            if not collection_no or not mst_skill:
+                # This appears to be a non-playable or invalid servant (e.g., boss). Count as a miss.
+                logging.debug(f"Servant {current_servant_id} not playable or missing collectionNo/mstSkill")
+                consecutive_misses += 1
+            else:
+                # Valid playable servant found — process and reset consecutive misses
+                consecutive_misses = 0
+                max_checked_id = max(max_checked_id, current_servant_id)
+                # Use the existing download_and_upsert pipeline so retries/backoff apply
+                if not download_and_upsert(url, upsert_servant):
+                    logging.error(f"Failed to process servant ID: {current_servant_id}")
+
         current_servant_id += 1
-        time.sleep(1)  # Adding a delay of 1 second between requests
+        time.sleep(RATE_LIMIT_SECONDS)
+
+    logging.info(f"Finished servant discovery. Last checked id: {current_servant_id-1}, max playable id seen: {max_checked_id}")
 
 def get_quest_ids_from_api(war_id):
     url = f'https://api.atlasacademy.io/nice/JP/war/{war_id}?lang=en'
@@ -119,7 +318,7 @@ def get_quest_details_and_upsert(quest_ids):
         url = f'https://api.atlasacademy.io/nice/JP/quest/{quest_id}/1?lang=en'
         if not download_and_upsert(url, upsert_quest):
             logging.error(f"Failed to process quest ID: {quest_id}")
-        time.sleep(1)  # Adding a delay of 1 second between requests
+        time.sleep(RATE_LIMIT_SECONDS)  # Adding a configurable delay between requests
 
 def main():
     war_ids = [
