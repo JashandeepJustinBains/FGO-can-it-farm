@@ -3,11 +3,15 @@ import json
 import os
 import re
 import time
-from pymongo import MongoClient
+try:
+    from pymongo import MongoClient
+except Exception as e:
+    raise ImportError("pymongo is required to run this script. Install with: pip install pymongo") from e
 from dotenv import load_dotenv
 import logging
 import hashlib
 from copy import deepcopy
+import argparse
 
 # Configure logging: write to file and to console. LOG_LEVEL env can override.
 log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
@@ -290,13 +294,16 @@ def retrieve_servants():
                 time.sleep(RATE_LIMIT_SECONDS)
                 continue
 
-            # Heuristic: treat entries missing mstSkill as non-playable (bosses / NPCs)
+            # Heuristic: treat entries without playable indicators as non-playable (bosses / NPCs)
             collection_no = data.get('collectionNo')
-            mst_skill = data.get('mstSkill')
+            # Some entries use 'mstSkill', others expose 'skills' or 'cards'; treat presence of any as playable
+            has_mst_skill = bool(data.get('mstSkill'))
+            has_skills = bool(data.get('skills'))
+            has_cards = bool(data.get('cards'))
 
-            if not collection_no or not mst_skill:
+            if not collection_no or not (has_mst_skill or has_skills or has_cards):
                 # This appears to be a non-playable or invalid servant (e.g., boss). Count as a miss.
-                logging.debug(f"Servant {current_servant_id} not playable or missing collectionNo/mstSkill")
+                logging.debug(f"Servant {current_servant_id} not playable or missing collectionNo/playable fields (mstSkill/skills/cards)")
                 consecutive_misses += 1
             else:
                 # Valid playable servant found — process and reset consecutive misses
@@ -325,7 +332,7 @@ def get_quest_ids_from_api(war_id):
                     recommend_lv = quest.get('recommendLv', '')
                     consume = quest.get('consume', 0)
                     after_clear = quest.get('afterClear', '')
-                    if recommend_lv in ['90', '90+', '90++', '90★', '90★★'] and consume == 40 and after_clear == 'repeatLast':
+                    if recommend_lv in ['90', '90+', '90++', '90★', '90★★', '90★★★', '100★★', '100★★★'] and consume == 40 and after_clear == 'repeatLast':
                         quest_ids.append(quest.get('id', 'UnknownID'))
             return quest_ids
         else:
@@ -341,23 +348,67 @@ def get_quest_details_and_upsert(quest_ids):
             logging.error(f"Failed to process quest ID: {quest_id}")
         time.sleep(RATE_LIMIT_SECONDS)  # Adding a configurable delay between requests
 
-def main():
+def main(run_quests: bool = True, run_servants: bool = True):
+    """Run quests and/or servants update phases.
+
+    run_quests: if True, fetch and upsert quest data.
+    run_servants: if True, fetch and upsert servant data.
+    """
+    logging.info(f"Starting main with run_quests={run_quests}, run_servants={run_servants}")
+
     war_ids = [
-        400,401,402,403,404,405,8382, 8383, 8384, 8385, 9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008, 9009, 9010, 9013, 9014, 9015, 9018, 9021, 9022, 9029, 9031, 9032, 9033, 9035, 9040, 9046, 9048, 9049, 9050, 9051, 9052, 9053, 9056, 9057, 9058, 9068, 9069, 9071, 9072, 9073, 9074, 9075, 9076, 9077, 9080, 9087, 9088, 9091, 9097, 9098, 9099, 9101, 9107, 9109, 9111, 9112, 9113, 9119, 9120, 9124, 9125, 9127, 9128, 9130, 9131, 9133, 9134, 9135, 9136, 9143, 9144, 9145, 9151, 9152, 9160, 9163, 9164, 9166, 9168, 9169, 9170, 9171, 9172, 9173, 9174, 9175, 9182, 9184, 9185, 9188, 9189, 9190, 9999, 11000, 12000, 13000, 14000, 
+        400,401,402,403,404,405,8382, 8383, 8384, 8385, 
+        9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008, 9009, 9010,
+        9013, 9014, 9015, 9018, 9021, 9022, 9029, 9031, 9032, 9033, 9035,
+        9040, 9046, 9048, 9049, 9050, 9051, 9052, 9053, 9056, 9057, 9058,
+        9068, 9069, 9071, 9072, 9073, 9074, 9075, 9076, 9077, 9080, 9087, 9088, 9091,
+        9097, 9098, 9099, 
+        9101, 9107, 9109, 9111, 9112, 9113, 9119, 9120, 9124, 9125, 9127, 9128, 
+        9130, 9131, 9133, 9134, 9135, 9136, 9143, 9144, 9145, 9151, 9152, 9160, 
+        9163, 9164, 9166, 9168, 9169, 9170, 9171, 9172, 9173, 9174, 9175, 9182, 
+        9184, 9185, 9188, 9189, 9190, 9999, 11000, 12000, 13000, 14000,
+        # 2025 events?
+        8386, 8387, 8388, 8389, 8390, 8391, 8392, 8393, 8394, 
+        # unbeast uolga summer
+        9193,
+        # grand duels some are not in yet
+        8395, 8396, 8397, 8398, 8399, 8400, 8401, 8402, 8403, 8404, 8405, 8406, 8407,
     ]
 
     all_quest_ids = []
-    for war_id in war_ids:
-        quest_ids = get_quest_ids_from_api(war_id)
-        all_quest_ids.extend(quest_ids)
+    if run_quests:
+        for war_id in war_ids:
+            quest_ids = get_quest_ids_from_api(war_id)
+            all_quest_ids.extend(quest_ids)
 
-    get_quest_details_and_upsert(all_quest_ids)
+        logging.info(f"Found {len(all_quest_ids)} quest ids to process")
+        get_quest_details_and_upsert(all_quest_ids)
 
-    retrieve_servants()
+    if run_servants:
+        retrieve_servants()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Download and upsert quest and servant data from Atlas Academy')
+    parser.add_argument('-s', '--servants', action='store_true', help='Only run servant updates')
+    parser.add_argument('-q', '--quests', action='store_true', help='Only run quest updates')
+    args = parser.parse_args()
+
+    # Determine mode: if neither flag provided, run both. If one provided, respect it.
+    if args.servants and args.quests:
+        run_quests = True
+        run_servants = True
+    elif args.servants:
+        run_quests = False
+        run_servants = True
+    elif args.quests:
+        run_quests = True
+        run_servants = False
+    else:
+        run_quests = True
+        run_servants = True
+
     try:
-        main()
+        main(run_quests=run_quests, run_servants=run_servants)
     except KeyboardInterrupt:
         logging.info("Interrupted by user (KeyboardInterrupt). Shutting down gracefully.")
     except Exception as e:
