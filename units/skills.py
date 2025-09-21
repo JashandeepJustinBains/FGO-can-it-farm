@@ -92,4 +92,61 @@ class Skills:
             raise IndexError(f"Mystic Code skill number {skill_num} is out of range")
 
     def __repr__(self):
-        return f"Skills(skills={self.skills}, cooldowns={self.cooldowns}, max_cooldowns={self.max_cooldowns}, cooldown_reduction_applied={self.cooldown_reduction_applied})"
+        return self._format_skills_repr()
+    
+    def _format_skills_repr(self):
+        """Format skills into human-readable representation showing variants per slot."""
+        if not self.skills:
+            return "Skills(no skills available)"
+        
+        lines = ["Skills:"]
+        
+        for slot_num in sorted(self.skills.keys()):
+            skill_variants = self.skills[slot_num]
+            if not skill_variants:
+                continue
+                
+            lines.append(f"  Skill {slot_num}:")
+            
+            for i, variant in enumerate(skill_variants):
+                # Determine variant context
+                if i == 0:
+                    context = "base"
+                elif len(skill_variants) == 2:
+                    context = "requires upgrade"
+                else:
+                    context = f"variant {i + 1}"
+                
+                skill_name = variant.get('name', 'Unknown Skill')
+                skill_id = variant.get('id', 'unknown')
+                cooldown = variant.get('cooldown', 0)
+                
+                # Format effects summary
+                effects_summary = self._summarize_skill_effects(variant)
+                
+                # Check if this is the chosen/default version
+                chosen_marker = " (chosen)" if variant == self.get_skill_by_num(slot_num) else ""
+                
+                lines.append(f"    ver {i + 1} | {context} | {skill_name} (ID: {skill_id}) | CD: {cooldown} | effects: {effects_summary}{chosen_marker}")
+        
+        # Add cooldown information
+        lines.append(f"  Current cooldowns: {self.cooldowns}")
+        lines.append(f"  Max cooldowns: {self.max_cooldowns}")
+        
+        return "\n".join(lines)
+    
+    def _summarize_skill_effects(self, skill_variant):
+        """Create a brief summary of skill effects while preserving raw data indicators."""
+        if not skill_variant.get('functions'):
+            return "raw effects preserved"
+        
+        effect_types = []
+        for func in skill_variant['functions'][:3]:  # Limit to first 3 for brevity
+            func_type = func.get('funcType', 'unknown')
+            target_type = func.get('funcTargetType', 'unknown')
+            effect_types.append(f"{func_type}({target_type})")
+        
+        if len(skill_variant['functions']) > 3:
+            effect_types.append("...")
+            
+        return f"raw effects preserved: {', '.join(effect_types)}" if effect_types else "raw effects preserved"
