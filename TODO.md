@@ -43,17 +43,17 @@ Description: Accept and validate webapp JSON payload and wire it to the simulato
 - Quest ID: integer
 - Commands: string (sequence of commands and separators as used by the simulator)
 
-Acceptance: POST endpoint accepts the example payload, validates and normalizes fields, and returns 200 with a run id or simulation result. The simulator receives structured input objects with `mode` passed through. Provide parsing unit tests.
+Acceptance: POST endpoint accepts the example payload, validates and normalizes fields, and returns 200 with a run id or simulation result. The simulator receives structured input objects with `ascension` passed through. Provide parsing unit tests.
 
 Notes: validate types, accept empty placeholders for team slots (collectionNo empty string), and return helpful 4xx messages for invalid data.
 Priority: 5
 
-[not-started] (ID: 4) Add `mode` handling in `units/Servant.py`
+[not-started] (ID: 4) Add `ascension` handling in `units/Servant.py`
 
 Files: units/Servant.py, data loading helpers
-Description: Support a `mode` attribute that selects servant data variant (skills/NP) based on ascension/variant. Backwards compatible when `mode` missing.
+Description: Support a `ascension` attribute that selects servant data variant (skills/NP) based on ascension/variant. Backwards compatible when `ascension` missing.
 
-Acceptance: Creating a Servant with `mode` chooses the corresponding variant. Add unit tests using example servant JSON variants.
+Acceptance: Creating a Servant with `ascension` chooses the corresponding variant. Add unit tests using example servant JSON variants.
 
 Blocker: need sample servant JSON snippets showing multiple variants per servant.
 Priority: 2

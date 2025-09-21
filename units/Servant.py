@@ -16,7 +16,7 @@ class Servant:
         #transforms completly new character on np to 4132
         312,
         # transforms np to different type on skill
-        394, 391, 413,
+        394, 391, 413, 448,
         # changes traits on different ascension
         385,
         # changes traits, skills and NP on different ascension
