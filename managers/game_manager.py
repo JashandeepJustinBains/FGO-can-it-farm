@@ -78,3 +78,85 @@ class GameManager:
 
     def copy(self):
         return GameManager(self.servant_ids, self.quest_id, gm_copy=self)
+    
+    def __repr__(self):
+        return self.team_repr()
+    
+    def team_repr(self):
+        """Generate human-readable team representation showing servant details."""
+        if not self.servants:
+            return "GameManager(no servants)"
+        
+        lines = ["Team composition:"]
+        
+        for i, servant in enumerate(self.servants):
+            # Basic servant info
+            slot_info = f"Slot {i + 1}: #{servant.id} {servant.name}"
+            if hasattr(servant, 'ascension'):
+                slot_info += f" (asc {servant.ascension})"
+            
+            # NP information
+            np_info = self._format_servant_nps(servant)
+            
+            # Skills information (compact version)
+            skills_info = self._format_servant_skills_compact(servant)
+            
+            # Transform information
+            transform_info = self._format_servant_transforms(servant)
+            
+            # Combine all info
+            full_line = f"  {slot_info} | {np_info} | {skills_info}"
+            if transform_info:
+                full_line += f" | {transform_info}"
+                
+            lines.append(full_line)
+        
+        return "\n".join(lines)
+    
+    def _format_servant_nps(self, servant):
+        """Format servant NP information compactly."""
+        if not servant.nps or not servant.nps.nps:
+            return "NP: none"
+        
+        primary_np = servant.nps.nps[-1]  # Highest ID NP
+        np_name = primary_np.get('name', 'Unknown')
+        card_type = primary_np.get('card', 'unknown')
+        
+        if len(servant.nps.nps) > 1:
+            return f"NP: {np_name} ({card_type}) (versions: {len(servant.nps.nps)})"
+        else:
+            return f"NP: {np_name} ({card_type})"
+    
+    def _format_servant_skills_compact(self, servant):
+        """Format servant skills compactly."""
+        if not servant.skills or not servant.skills.skills:
+            return "Skills: none"
+        
+        skill_names = []
+        for slot_num in sorted(servant.skills.skills.keys()):
+            skill_variants = servant.skills.skills[slot_num]
+            if skill_variants:
+                primary_skill = skill_variants[-1]  # Latest version
+                skill_name = primary_skill.get('name', 'Unknown')
+                if len(skill_variants) > 1:
+                    skill_names.append(f"{skill_name}(v{len(skill_variants)})")
+                else:
+                    skill_names.append(skill_name)
+        
+        return f"Skills: {' | '.join(skill_names)}"
+    
+    def _format_servant_transforms(self, servant):
+        """Format servant transform information."""
+        # Check for Aoko transformation (413 -> 4132)
+        if servant.id == 413:
+            return "transforms->4132 on first NP use"
+        elif servant.id == 4132:
+            return "transformed from 413"
+        
+        # Check for other transform data if available
+        if hasattr(servant, 'data') and servant.data:
+            transforms = servant.data.get('transforms', [])
+            if transforms:
+                return f"transforms: {len(transforms)} available"
+        
+        return ""
