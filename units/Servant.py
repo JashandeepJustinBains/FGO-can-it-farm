@@ -12,9 +12,19 @@ logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 class Servant:
-    special_servants = [312, 394, 391, 413, 385, 350, 306, 305]
+    special_servants = [
+        #transforms completly new character on np to 4132
+        312,
+        # transforms np to different type on skill
+        394, 391, 413,
+        # changes traits on different ascension
+        385,
+        # changes traits, skills and NP on different ascension
+        1, 444,
+        # applies special effect per turn that needs a translation to its real effect
+        350, 306, 305]
 
-    def __init__(self, collectionNo, np=1, initialCharge=0, attack=0, atkUp=0, artsUp=0, quickUp=0, busterUp=0, npUp=0, damageUp=0, busterDamageUp=0, quickDamageUp=0, artsDamageUp=0, append_5=False):
+    def __init__(self, collectionNo, np=1, ascension=1, lvl=0, initialCharge=0, attack=0, atkUp=0, artsUp=0, quickUp=0, busterUp=0, npUp=0, damageUp=0, busterDamageUp=0, quickDamageUp=0, artsDamageUp=0, append_5=False):
         self.id = collectionNo
         self.data = select_character(collectionNo)
         if self.data is None:
@@ -26,6 +36,8 @@ class Servant:
         self.attribute = self.data.get('attribute')
         self.traits = [trait['id'] for trait in self.data.get('traits', [])]
         self.cards = self.data.get('cards', [])
+        self.lvl = lvl # currently working on High Prio TODOs
+        self.ascension = ascension; # currently working on High Prio TODOs
         self.atk_growth = self.data.get('atkGrowth', [])
         self.skills = Skills(self.data.get('skills', []), append_5=append_5)
         self.np_level = np
@@ -36,7 +48,7 @@ class Servant:
         self.np_gain_mod = 1
         self.buffs = Buffs(self)
         self.stats = Stats(self)
-        self.ce_attack = attack # TODO unused
+        self.bonus_attack = attack
         self.atk_mod = atkUp
         self.b_up = busterUp
         self.a_up = artsUp

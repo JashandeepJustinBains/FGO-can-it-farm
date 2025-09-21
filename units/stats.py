@@ -10,8 +10,7 @@ class Stats:
                 self.servant.cooldowns[skill] = max(self.servant.cooldowns[skill] - effect['svals']['Value'], 0)
 
     def get_base_atk(self):
-        # 1000atk from silver fous
-        return ( self.servant.ce_attack + 1000 + self.get_atk_at_level() ) * self.get_class_base_multiplier()
+        return ( self.servant.bonus_attack + self.get_atk_at_level(self.servant.get_lvl()) ) * self.get_class_base_multiplier()
 
     def get_atk_at_level(self, level=0):
         if level == 0:

@@ -5,7 +5,7 @@ logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 class SkillManager:
-    def __init__(self, turn_manager, sm_copy=None):
+    def __init__(self, turn_manager):
         self.tm = turn_manager
         self.gm = self.tm.gm
 
@@ -129,7 +129,6 @@ class SkillManager:
             print(f"Mystic Code skill {skill_num} is on cooldown: {mystic_code.cooldowns[skill_num]} turns remaining")
 
 
-
     def use_skill(self, servant, skill_num, target=None):
         logging.info(f"BEGINNING USE_SKILL OF {servant.name}' SKILL {servant.skills.get_skill_by_num(skill_num+1)}")
         skill_num += 1
@@ -146,6 +145,7 @@ class SkillManager:
             print(f"{servant.name} skill {skill_num} is on cooldown: {servant.skills.cooldowns[skill_num]} turns remaining")
             return False
 
+    #TODO check API call to see what indexing is necessary for swapping
     def swap_servants(self, frontline_idx, backline_idx):
         # Convert to 0-based indices
         frontline_index = frontline_idx - 1
@@ -177,6 +177,7 @@ class SkillManager:
         target.skills.decrement_cooldowns(effect['svals']['Value'])
 
     def apply_transform(self, effect, target):
+        #TODO how do we parse transform effects?
         return
 
     def add_field_change(self, effect, target):

@@ -48,8 +48,20 @@ async def simulate(req: SimRequest):
 
 
 @app.get('/api/servants')
-async def get_servants(rarity: Optional[List[int]] = Query(None), className: Optional[str] = '', npType: Optional[str] = '', attackType: Optional[str] = '', search: Optional[str] = '', team: Optional[List[int]] = Query(None)):
+async def get_servants(rarity: Optional[List[int]] = Query(None), className: Optional[str] = '', npType: Optional[str] = '', attackType: Optional[str] = '', search: Optional[str] = '', team: Optional[List[int]] = Query(None), warm: Optional[bool] = False):
     # Build query similar to Flask
+    # Warm-up short-circuit: if warm=true, do a light DB ping to establish connections and return quickly.
+    if warm:
+        try:
+            # ping the server to open connections / warm pools
+            # db.client is available from api.db
+            db.client.admin.command('ping')
+        except Exception:
+            # Ignore any errors during warm so the client call remains fire-and-forget
+            pass
+        # Return an empty list quickly; the front-end ignores response content.
+        return []
+
     query = {'$and': []}
 
     if rarity:
@@ -161,6 +173,21 @@ async def get_quests(warLongNames: Optional[List[str]] = Query(None), recommendL
         return quests
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get('/api/warmup')
+async def api_warmup():
+    """Lightweight warmup endpoint that pings the DB and returns quickly.
+
+    Front-end clients can call this once on App mount to encourage the server to open DB
+    connections / pools before heavier user requests.
+    """
+    try:
+        db.client.admin.command('ping')
+        return {"status": "ok"}
+    except Exception:
+        # Don't propagate errors to the client; warmup is best-effort
+        return {"status": "error"}
 
 
 @app.get('/api/quests/warLongNames')

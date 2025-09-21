@@ -634,6 +634,9 @@ base_multipliers = {
     "alterEgo":     1.0,
     "foreigner":    1.0,
     "pretender":    1.0,
+    "beast":        1.0,
+    "beastEresh":   1.0,
+    "unBeastOlgaMarie": 1.0
 }
 
 # class indices used for getting correct class advantage
@@ -652,27 +655,31 @@ class_indices = bidict({ # character.className
     "alterEgo": 11,
     "foreigner": 12,
     "pretender": 13,
-    "beast": 14
+    "beast": 14,
+    "beastEresh": 15,
+    "unBeastOlgaMarie": 16
 })
 
 #
 class_advantage_matrix = [
-    #Shield  Saber	Archer	Lancer	Rider	Caster	Assassin Berserker Ruler Avenger MoonCancer Alterego Foreigner Pretender Beast
-    [1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0],
-    [1.0,	1.0,	0.5,	2.0,	1.0,	1.0,	1.0,	2.0,	0.5,	1.0,	1.0,	1.0,	1.0,	1.0,	0.5],
-    [1.0,	2.0,	1.0,	0.5,	1.0,	1.0,	1.0,	2.0,	0.5,	1.0,	1.0,	1.0,	1.0,	1.0,	0.5],
-    [1.0,	0.5,	2.0,	1.0,	1.0,	1.0,	1.0,	2.0,	0.5,	1.0,	1.0,	1.0,	1.0,	1.0,	0.5],
-    [1.0,	1.0,	1.0,	1.0,	1.0,	2.0,	0.5,	2.0,	0.5,	1.0,	1.0,	1.0,	1.0,	1.0,	0.5],
-    [1.0,	1.0,	1.0,	1.0,	0.5,	1.0,	2.0,	2.0,	0.5,	1.0,	1.0,	1.0,	1.0,	1.0,	0.5],
-    [1.0,	1.0,	1.0,	1.0,	2.0,	0.5,	1.0,	2.0,	0.5,	1.0,	1.0,	1.0,	1.0,	1.0,	0.5],
-    [1.0,	1.5,	1.5,	1.5,	1.5,	1.5,	1.5,	1.5,	1.5,	1.5,	1.5,	1.5,	0.5,	1.5,	0.5],
-    [1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	2.0,	1.0,	0.5,	2.0,	1.0,	1.0,	1.0,	2.0],
-    [1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	2.0,	2.0,	1.0,	0.5,	1.0,	1.0,	1.0,	2.0],
-    [1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	2.0,	0.5,	2.0,	1.0,	1.0,	1.0,	1.0,	2.0],
-    [1.0,	0.5,	0.5,	0.5,	1.5,	1.5,	1.5,	2.0,	1.0,	1.0,	1.0,	1.0,	2.0,	0.5,	2.0],
-    [1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	1.0,	2.0,	1.0,	1.0,	1.0,	0.5,	2.0,	2.0,	2.0],
-    [1.0,	1.5,	1.5,	1.5,	0.5,	0.5,	0.5,	2.0,	1.0,	1.0,	1.0,	2.0,	0.5,	1.0,	2.0],
-    [1.0,	1.5,	1.5,	1.5,	1.5,	1.5,	1.5,	2.0,	0.5,	0.5,	0.5,	0.5,	0.5,	0.5,	1.0]
+    #Shield  Saber	Archer	Lancer	Rider	Caster	Assassin Berserker Ruler Avenger MoonCancer Alterego Foreigner Pretender Beast beastEresh unBeastOlgaMarie
+    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+    [1.0, 1.0, 0.5, 2.0, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 0.5],
+    [1.0, 2.0, 1.0, 0.5, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 0.5],
+    [1.0, 0.5, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 0.5],
+    [1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 0.5, 2.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 0.5],
+    [1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 2.0, 2.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 0.5],
+    [1.0, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0, 2.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 0.5],
+    [1.0, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 0.5, 1.5, 0.5, 1.0, 1.5],
+    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 0.5, 2.0, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0],
+    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 1.0, 0.5, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0],
+    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 0.5, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0, 0.5, 0.5],
+    [1.0, 0.5, 0.5, 0.5, 1.5, 1.5, 1.5, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0, 0.5, 2.0, 0.5, 1.0],
+    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 0.5, 2.0, 2.0, 2.0, 0.5, 2.0],
+    [1.0, 1.5, 1.5, 1.5, 0.5, 0.5, 0.5, 2.0, 1.0, 1.0, 1.0, 2.0, 0.5, 1.0, 2.0, 0.5, 1.0],
+    [1.0, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.5, 0.5, 1.5, 1.5, 1.5, 1.5, 1.0, 1.0, 1.0],
+    [1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0, 1.0, 0.5, 2.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0]
 ]
 
 #
@@ -1455,177 +1462,4 @@ skill_data = {
         'DEF Up vs. Humanoid': 1
         }
     }
-
-# we are testing on this one "94082615"
-list_of_quests=[
-    # 90+/90++ nodes with CE bonuses
-    "94082615",#:{ 
-        # {"atk":500, "arts":8, "buster":8, "npGain":5, "npGauge":30, "damageUp":100},
-        # {"atk":2000, "arts":10, "buster":10, "npGain":8,"npGauge":50, "damageUp":200}},
-    "94097715",#:#{ 
-        # {"atk":500, "arts":8, "buster":8, "npGain":5, "npGauge":30, "damageUp":100},
-        # {"atk":2000, "arts":10, "buster":10, "npGain":8,"npGauge":50, "damageUp":200}},
-    "94062608",#:{ 
-    #     {"atk":250, "npGauge":30, "damageUp":100},
-    #     {"atk":1000, "npGauge":50, "damageUp":200}},
-    "94073811",#:{ 
-    #     {"atk":250, "arts":8, "buster":8, "npDamage":5, "npGauge":30, "damageUp":100},
-    #     {"atk":250, "arts":10, "buster":10, "npDamage":8, "npGauge":50, "damageUp":200}},
-    "94063014",#:{ 
-    #     {"atk":500, "damageUp":100},
-    #     {"atk":2000, "damageUp":200}},
-    "94063013",#:{ 
-    #     {"atk":0, "npDamage":10, "damageUp":100},
-    #     {"atk":0, "npDamage":10, "damageUp":200}},
-    "94062608",#:{ 
-    #     {"atk":250, "npGauge":30, "damageUp":100},
-    #     {"atk":1000, "npGauge":50, "damageUp":200}},
-    "94091611",#:{ 
-    #     {"atk":250, "npDamage":10, "damageUp":100},
-    #     {"atk":1000, "npDamage":15, "damageUp":200}},
-    "94087109",#:{ 
-    #     {"atk":250, "arts":8, "buster":8, "npDamage":3, "npGauge":30, "damageUp":100},
-    #     {"atk":1000, "arts":10, "buster":10, "npDamage":5, "npGauge":50, "damageUp":200}},
-    "94098809",#:{ 
-    #     {"atk":250, "arts":4, "buster":4, "npGauge":30},
-    #     {"atk":1000, "arts":6, "buster":6, "npGauge":50}},
-    "94074711",#:{ 
-    #     {"atk":250, "quick":8, "buster":8, "npGain":5, "npGauge":30},
-    #     {"atk":1000, "quick":10, "buster":10, "npGain":8, "npGauge":50}},
-    "94074710",#:{ 
-    #     {"atk":250, "quick":8, "buster":8, "npGain":5, "npGauge":30},
-    #     {"atk":1000, "quick":10, "buster":10, "npGain":8, "npGauge":50}},
-    "94096911",#:{ 
-    #     {"atk":500, "arts":8, "npDamage":10, "npGauge":30, "upDamage":100},
-    #     {"atk":2000, "arts":10, "npDamage":15, "npGauge":50, "upDamage":200}},
-    "94055418",#:{ 
-    #     {"atk":500, "npDamage":10},
-    #     {"atk":2000, "npDamage":15}},
-    "94091610",#:{ 
-    #     {"atk":250, "npDamage":10, "damageUp":100},
-    #     {"atk":1000, "npDamage":15, "damageUp":200}},
-    "94063912",#:{ 
-    #     {"atk":250, "damageUp (Demonic)": 25,"damageUp":100}, 
-    #     {"atk":1000,"damageUp (Demonic)": 30,"damageUp":100}},
-    "94088110",##:{
-    #     {"atk":400, "arts":8, "buster":8, "npGauge":30, "quick":50, "arts":50, "buster":50, "npDamage":50}, 
-    #     {"atk":1600, "arts":10, "buster":10, "npGauge":50, "quick":100, "arts":100, "buster":100, "npDamage":100}},
-    "94090209",##:{ 
-    #     {"atk":250, "arts":8, "quick":8, "npGain":5, "npGauge":30}, 
-    #     {"atk":1000, "arts":10, "quick":10, "npGain":8, "npGauge":50}},
-    "94088111",##:{ 
-    #     {"atk":400, "arts":8, "buster":8, "npGauge":30, "quick":50, "arts":50, "buster":50, "npDamage":50}, 
-    #     {"atk":1600, "arts":10, "buster":10, "npGauge":50, "quick":100, "arts":100, "buster":100, "npDamage":100}},
-    "94087110",##:{ 
-    #     {"atk":250, "arts":8, "buster":8, "npDamage":3, "npGauge":30, "damageUp":100},
-    #     {"atk":1000, "arts":10, "buster":10, "npDamage":5, "npGauge":50, "damageUp":200}},
-    "94090208",##:{ 
-    #     {"atk":250, "arts":8, "quick":8, "npGain":5, "npGauge":30}, 
-    #     {"atk":1000, "arts":10, "quick":10, "npGain":8, "npGauge":50}},
-    "94063913",##:{ 
-    #     {"atk":250, "damageUp (Demonic)": 25,"damageUp":100}, 
-    #     {"atk":1000,"damageUp (Demonic)": 30,"damageUp":100}},
-    "94068911",##:{ 
-    #     {"atk":250, "arts":8, "quick":8, "npDamage":5, "npGauge":30}, 
-    #     {"atk":1000, "arts":10, "quick":10, "npDamage":8, "npGauge":50}},
-    "94054911",##:{ None, None},
-    "94063012",##:{ 
-    #     {"atk":250, "buster":8, "npGain":8, "damageUp":100}, 
-    #     {"atk":1000,"buster":10, "npGain":10, "damageUp":200}},
-
-    # OC nodes
-    "94093202",#: None,
-    "93040103",#: None,
-    "94095301",#: None,
-    "94090701",#: None,
-    "94095302",#: None,
-    "94090702",#: None,
-    "94086601",#: None,
-    "94086602",#: None,
-    "94089601",#: None,
-    "93040104",#: None,
-    "93040102",#: None,
-    "94100502",#: None,
-    "93040105",#: None,
-    "94100501",#: None,
-    "93040101"#: None
-]
-
-character_list_multicore_actuallygood = {
-    #buster aoe
-    16:"Arash", #self-sac
-    247:"Arjuna (Alter)",
-    309:"Morgan",
-    12:"Gilgamesh",
-    51:"Sakata Kintoki",
-    334:"Koyanskaya of Dark",
-    373:"Kukulcan",
-    312:"Mélusine",
-    108:"Iskandar",
-    385:"Aesc the Rain Witch",
-    114:"Minamoto-no-Raikou",
-    376:"LarvaTiamat",
-    351:"ArchetypeEarth",
-    221:"Queen Medb",
-    358:"Wu Zetian",
-
-    #buster single
-    106:"Jeanne d'Arc (Alter)", # not good
-    195:"Abigail Williams", #needs update
-    414:"Shizuki Soujuurou", # self-sac
-    118:"Ozymandias",
-
-    # quick aoe
-    297:"Ashiya Douman",
-    331:"Taigong Wang",
-    357:"Scáthach-Skadi (Ruler)",
-    403:"Minamoto-no-RaikouUshi Gozen",
-    416:"Hibiki  Chikagi",
-    281:"Voyager",
-    387:"Suzuka Gozen (Summer Vacation)",
-
-    # quick single
-    339:"Super Bunyan",
-    347:"Don Quixote",
-    384:"Medusa",
-
-    #arts aoe
-    355:"Ibuki-Douji",
-    394:"Ptolemaîos",
-    371:"Tezcatlipoca",
-    386:"Altria Caster",
-    383:"Durga",
-    390:"Mélusine",
-    315:"Habetrot", #self-sac
-    369:"Kotomine Kirei",
-    253:"Leonardo da Vinci",
-    413:"Aozaki Aoko",
-    414:"Space Ereshkigal", # needs update
-    145:"Gilgamesh (caster)",
-    349:"Kyokutei Bakin",
-    374:"Pope Johanna",
-    370:"Nitocris (Alter)",
-
-    #arts single
-    52:"Vlad III", # not actuallygood
-    306:"Galatea",
-    377:"Sodom's BeastDraco",
-    345:"Kriemhild",
-    234:"Beni-Enma", # needs update
-
-}
-character_list_support={
-    284:"Altria Caster",
-    314:"Koyanskaya of Light",
-    215:"Scáthach-Skadi",
-    357:"Scáthach-Skadi (Ruler)",
-    316:"Oberon",
-    389:"Cnoc na Riabh Yaraan-doo",
-    241:"Sima Yi (Reines)",
-    37:"Zhuge Liang (Lord El-Melloi II)",
-    353:"Lady Avalon",
-    150:"Merlin", # only kinda <-- IDIOT | needs update he is 30% aoe charger really good for buster + arts/quick multicore
-    404:"Yui Shousetsu",
-
-}
 

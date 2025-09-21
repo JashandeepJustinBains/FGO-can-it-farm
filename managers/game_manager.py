@@ -9,7 +9,7 @@ logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 class GameManager:
-    def __init__(self, servant_init_dicts, quest_id, mc_id, gm_copy=None):
+    def __init__(self, servant_init_dicts, quest_id, mc_id):
         self.servant_init_dicts = servant_init_dicts  # List of dicts
         self.quest_id = quest_id
         self.mc_id = mc_id
@@ -41,6 +41,7 @@ class GameManager:
     def swap_servants(self, frontline_idx, backline_idx):
         self.servants[frontline_idx], self.servants[backline_idx] = self.servants[backline_idx], self.servants[frontline_idx]
 
+    # TODO part of the transformation refactoring mega todo
     def transform_aoko(self, aoko_buffs, aoko_cooldowns, aoko_np_gauge=None):
         print("What? \nAoko is transforming!")
         servants_list = [servant.name for servant in self.servants]

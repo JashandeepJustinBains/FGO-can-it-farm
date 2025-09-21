@@ -5,10 +5,11 @@ logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 # needed to increase consecutivly used NPs OC levels
+# should be static 
 np_oc_1_turn = {'funcType': 'addStateShort', 'funcTargetType': 'ptAll', 'functvals': [], 'fieldReq': [], 'condTarget': [], 'svals': {'Rate': 1000, 'Turn': 1, 'Count': 1, 'Value': 1}, 'buffs': [{'name': 'Overcharge Lv. Up', 'functvals': '', 'tvals': [], 'svals': None, 'value': 0, 'turns': 1}]}
 
 class npManager:
-    def __init__(self, skill_manager, np_copy=None):
+    def __init__(self, skill_manager):
         self.sm = skill_manager
         self.tm = self.sm.tm
         self.gm = self.tm.gm
