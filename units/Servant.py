@@ -11,6 +11,119 @@ import logging
 logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
+def select_ascension_data(servant_json: dict, ascension: int) -> dict:
+    """
+    Select the appropriate ascension-specific data from a servant JSON.
+    
+    Handles multiple JSON formats:
+    - Legacy single-list: skills/noblePhantasms is a single list (ascension-independent)
+    - List-of-lists: outer list with per-ascension variants (pick index ascension-1)
+    - ascensions/forms arrays: find matching ascension object and extract keys
+    - Mixed shapes: prefer explicit ascension-matching entry, fallback to legacy
+    
+    If requested ascension > available entries, chooses highest available with warning.
+    Preserves raw effect IDs and OC/NP matrices exactly.
+    
+    Args:
+        servant_json: Raw servant data dictionary
+        ascension: Requested ascension level (1-based)
+    
+    Returns:
+        Dictionary with ascension-appropriate 'skills' and 'noblePhantasms' keys
+    """
+    result = {}
+    
+    # Handle skills
+    skills_data = servant_json.get('skills', [])
+    if isinstance(skills_data, list) and len(skills_data) > 0:
+        if isinstance(skills_data[0], list):
+            # List-of-lists format
+            max_available = len(skills_data)
+            if ascension > max_available:
+                logging.warning(f"Requested ascension {ascension} > available skills entries {max_available}, using highest")
+                chosen_idx = max_available - 1
+            else:
+                chosen_idx = ascension - 1
+            result['skills'] = skills_data[chosen_idx]
+        else:
+            # Legacy single-list format - ascension independent
+            result['skills'] = skills_data
+    else:
+        result['skills'] = []
+    
+    # Handle noblePhantasms
+    nps_data = servant_json.get('noblePhantasms', [])
+    if isinstance(nps_data, list) and len(nps_data) > 0:
+        if isinstance(nps_data[0], list):
+            # List-of-lists format
+            max_available = len(nps_data)
+            if ascension > max_available:
+                logging.warning(f"Requested ascension {ascension} > available NP entries {max_available}, using highest")
+                chosen_idx = max_available - 1
+            else:
+                chosen_idx = ascension - 1
+            result['noblePhantasms'] = nps_data[chosen_idx]
+        else:
+            # Legacy single-list format - ascension independent
+            result['noblePhantasms'] = nps_data
+    else:
+        result['noblePhantasms'] = []
+    
+    # Handle ascensions/forms arrays (if present, override above)
+    ascensions_data = servant_json.get('ascensions', [])
+    forms_data = servant_json.get('forms', [])
+    
+    if ascensions_data:
+        # Find matching ascension entry
+        matching_asc = None
+        for asc_entry in ascensions_data:
+            if asc_entry.get('ascension') == ascension:
+                matching_asc = asc_entry
+                break
+        
+        if matching_asc:
+            # Override with ascension-specific data if available
+            if 'skills' in matching_asc:
+                result['skills'] = matching_asc['skills']
+            if 'noblePhantasms' in matching_asc:
+                result['noblePhantasms'] = matching_asc['noblePhantasms']
+        else:
+            # No exact match, use highest available
+            if ascensions_data:
+                highest_asc = max(ascensions_data, key=lambda x: x.get('ascension', 0))
+                if highest_asc.get('ascension', 0) < ascension:
+                    logging.warning(f"Requested ascension {ascension} not found in ascensions array, using ascension {highest_asc.get('ascension')}")
+                if 'skills' in highest_asc:
+                    result['skills'] = highest_asc['skills']
+                if 'noblePhantasms' in highest_asc:
+                    result['noblePhantasms'] = highest_asc['noblePhantasms']
+    
+    if forms_data:
+        # Similar logic for forms
+        matching_form = None
+        for form_entry in forms_data:
+            if form_entry.get('ascension') == ascension:
+                matching_form = form_entry
+                break
+        
+        if matching_form:
+            if 'skills' in matching_form:
+                result['skills'] = matching_form['skills']
+            if 'noblePhantasms' in matching_form:
+                result['noblePhantasms'] = matching_form['noblePhantasms']
+        else:
+            # No exact match, use highest available
+            if forms_data:
+                highest_form = max(forms_data, key=lambda x: x.get('ascension', 0))
+                if highest_form.get('ascension', 0) < ascension:
+                    logging.warning(f"Requested ascension {ascension} not found in forms array, using ascension {highest_form.get('ascension')}")
+                if 'skills' in highest_form:
+                    result['skills'] = highest_form['skills']
+                if 'noblePhantasms' in highest_form:
+                    result['noblePhantasms'] = highest_form['noblePhantasms']
+    
+    return result
+
 class Servant:
     special_servants = [
         #transforms completly new character on np to 4132
@@ -39,6 +152,13 @@ class Servant:
         self.lvl = lvl # currently working on High Prio TODOs
         self.ascension = ascension; # currently working on High Prio TODOs
         self.atk_growth = self.data.get('atkGrowth', [])
+        
+        # Example integration of ascension data selection:
+        # For servants with ascension-specific skills/NPs, you can use:
+        # ascension_data = select_ascension_data(self.data, ascension)
+        # self.skills = Skills(ascension_data.get('skills', []), append_5=append_5)
+        # self.nps = NP(ascension_data.get('noblePhantasms', []))
+        # Current implementation uses raw data for compatibility:
         self.skills = Skills(self.data.get('skills', []), append_5=append_5)
         self.np_level = np
         self.oc_level = 1

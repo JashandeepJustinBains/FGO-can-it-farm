@@ -95,3 +95,57 @@ class GameManager:
             state['quest'].__dict__ = quest_state
         return state
 
+    def __repr__(self):
+        """
+        Human-readable team representation showing each servant slot with:
+        - Collection number and ascension 
+        - Noble Phantasm name and card type
+        - Skills with names and cooldowns
+        - Transform flags or notes
+        """
+        lines = []
+        for i, servant in enumerate(self.servants, 1):
+            # Basic servant info
+            slot_line = f"Slot {i}: #{servant.id} {servant.name} (asc {servant.ascension})"
+            
+            # NP info
+            if hasattr(servant, 'nps') and servant.nps and servant.nps.nps:
+                np = servant.nps.nps[0]  # Use first/main NP
+                np_name = np.get('name', 'Unknown NP')
+                np_card = np.get('card', 'unknown')
+                slot_line += f" | NP: {np_name} ({np_card})"
+            else:
+                slot_line += " | NP: None"
+            
+            # Skills info
+            skills_info = []
+            if hasattr(servant, 'skills') and servant.skills:
+                for skill_num in [1, 2, 3]:
+                    try:
+                        skill = servant.skills.get_skill_by_num(skill_num - 1)  # 0-indexed
+                        skill_name = skill.get('name', f'Skill {skill_num}')
+                        cooldown = servant.skills.cooldowns.get(skill_num, 0)
+                        max_cd = servant.skills.max_cooldowns.get(skill_num, 0)
+                        cd_display = cooldown if cooldown > 0 else max_cd
+                        skills_info.append(f"{skill_name} (CD {cd_display})")
+                    except (IndexError, KeyError):
+                        skills_info.append(f"Skill {skill_num} (unavailable)")
+            
+            if skills_info:
+                slot_line += f" | Skills: {', '.join(skills_info)}"
+            else:
+                slot_line += " | Skills: None"
+            
+            # Transform info
+            transform_info = "none"
+            if servant.id == 413:  # Aoko
+                transform_info = "transforms->4132 on first NP use"
+            elif servant.id == 4132:  # Super Aoko
+                transform_info = "transformed from 413"
+            
+            slot_line += f" | transforms: {transform_info}"
+            
+            lines.append(slot_line)
+        
+        return "\n".join(lines)
+
