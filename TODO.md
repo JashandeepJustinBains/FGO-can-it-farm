@@ -99,3 +99,17 @@ Description: Add small improvements: API payload README, parsing tests, and quic
 
 Acceptance: `api/README.md` added and a basic test skeleton for API parsing present.
 Priority: 8
+
+[not-started] (ID: 10) Finish `db.py` (work-in-progress)
+
+Files: db.py
+Description: `db.py` is currently a work-in-progress file used for database connection bootstrapping. Finish implementing environment-based configuration, connection pooling, and secure read-only clients for simulation consumers. Ensure it supports local dev (env var), Atlas (MONGO_URI), and a mocked in-memory store for tests.
+Acceptance: `db.py` exposes `get_db()` and `get_client()` helpers and is covered by a basic unit test that can swap in a fake client. Add clear docs in `api/README.md`.
+Priority: 5
+
+[not-started] (ID: 11) Minimal successful-run logging (Cloudflare D1)
+
+Files: utils/results_store.py, api/main.py, sim_entry_points/traverse_api_input.py
+Description: When a simulation run clears all waves (successful run), write a compact summary record suitable for limited storage (Cloudflare D1). The minimal record should include: a compact team descriptor (collectionNos + ascensions), mystic code id, quest id, short command string, result hash, timestamp, and short per-wave summary (damage dealt / remaining HP as % or flags). Use a configurable backend (D1 via HTTP endpoint or SQLite fallback) to write records.
+Acceptance: Implement `utils/results_store.py` with a simple interface `save_minimal_run(summary: dict) -> id`. Wire the FastAPI endpoint to call this after detect-success. Provide a script to export local SQLite to a small JSON file to seed D1 during migrations.
+Priority: 3
