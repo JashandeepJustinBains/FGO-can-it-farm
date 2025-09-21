@@ -103,3 +103,47 @@ class NP:
     def get_npdist(self, new_id=None):
         np = self.get_np_by_id(new_id)
         return np.get('npDistribution', [])  # Safely get npDistribution as a list
+    
+    def __repr__(self):
+        return self._format_nps_repr()
+    
+    def _format_nps_repr(self):
+        """Format NPs into human-readable representation showing OC/NP level matrices."""
+        if not self.nps:
+            return "NP(no noble phantasms available)"
+        
+        lines = ["Noble Phantasms:"]
+        
+        for i, np in enumerate(self.nps):
+            np_name = np.get('name', 'Unknown NP')
+            np_id = np.get('id', 'unknown')
+            new_id = np.get('new_id', i + 1)
+            card_type = np.get('card', 'unknown')
+            
+            lines.append(f"  NP ver {new_id} (original ID: {np_id}): {np_name} ({card_type})")
+            
+            # Show OC matrix information
+            lines.append(f"    OC matrix: preserved (functions: {len(np.get('functions', []))})")
+            
+            # Show NP level effects indication
+            sample_func = next((f for f in np.get('functions', []) if f.get('svals')), None)
+            if sample_func and sample_func.get('svals'):
+                np_levels_available = len(sample_func['svals'])
+                lines.append(f"    NP-level effects: preserved raw keys (levels 1-{np_levels_available})")
+            else:
+                lines.append(f"    NP-level effects: preserved raw keys")
+            
+            # Show overcharge variations
+            oc_keys = [key for key in np.get('functions', [{}])[0].keys() if key.startswith('svals') and key != 'svals']
+            if oc_keys:
+                oc_levels = sorted([int(key.replace('svals', '')) for key in oc_keys if key.replace('svals', '').isdigit()])
+                if oc_levels:
+                    lines.append(f"    OC variations: levels {', '.join(map(str, oc_levels))}")
+        
+        # Show current default
+        if self.nps:
+            default_np = self.nps[-1]
+            lines.append(f"  Default card type: {self.card}")
+            lines.append(f"  Default NP: ver {default_np.get('new_id', len(self.nps))}")
+        
+        return "\n".join(lines)

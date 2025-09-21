@@ -95,3 +95,91 @@ class GameManager:
             state['quest'].__dict__ = quest_state
         return state
 
+    def __repr__(self):
+        return self.team_repr()
+
+    def team_repr(self):
+        """Generate human-readable team representation showing servant details."""
+        if not self.servants:
+            return "GameManager(no servants)"
+        
+        lines = ["Team composition:"]
+        
+        for i, servant in enumerate(self.servants):
+            # Basic servant info
+            slot_info = f"Slot {i + 1}: #{servant.id} {servant.name}"
+            if hasattr(servant, 'ascension'):
+                slot_info += f" (asc {servant.ascension})"
+            
+            lines.append(slot_info)
+            
+            # NP information
+            np_info = self._format_servant_nps(servant)
+            lines.append(f"  {np_info}")
+            
+            # Skills information (use Skills repr)
+            skills_info = self._format_servant_skills_compact(servant)
+            lines.append(f"  {skills_info}")
+            
+            # Transform information
+            transform_info = self._format_servant_transforms(servant)
+            if transform_info:
+                lines.append(f"  transforms: {transform_info}")
+            else:
+                lines.append(f"  transforms: none")
+        
+        return "\n".join(lines)
+
+    def _format_servant_nps(self, servant):
+        """Format servant NP information compactly."""
+        if not servant.nps or not servant.nps.nps:
+            return "NP: none"
+        
+        lines = ["NPs:"]
+        for np in servant.nps.nps:
+            np_name = np.get('name', 'Unknown')
+            card_type = np.get('card', 'unknown')
+            new_id = np.get('new_id', 1)
+            lines.append(f"    ver new_id={new_id} | {np_name} ({card_type}) | OC-matrix: preserved")
+        
+        return "\n  ".join(lines)
+
+    def _format_servant_skills_compact(self, servant):
+        """Format servant skills compactly."""
+        if not servant.skills or not servant.skills.skills:
+            return "Skills: none"
+        
+        # Use the enhanced Skills repr but format more compactly for team view
+        lines = ["Skills:"]
+        for slot_num in sorted(servant.skills.skills.keys()):
+            skill_variants = servant.skills.skills[slot_num]
+            if not skill_variants:
+                continue
+                
+            skill_lines = [f"    Skill {slot_num}:"]
+            for i, variant in enumerate(skill_variants):
+                context = "base" if i == 0 else f"ver {i + 1}"
+                skill_name = variant.get('name', 'Unknown Skill')
+                cooldown = variant.get('cooldown', 0)
+                skill_lines.append(f"      {context} | {skill_name} | cooldown: {cooldown} | effects: raw preserved")
+            
+            lines.extend(skill_lines)
+        
+        return "\n  ".join(lines)
+
+    def _format_servant_transforms(self, servant):
+        """Format servant transform information."""
+        # Check for Aoko transformation (413 -> 4132)
+        if servant.id == 413:
+            return "transforms->4132 on first NP use"
+        elif servant.id == 4132:
+            return "transformed from 413"
+        
+        # Check for other transform data if available
+        if hasattr(servant, 'data') and servant.data:
+            transforms = servant.data.get('transforms', [])
+            if transforms:
+                return f"{len(transforms)} available"
+        
+        return ""
+
