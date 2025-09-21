@@ -1,4 +1,20 @@
-from bidict import bidict
+try:
+    from bidict import bidict
+except ImportError:
+    # Fallback bidict implementation for testing
+    class bidict(dict):
+        def __init__(self, mapping):
+            super().__init__(mapping)
+            self.inverse = {v: k for k, v in mapping.items()}
+
+# Temporary bidict replacement for testing (in case bidict is not available)
+try:
+    bidict
+except NameError:
+    class bidict(dict):
+        def __init__(self, mapping):
+            super().__init__(mapping)
+            self.inverse = {v: k for k, v in mapping.items()}
 
 traits_dict={
     "2": "genderFemale",

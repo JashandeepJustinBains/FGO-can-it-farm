@@ -81,4 +81,52 @@ class Skills:
             self.cooldowns[skill_num] = self.max_cooldowns[skill_num]
 
     def __repr__(self):
-        return f"Skills(skills={self.skills}, cooldowns={self.cooldowns}, max_cooldowns={self.max_cooldowns}, cooldown_reduction_applied={self.cooldown_reduction_applied})"
+        return self._format_skills_repr()
+    
+    def _format_skills_repr(self):
+        """Format skills into human-readable representation showing variants per slot."""
+        if not self.skills:
+            return "Skills(no skills available)"
+        
+        lines = ["Skills:"]
+        
+        for slot_num in sorted(self.skills.keys()):
+            skill_variants = self.skills[slot_num]
+            if not skill_variants:
+                continue
+                
+            lines.append(f"  Skill {slot_num}:")
+            
+            for i, variant in enumerate(skill_variants):
+                # Determine variant context
+                if i == 0:
+                    context = "base"
+                elif len(skill_variants) == 2:
+                    context = "requires upgrade"
+                else:
+                    context = f"variant {i + 1}"
+                
+                skill_name = variant.get('name', 'Unknown Skill')
+                skill_id = variant.get('id', 'unknown')
+                cooldown = variant.get('cooldown', 0)
+                
+                # Format effects summary
+                effects_summary = self._summarize_skill_effects(variant)
+                
+                # Check if this is the chosen/default version
+                chosen_variant = self.get_skill_by_num(slot_num)
+                is_chosen = chosen_variant and chosen_variant.get('id') == variant.get('id')
+                chosen_marker = " [CHOSEN]" if is_chosen else ""
+                
+                lines.append(f"    ver {i + 1} | {context}: {skill_name} | cooldown: {cooldown} | {effects_summary}{chosen_marker}")
+        
+        return "\n".join(lines)
+    
+    def _summarize_skill_effects(self, skill_variant):
+        """Create a brief summary of skill effects while preserving raw data indicators."""
+        functions = skill_variant.get('functions', [])
+        if not functions:
+            return "effects: raw preserved"
+        
+        effect_count = len(functions)
+        return f"effects: raw preserved ({effect_count} functions)"

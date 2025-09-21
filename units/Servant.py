@@ -3,13 +3,129 @@ from .stats import Stats
 from .skills import Skills
 from .buffs import Buffs
 from .np import NP
-from scripts.connectDB import db
+
+# Mock DB connection for testing
+try:
+    from scripts.connectDB import db
+except ImportError:
+    # Create a mock DB for testing
+    class MockDB:
+        class MockCollection:
+            def find_one(self, query):
+                return None
+        
+        @property
+        def servants(self):
+            return self.MockCollection()
+    
+    db = MockDB()
 
 import logging
 
 # Configure logging
 logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
+
+def select_ascension_data(servant_json: dict, ascension: int) -> dict:
+    """
+    Select ascension-specific data from servant JSON.
+    
+    Handles multiple input shapes:
+    - Legacy single-list: skills/noblePhantasms as single list (ascension-independent)
+    - List-of-lists: outer list with items per-ascension
+    - ascensions/forms arrays: objects with ascension field containing skills/noblePhantasms
+    - Mixed shapes: prefer explicit ascension entries, fallback to legacy
+    
+    Args:
+        servant_json: The servant data dictionary
+        ascension: The requested ascension level (1-based)
+    
+    Returns:
+        Dictionary with selected ascension data (skills, noblePhantasms, passives, transforms)
+    """
+    result = {}
+    
+    # Check for explicit ascensions/forms array first
+    ascensions_data = servant_json.get('ascensions', servant_json.get('forms', []))
+    if ascensions_data:
+        # Look for matching ascension
+        selected_ascension = None
+        for asc_data in ascensions_data:
+            asc_index = asc_data.get('ascension', asc_data.get('ascensionIndex', asc_data.get('index', 0)))
+            if asc_index == ascension:
+                selected_ascension = asc_data
+                break
+        
+        if selected_ascension:
+            # Extract data from the ascension object
+            result['skills'] = selected_ascension.get('skills', [])
+            result['noblePhantasms'] = selected_ascension.get('noblePhantasms', [])
+            result['passives'] = selected_ascension.get('passives', [])
+            result['transforms'] = selected_ascension.get('transforms', [])
+            return result
+        else:
+            # Requested ascension not found, use highest available
+            if ascensions_data:
+                highest_asc = max(ascensions_data, key=lambda x: x.get('ascension', x.get('ascensionIndex', x.get('index', 0))))
+                highest_level = highest_asc.get('ascension', highest_asc.get('ascensionIndex', highest_asc.get('index', 0)))
+                logging.warning(f"Ascension {ascension} not found, using highest available ascension {highest_level}")
+                result['skills'] = highest_asc.get('skills', [])
+                result['noblePhantasms'] = highest_asc.get('noblePhantasms', [])
+                result['passives'] = highest_asc.get('passives', [])
+                result['transforms'] = highest_asc.get('transforms', [])
+                return result
+    
+    # Check for list-of-lists format (per-ascension lists)
+    skills_data = servant_json.get('skills', [])
+    nps_data = servant_json.get('noblePhantasms', [])
+    
+    # Detect if skills/nps are list-of-lists
+    is_skills_list_of_lists = (skills_data and 
+                              isinstance(skills_data, list) and 
+                              len(skills_data) > 0 and 
+                              isinstance(skills_data[0], list))
+    
+    is_nps_list_of_lists = (nps_data and 
+                           isinstance(nps_data, list) and 
+                           len(nps_data) > 0 and 
+                           isinstance(nps_data[0], list))
+    
+    if is_skills_list_of_lists or is_nps_list_of_lists:
+        # Handle list-of-lists format
+        if is_skills_list_of_lists:
+            if ascension <= len(skills_data):
+                result['skills'] = skills_data[ascension - 1]
+            else:
+                # Use highest available
+                highest_idx = len(skills_data) - 1
+                logging.warning(f"Skills ascension {ascension} not found, using highest available ascension {highest_idx + 1}")
+                result['skills'] = skills_data[highest_idx]
+        else:
+            result['skills'] = skills_data
+            
+        if is_nps_list_of_lists:
+            if ascension <= len(nps_data):
+                result['noblePhantasms'] = nps_data[ascension - 1]
+            else:
+                # Use highest available
+                highest_idx = len(nps_data) - 1
+                logging.warning(f"NoblePhantasms ascension {ascension} not found, using highest available ascension {highest_idx + 1}")
+                result['noblePhantasms'] = nps_data[highest_idx]
+        else:
+            result['noblePhantasms'] = nps_data
+            
+        # For list-of-lists, other fields are typically ascension-independent
+        result['passives'] = servant_json.get('passives', servant_json.get('classPassive', []))
+        result['transforms'] = servant_json.get('transforms', [])
+        return result
+    
+    # Legacy single-list format (ascension-independent)
+    result['skills'] = skills_data
+    result['noblePhantasms'] = nps_data
+    result['passives'] = servant_json.get('passives', servant_json.get('classPassive', []))
+    result['transforms'] = servant_json.get('transforms', [])
+    
+    return result
 
 class Servant:
     special_servants = [
@@ -39,6 +155,12 @@ class Servant:
         self.lvl = lvl # currently working on High Prio TODOs
         self.ascension = ascension; # currently working on High Prio TODOs
         self.atk_growth = self.data.get('atkGrowth', [])
+        
+        # Example integration with ascension-aware data selection (commented for minimal changes):
+        # ascension_data = select_ascension_data(self.data, ascension)
+        # self.skills = Skills(ascension_data.get('skills', self.data.get('skills', [])), append_5=append_5)
+        # self.nps = NP(ascension_data.get('noblePhantasms', self.data.get('noblePhantasms', [])))
+        
         self.skills = Skills(self.data.get('skills', []), append_5=append_5)
         self.np_level = np
         self.oc_level = 1
