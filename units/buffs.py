@@ -8,12 +8,15 @@ magic_bullet_buff = {'buff': 'Magic Bullet', 'functvals': [], 'value': 9999, 'tv
 
 class Buffs:
     def __init__(self, servant=None, enemy=None):
+        # Initialize basic buffs list and stateful effect tracking for all cases
+        self.buffs = []
+        self.stateful_effects = []
+        self.counters = {}
+        
         if servant:
             self.servant = servant
-            self.buffs = []
         if enemy:
             self.enemy = enemy
-            self.buffs = []
 
     def process_end_turn_skills(self):
         add_magic_bullets = False
@@ -137,11 +140,18 @@ class Buffs:
     def parse_passive_functions(self, functions_data):
         functions = []
         for func in functions_data:
+            svals = func.get('svals', {})
+            # Handle both list and dict formats for svals
+            if isinstance(svals, list):
+                parsed_svals = svals[0] if len(svals) > 0 else {}
+            else:
+                parsed_svals = svals
+                
             parsed_function = {
                 'funcType': func.get('funcType'),
                 'funcTargetType': func.get('funcTargetType'),
                 'functvals': func.get('functvals', []),
-                'svals': func.get('svals', [{}])[0],
+                'svals': parsed_svals,
                 'buffs': func.get('buffs', [])
             }
             functions.append(parsed_function)
@@ -181,4 +191,88 @@ class Buffs:
 
     def __repr__(self):
         return self.grouped_str()
+        
+    def add_stateful_effect(self, effect_type, effect_id, owner, lifetime, params):
+        """Add a stateful effect like a counter or per-turn trigger."""
+        stateful_effect = {
+            "type": effect_type,  # 'counter', 'per_turn', 'trait_add', etc.
+            "id": effect_id,
+            "owner": owner,  # 'self' or 'target'
+            "lifetime": lifetime,  # turns or 'permanent' or 'per_trigger'
+            "params": params,
+            "stack_count": 1
+        }
+        
+        self.stateful_effects.append(stateful_effect)
+        
+        # Special handling for counters
+        if effect_type == 'counter':
+            counter_id = params.get('counter_id', effect_id)
+            if counter_id not in self.counters:
+                self.counters[counter_id] = {
+                    "count": params.get('initial_count', 0),
+                    "max_count": params.get('max_count', 99),
+                    "increment_per_trigger": params.get('increment', 1),
+                    "consume_per_use": params.get('consume', 1)
+                }
+    
+    def get_counters(self, owner=None):
+        """Get current counter states, optionally filtered by owner."""
+        if owner is None:
+            return self.counters
+        
+        # Filter by owner if specified
+        filtered_counters = {}
+        for effect in self.stateful_effects:
+            if effect['type'] == 'counter' and effect['owner'] == owner:
+                counter_id = effect['params'].get('counter_id', effect['id'])
+                if counter_id in self.counters:
+                    filtered_counters[counter_id] = self.counters[counter_id]
+        
+        return filtered_counters
+    
+    def increment_counter(self, counter_id, amount=1):
+        """Increment a counter by specified amount."""
+        if counter_id in self.counters:
+            counter = self.counters[counter_id]
+            counter['count'] = min(
+                counter['count'] + amount,
+                counter['max_count']
+            )
+    
+    def consume_counter(self, counter_id, amount=1):
+        """Consume from a counter and return if successful."""
+        if counter_id in self.counters:
+            counter = self.counters[counter_id]
+            if counter['count'] >= amount:
+                counter['count'] -= amount
+                return True
+        return False
+    
+    def process_stateful_effects_end_turn(self):
+        """Process stateful effects at end of turn."""
+        for effect in self.stateful_effects[:]:  # Copy to avoid modification during iteration
+            if effect['type'] == 'per_turn':
+                self._apply_per_turn_effect(effect)
+            
+            # Decrement lifetime
+            if isinstance(effect['lifetime'], int) and effect['lifetime'] > 0:
+                effect['lifetime'] -= 1
+                if effect['lifetime'] <= 0:
+                    self.stateful_effects.remove(effect)
+    
+    def _apply_per_turn_effect(self, effect):
+        """Apply a per-turn effect."""
+        params = effect.get('params', {})
+        effect_type = params.get('effect_type', 'unknown')
+        
+        if effect_type == 'np_gain':
+            if hasattr(self, 'servant') and self.servant:
+                self.servant.set_npgauge(params.get('value', 0))
+        elif effect_type == 'damage':
+            # Apply per-turn damage (not implemented in base game)
+            pass
+        elif effect_type == 'heal':
+            # Apply per-turn healing (not implemented in base game)
+            pass
 
