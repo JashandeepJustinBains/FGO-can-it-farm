@@ -197,9 +197,32 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Accept either SERVANTS_READONLY_URI (old name) or MONGO_URI_READ (env used in .env)
+    # Prefer environment variables. Accept either SERVANTS_READONLY_URI or MONGO_URI_READ.
     uri = os.environ.get('SERVANTS_READONLY_URI') or os.environ.get('MONGO_URI_READ')
+
+    # Fallback: if not present in env, try reading a .env file in repo root for MONGO_URI_READ
     if not uri:
-        print("ERROR: please set SERVANTS_READONLY_URI env var and re-run.", file=sys.stderr)
+        env_path = os.path.join(os.getcwd(), '.env')
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            continue
+                        if '=' not in line:
+                            continue
+                        k, v = line.split('=', 1)
+                        k = k.strip()
+                        v = v.strip().strip('"')
+                        if k == 'MONGO_URI_READ' or k == 'SERVANTS_READONLY_URI':
+                            uri = v
+                            break
+            except Exception:
+                pass
+
+    if not uri:
+        print("ERROR: please set SERVANTS_READONLY_URI or MONGO_URI_READ environment variable (or add MONGO_URI_READ to .env) and re-run.", file=sys.stderr)
         sys.exit(2)
     try:
         run_discovery(uri, limit=args.limit, verbose=args.verbose)
