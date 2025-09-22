@@ -6,6 +6,8 @@
 output.txt
 test.txt
 .env
-__pycache__
+__pycache__/
+*.pyc
+*.pyo
 .vscode
 env
