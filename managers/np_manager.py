@@ -84,9 +84,6 @@ class npManager:
                     self.sm.apply_effect(np_oc_1_turn, s)
             if servant.id == 413:
                 self.gm.transform_aoko(aoko_buffs=servant.buffs.buffs, aoko_cooldowns=servant.skills.cooldowns)
-            if servant.id == 4132: # remove upto 10 magic bullets per NP
-                for i in range(10):
-                    servant.buffs.remove_buff({'buff': 'Magic Bullet', 'functvals': [], 'value': 9999, 'tvals': [], 'turns': -1})
 
             # If the NP had side-effects that mark the caster for death (self-sacrifice)
             # handle removal immediately so the effect is visible to the rest of the command flow.
@@ -310,16 +307,22 @@ class npManager:
 
             np_per_hit = (np_gain * card_np_value * (1 + card_eff_mod) * specific_enemy_modifier * overkill_bonus)
 
-            # Handle triggered buffs that fire on buster hits similarly to apply_np_damage
+            # Trigger handling: delegate to SkillManager.run_triggered_buff which
+            # understands the preserved svals/count and a registry of trigger
+            # handlers. This avoids hardcoding behaviors here and centralizes
+            # trigger semantics in SkillManager.
             try:
                 for buff in list(servant.buffs.buffs):
-                    svals = buff.get('svals', {})
-                    triggered_pos = svals.get('TriggeredFuncPosition') or buff.get('TriggeredFuncPosition')
-                    if triggered_pos and card_type == 'buster':
-                        value = buff.get('value', 0)
-                        count = buff.get('count', svals.get('Count'))
-                        if value:
-                            servant.set_npgauge(value / 100)
+                    # let SkillManager decide if the buff should run for this card
+                    ran = False
+                    try:
+                        ran = self.sm.run_triggered_buff(buff=buff, source_servant=servant, target=target, card_type=card_type)
+                    except Exception:
+                        ran = False
+                    # If the triggered handler ran and the buff has a finite count,
+                    # decrement and drop if depleted. Handlers may also handle this.
+                    if ran:
+                        count = buff.get('count') or (buff.get('svals') or {}).get('Count')
                         if isinstance(count, int):
                             new_count = count - 1
                             buff['count'] = new_count

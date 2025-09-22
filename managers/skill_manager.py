@@ -85,6 +85,12 @@ class SkillManager:
     def _determine_trigger_type(self, state):
         svals = state.get('svals', {}) or {}
         tvals = state.get('tvals', []) or []
+        name = (state.get('buff_name') or '').lower()
+
+        # Magic-bullet style counters may have an explicit count or be named
+        # as a stored counter; check this first before generic Count checks.
+        if 'magic bullet' in name or 'bullet' in name or 'counter' in name:
+            return 'counter'
 
         # If the buff contains a TriggeredFuncPosition or a Count it is often
         # a chained/triggered buff that fires later (commonly on-hit for NP
@@ -97,12 +103,6 @@ class SkillManager:
         # an effect that lasts for N turns and may have an end-of-turn hook.
         if state.get('turns'):
             return 'end-turn'
-
-        # Magic-bullet style counters may have an explicit count or be named
-        # as a stored counter; use 'counter' for those.
-        name = (state.get('buff_name') or '').lower()
-        if 'magic bullet' in name or 'bullet' in name or 'counter' in name:
-            return 'counter'
 
         # Default to 'immediate' meaning the effect is applied at skill use time
         return 'immediate'

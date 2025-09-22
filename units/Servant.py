@@ -251,10 +251,22 @@ class Servant:
         buff = state['buff_name']
         value = state['value']
         functvals = state['functvals']
-        tvals = [tval['id'] for tval in state.get('tvals', [])]
+        tvals = [tval['id'] for tval in state.get('tvals', [])] if state.get('tvals') else []
         turns = state['turns']
-
-        self.buffs.add_buff({'buff': buff, 'functvals': functvals, 'value': value, 'tvals': tvals, 'turns': turns})
+        
+        # Preserve metadata for trigger handling
+        buff_entry = {
+            'buff': buff, 
+            'functvals': functvals, 
+            'value': value, 
+            'tvals': tvals, 
+            'turns': turns,
+            'svals': state.get('svals', {}),
+            'count': state.get('count'),
+            'trigger_type': state.get('trigger_type')
+        }
+        
+        self.buffs.add_buff(buff_entry)
 
     def apply_ce_effects(self, ce_effects):
         for effect in ce_effects:
