@@ -1,0 +1,38 @@
+name: Discover Servants from R2
+
+on:
+  workflow_dispatch:
+    inputs:
+      r2_root:
+        description: 'Public R2 root URL (must include trailing / or will be normalized)'
+        required: true
+        default: 'https://pub-8d0beb1d35c94104b42407e76d04e44b.r2.dev/'
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run discovery
+        id: run
+        run: |
+          python tools/discover_from_r2.py --r2-root "${{ github.event.inputs.r2_root }}" --out discovery_report.json --outdir downloaded_servants
+          cat discovery_report.json
+
+      - name: Upload discovery artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: discovery-report
+          path: discovery_report.json
