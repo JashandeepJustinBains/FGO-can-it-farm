@@ -126,6 +126,7 @@ class Servant:
         self.traits = [trait['id'] for trait in self.data.get('traits', [])]
         self.cards = self.data.get('cards', [])
         self.atk_growth = self.data.get('atkGrowth', [])
+        self.fields = []  # Track current field conditions
         
         # Example integration for ascension data selection:
         # ascension_data = select_ascension_data(self.data, ascension)
@@ -185,6 +186,76 @@ class Servant:
         turns = state['turns']
 
         self.buffs.add_buff({'buff': buff, 'functvals': functvals, 'value': value, 'tvals': tvals, 'turns': turns})
+    
+    # Enhanced effect interpretation helpers
+    def get_all_normalized_effects(self):
+        """Get all normalized effects from skills, NP, and passives."""
+        all_effects = []
+        
+        # Skill effects
+        for slot_num in [1, 2, 3]:
+            try:
+                skill = self.skills.get_skill_by_num(slot_num)
+                for func in skill.get('functions', []):
+                    if isinstance(func, dict) and 'source' in func:
+                        all_effects.append(func)
+            except (IndexError, KeyError):
+                continue
+        
+        # NP effects
+        try:
+            np_effects = self.nps.get_np_values(self.np_level, self.stats.get_oc_level())
+            for effect in np_effects:
+                if isinstance(effect, dict) and 'source' in effect:
+                    all_effects.append(effect)
+        except (AttributeError, KeyError):
+            pass
+        
+        # Passive effects
+        for passive in self.passives:
+            for func in passive.get('functions', []):
+                if isinstance(func, dict) and 'source' in func:
+                    all_effects.append(func)
+        
+        return all_effects
+    
+    def get_effects_by_type(self, func_type_pattern):
+        """Get all effects matching a funcType pattern."""
+        matching_effects = []
+        all_effects = self.get_all_normalized_effects()
+        
+        for effect in all_effects:
+            func_type = effect.get('funcType', '').lower()
+            if func_type_pattern.lower() in func_type:
+                matching_effects.append(effect)
+        
+        return matching_effects
+    
+    def get_damage_effects(self):
+        """Get all damage-related effects."""
+        return self.get_effects_by_type('damage')
+    
+    def get_buff_effects(self):
+        """Get all buff-related effects."""
+        buff_patterns = ['up', 'buff', 'boost']
+        all_buffs = []
+        
+        for pattern in buff_patterns:
+            all_buffs.extend(self.get_effects_by_type(pattern))
+        
+        return all_buffs
+    
+    def get_trait_effects(self):
+        """Get all trait manipulation effects."""
+        return self.get_effects_by_type('trait')
+    
+    def get_counter_effects(self):
+        """Get all counter-related effects."""
+        return self.get_effects_by_type('counter')
+    
+    def interpret_effect_for_runtime(self, effect, target=None):
+        """Interpret a normalized effect for runtime use."""
+        return self.stats.resolve_generic_effect(effect, target)
 
 def select_character(character_id):
     servant = db.servants.find_one({'collectionNo': character_id})
