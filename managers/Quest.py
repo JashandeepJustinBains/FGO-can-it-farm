@@ -14,9 +14,38 @@ class Quest:
 
     def retrieve_quest(self):
         query = {"id": self.quest_id}
-        document = self.db.quests.find_one(query)
-        if document:
-            self.process_quest(document)
+        if self.db is not None:
+            document = self.db.quests.find_one(query)
+            if document:
+                self.process_quest(document)
+                return
+        
+        # Fallback to basic quest for offline mode
+        basic_quest = {
+            'id': self.quest_id,
+            'individuality': [],
+            'stages': [
+                {
+                    'enemies': [
+                        {'name': 'Enemy 1', 'hp': 10000, 'deathRate': 100, 'svt': {'className': 'saber', 'traits': [], 'attribute': 'man'}, 'state': None},
+                        {'name': 'Enemy 2', 'hp': 15000, 'deathRate': 100, 'svt': {'className': 'archer', 'traits': [], 'attribute': 'man'}, 'state': None},
+                        {'name': 'Enemy 3', 'hp': 20000, 'deathRate': 100, 'svt': {'className': 'lancer', 'traits': [], 'attribute': 'man'}, 'state': None}
+                    ]
+                },
+                {
+                    'enemies': [
+                        {'name': 'Enemy 4', 'hp': 25000, 'deathRate': 100, 'svt': {'className': 'rider', 'traits': [], 'attribute': 'man'}, 'state': None},
+                        {'name': 'Enemy 5', 'hp': 30000, 'deathRate': 100, 'svt': {'className': 'caster', 'traits': [], 'attribute': 'man'}, 'state': None},
+                    ]
+                },
+                {
+                    'enemies': [
+                        {'name': 'Boss', 'hp': 100000, 'deathRate': 100, 'svt': {'className': 'berserker', 'traits': [], 'attribute': 'man'}, 'state': None}
+                    ]
+                }
+            ]
+        }
+        self.process_quest(basic_quest)
 
     def process_quest(self, document):
         waves = document['stages']

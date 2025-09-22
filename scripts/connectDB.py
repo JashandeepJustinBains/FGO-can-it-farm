@@ -11,14 +11,19 @@ load_dotenv()
 
 # MongoDB connection
 mongo_uri = os.getenv('MONGO_URI_READ')
-if not mongo_uri:
-    raise ValueError("No MONGO_URI_READ environment variable set")
-
-client = MongoClient(mongo_uri)
-db = client['FGOCanItFarmDatabase']
-servants_collection = db['servants']
-quests_collection = db['quests']
-mysticcode_collection = db['mysticcodes']
+if mongo_uri:
+    client = MongoClient(mongo_uri)
+    db = client['FGOCanItFarmDatabase']
+    servants_collection = db['servants']
+    quests_collection = db['quests']
+    mysticcode_collection = db['mysticcodes']
+else:
+    # Offline mode - collections will be None
+    client = None
+    db = None
+    servants_collection = None
+    quests_collection = None
+    mysticcode_collection = None
 
 # Set the encoding to UTF-8
 sys.stdout.reconfigure(encoding='utf-8')

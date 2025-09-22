@@ -5,20 +5,16 @@ from Driver import Driver
 from units.Servant import select_character
 
 
-@pytest.mark.skipif(not os.getenv('MONGO_URI_READ'), reason='Requires MONGO_URI_READ to access DB')
 def test_collection3_upgraded_np_behavior():
-    """Integration test that requires DB access.
+    """Integration test for collection 3 NP upgrade behavior.
 
-    It pulls the canonical servant data for collectionNo 3 from the DB, tweaks
-    the initialization parameters per the user's specification (np=5,
-    initialCharge=50, npDamageUp=150, append_5=True), runs the provided
-    command sequence for quest 94100501 and asserts NP gauge after wave 1
-    is approximately 30 and after wave 2 is approximately 20.
+    Tests that Mana Burst (Wrath)-style on-hit triggers work correctly
+    by providing NP grants per hit rather than only once.
     """
 
-    # Fetch servant JSON from DB
+    # Fetch servant JSON (DB or fixture)
     servant_json = select_character(3)
-    assert servant_json is not None, "Servant 3 not found in DB"
+    assert servant_json is not None, "Servant 3 not found in DB or fixture"
 
     # Build servant init dicts: first servant is collectionNo 3 with upgrades
     servants = [

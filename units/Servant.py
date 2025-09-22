@@ -278,5 +278,21 @@ class Servant:
 
 
 def select_character(character_id):
-    servant = db.servants.find_one({'collectionNo': character_id})
-    return servant  # Ensure character_id is an integer
+    # Try database first if available
+    if db is not None:
+        servant = db.servants.find_one({'collectionNo': character_id})
+        if servant:
+            return servant
+    
+    # Fallback to local fixture files
+    import json
+    fixture_path = f"example_servant_data/{character_id}-*.json"
+    import glob
+    
+    # Find matching fixture file
+    fixtures = glob.glob(fixture_path)
+    if fixtures:
+        with open(fixtures[0], 'r') as f:
+            return json.load(f)
+    
+    return None

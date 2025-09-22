@@ -8,13 +8,21 @@ class Skills:
         self.melusine_skill = False
         self.append_5 = append_5
 
+    def _extract_number(self, value):
+        """Extract number from MongoDB-style format or return as-is"""
+        if isinstance(value, dict) and '$numberInt' in value:
+            return int(value['$numberInt'])
+        elif isinstance(value, dict) and '$numberDouble' in value:
+            return float(value['$numberDouble'])
+        return value
+
     def parse_skills(self, skills_data):
         skills = {1:[], 2:[], 3:[]}
         for skill in skills_data:
             parsed_skill = {
-                'id': skill.get('id'),
+                'id': self._extract_number(skill.get('id')),
                 'name': skill.get('name'),
-                'cooldown': skill.get('coolDown')[9] if len(skill.get('coolDown', [])) > 9 else 0,
+                'cooldown': self._extract_number(skill.get('coolDown')[9] if len(skill.get('coolDown', [])) > 9 else 0),
                 'functions': []
             }
             for function in skill.get('functions', []):
@@ -36,13 +44,17 @@ class Skills:
                     }
                     parsed_function['buffs'].append(parsed_buff)
                 parsed_skill['functions'].append(parsed_function)
-            skills[int(skill['num'])].append(parsed_skill)
+            skill_num = self._extract_number(skill['num'])
+            skills[skill_num].append(parsed_skill)
         return skills
 
     def initialize_max_cooldowns(self):
         max_cooldowns = {}
-        for i in range(1, len(self.skills) + 1):
-            max_cooldowns[i] = self.skills[i][-1]['cooldown']
+        for i in range(1, 4):  # Skills are always 1, 2, 3
+            if self.skills[i]:  # Only if skill exists
+                max_cooldowns[i] = self.skills[i][-1]['cooldown']
+            else:
+                max_cooldowns[i] = 0  # Default cooldown for empty skills
         return max_cooldowns
 
     def get_skill_by_num(self, num):
