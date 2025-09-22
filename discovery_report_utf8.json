@@ -1,0 +1,11 @@
+{
+  "found_dbs": [
+    "FGOCanItFarmDatabase"
+  ]
+}
+{
+  "db": "FGOCanItFarmDatabase",
+  "servants_count": 452
+}
+{"warning": "OperationFailure during iteration; retrying without no_cursor_timeout", "error": "noTimeout cursors are disallowed in this atlas tier, full error: {'ok': 0, 'errmsg': 'noTimeout cursors are disallowed in this atlas tier', 'code': 8000, 'codeName': 'AtlasError'}"}
+{"error": "noTimeout cursors are disallowed in this atlas tier, full error: {'ok': 0, 'errmsg': 'noTimeout cursors are disallowed in this atlas tier', 'code': 8000, 'codeName': 'AtlasError'}"}
