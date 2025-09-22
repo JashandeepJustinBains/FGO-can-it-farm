@@ -20,6 +20,8 @@ import sys
 from collections import defaultdict, Counter
 from pymongo import MongoClient
 from bson import json_util
+import argparse
+import time
 
 
 def find_servants_collections(client):
@@ -95,7 +97,7 @@ def analyze_doc(doc, stats, sample_by_key, sample_limit=3):
                     stats["tvals_examples"].append(func.get("tvals"))
 
 
-def run_discovery(uri):
+def run_discovery(uri, limit=None, verbose=False):
     client = MongoClient(uri, serverSelectionTimeoutMS=15000)
     dbs_with_servants = find_servants_collections(client)
     report = {
@@ -122,20 +124,52 @@ def run_discovery(uri):
         print(json.dumps({"error": "no db with 'servants' collection found"}, indent=2))
         return
 
+    if verbose:
+        print(json.dumps({"found_dbs": dbs_with_servants}, indent=2))
+
     for dbname in dbs_with_servants:
         coll = client[dbname]["servants"]
+        try:
+            total_in_coll = coll.count_documents({})
+        except Exception as e:
+            total_in_coll = None
+        if verbose:
+            print(json.dumps({"db": dbname, "servants_count": total_in_coll}, indent=2, default=json_util.default))
+
         cursor = coll.find({}, no_cursor_timeout=True).batch_size(200)
         count = 0
+        first_ids = []
+        start = time.time()
         try:
             for doc in cursor:
                 count += 1
-                analyze_doc(doc, overall_stats, sample_by_key)
-                if count % 1000 == 0:
+                # record first few ids for debugging
+                if len(first_ids) < 50:
+                    try:
+                        first_ids.append(str(doc.get('_id')))
+                    except Exception:
+                        pass
+                try:
+                    analyze_doc(doc, overall_stats, sample_by_key)
+                except Exception as e:
+                    # keep scanning but record error
+                    overall_stats.setdefault('doc_errors', []).append({'db': dbname, 'count': count, 'error': str(e)})
+                if count % 1000 == 0 and verbose:
                     print(json.dumps({"progress": f"processed {count} docs in {dbname}"}))
-            report["per_db"][dbname] = {"docs_processed": count}
+                if limit and report["total_docs_processed"] + count >= limit:
+                    # reached requested limit across DBs
+                    break
+            elapsed = time.time() - start
+            report["per_db"][dbname] = {"docs_processed": count, "first_ids_sample": first_ids, "scan_time_seconds": elapsed}
             report["total_docs_processed"] += count
         finally:
-            cursor.close()
+            try:
+                cursor.close()
+            except Exception:
+                pass
+        # if global limit reached, stop scanning further DBs
+        if limit and report["total_docs_processed"] >= limit:
+            break
 
     # finalize sets -> lists for JSON
     finalized = {
@@ -157,12 +191,18 @@ def run_discovery(uri):
 
 
 if __name__ == "__main__":
-    uri = os.environ.get('SERVANTS_READONLY_URI')
+    parser = argparse.ArgumentParser(description='Discover servants collection shapes')
+    parser.add_argument('--limit', type=int, default=None, help='Stop after processing this many documents total (for debugging)')
+    parser.add_argument('--verbose', action='store_true', help='Enable verbose progress output')
+    args = parser.parse_args()
+
+    # Accept either SERVANTS_READONLY_URI (old name) or MONGO_URI_READ (env used in .env)
+    uri = os.environ.get('SERVANTS_READONLY_URI') or os.environ.get('MONGO_URI_READ')
     if not uri:
         print("ERROR: please set SERVANTS_READONLY_URI env var and re-run.", file=sys.stderr)
         sys.exit(2)
     try:
-        run_discovery(uri)
+        run_discovery(uri, limit=args.limit, verbose=args.verbose)
     except Exception as e:
         print(json.dumps({"error": str(e)}))
         raise

@@ -19,8 +19,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install pymongo
 
-      - name: Run discovery catalog
+      - name: Run discovery catalog (verbose)
         env:
-          SERVANTS_READONLY_URI: ${{ secrets.SERVANTS_READONLY_URI }}
+          MONGO_URI_READ: ${{ secrets.MONGO_URI_READ }}
         run: |
-          python discovery_catalog.py
+          python discovery_catalog.py --verbose > discovery_report.json
+
+      - name: Upload discovery report
+        uses: actions/upload-artifact@v4
+        with:
+          name: discovery-report
+          path: discovery_report.json
