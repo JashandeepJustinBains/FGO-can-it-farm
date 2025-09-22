@@ -19,6 +19,7 @@ import json
 import sys
 from collections import defaultdict, Counter
 from pymongo import MongoClient
+from pymongo.errors import OperationFailure
 from bson import json_util
 import argparse
 import time
@@ -136,37 +137,82 @@ def run_discovery(uri, limit=None, verbose=False):
         if verbose:
             print(json.dumps({"db": dbname, "servants_count": total_in_coll}, indent=2, default=json_util.default))
 
-        cursor = coll.find({}, no_cursor_timeout=True).batch_size(200)
-        count = 0
-        first_ids = []
-        start = time.time()
-        try:
-            for doc in cursor:
-                count += 1
-                # record first few ids for debugging
-                if len(first_ids) < 50:
+        # Try to use a no-timeout cursor for long scans; some Atlas tiers disallow this
+        # (OperationFailure: noTimeout cursors are disallowed). If that occurs, retry
+        # without the flag so discovery can continue on restricted tiers.
+            count = 0
+            first_ids = []
+            start = time.time()
+            last_id = None
+            cursor_filter = {}
+            while True:
+                try:
+                    # create cursor; prefer no_cursor_timeout for long scans but allow fallback
                     try:
-                        first_ids.append(str(doc.get('_id')))
+                        cursor = coll.find(cursor_filter, no_cursor_timeout=True).batch_size(200)
+                    except Exception:
+                        # fall back to non-noCursorTimeout cursor
+                        cursor = coll.find(cursor_filter).batch_size(200)
+
+                    for doc in cursor:
+                        count += 1
+                        last_id = doc.get('_id')
+                        # record first few ids for debugging
+                        if len(first_ids) < 50:
+                            try:
+                                first_ids.append(str(last_id))
+                            except Exception:
+                                pass
+                        try:
+                            analyze_doc(doc, overall_stats, sample_by_key)
+                        except Exception as e:
+                            overall_stats.setdefault('doc_errors', []).append({'db': dbname, 'count': count, 'error': str(e)})
+                        if count % 1000 == 0 and verbose:
+                            print(json.dumps({"progress": f"processed {count} docs in {dbname}"}))
+                        if limit and report["total_docs_processed"] + count >= limit:
+                            break
+
+                    try:
+                        cursor.close()
                     except Exception:
                         pass
-                try:
-                    analyze_doc(doc, overall_stats, sample_by_key)
-                except Exception as e:
-                    # keep scanning but record error
-                    overall_stats.setdefault('doc_errors', []).append({'db': dbname, 'count': count, 'error': str(e)})
-                if count % 1000 == 0 and verbose:
-                    print(json.dumps({"progress": f"processed {count} docs in {dbname}"}))
-                if limit and report["total_docs_processed"] + count >= limit:
-                    # reached requested limit across DBs
-                    break
-            elapsed = time.time() - start
-            report["per_db"][dbname] = {"docs_processed": count, "first_ids_sample": first_ids, "scan_time_seconds": elapsed}
-            report["total_docs_processed"] += count
-        finally:
-            try:
-                cursor.close()
-            except Exception:
-                pass
+
+                    # finished scanning this cursor slice without fatal cursor errors
+                    elapsed = time.time() - start
+                    report["per_db"][dbname] = {"docs_processed": count, "first_ids_sample": first_ids, "scan_time_seconds": elapsed}
+                    report["total_docs_processed"] += count
+
+                    # if limit reached or no more docs (no last_id), break
+                    if limit and report["total_docs_processed"] >= limit:
+                        break
+                    # determine whether there may be more docs: if last_id is None or count==0 we are done
+                    if last_id is None:
+                        break
+
+                    # prepare to resume after last_id
+                    cursor_filter = {'_id': {'$gt': last_id}}
+                    # check whether there are any remaining docs; if none, break
+                    remaining = coll.count_documents(cursor_filter)
+                    if not remaining:
+                        break
+                    # otherwise, loop to open a new cursor starting after last_id
+                    if verbose:
+                        print(json.dumps({"resume_after_id": str(last_id), "remaining": remaining}))
+
+                except OperationFailure as e:
+                    # handle Atlas-specific noTimeout cursor rejections that may occur during iteration
+                    if 'noTimeout cursors are disallowed' in str(e):
+                        if verbose:
+                            print(json.dumps({"warning": "OperationFailure during iteration; retrying without no_cursor_timeout", "error": str(e)}))
+                        # retry by setting filter to start after last_id and continue loop
+                        if last_id is None:
+                            # if we have no progress, re-raise
+                            raise
+                        cursor_filter = {'_id': {'$gt': last_id}}
+                        continue
+                    else:
+                        raise
+        # (cursor iteration handled above in a resume-capable loop)
         # if global limit reached, stop scanning further DBs
         if limit and report["total_docs_processed"] >= limit:
             break
