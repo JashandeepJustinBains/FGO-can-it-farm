@@ -1,12 +1,7 @@
 name: Discover Servants from R2
 
 on:
-  workflow_dispatch:
-    inputs:
-      r2_root:
-        description: 'Public R2 root URL (must include trailing / or will be normalized)'
-        required: true
-        default: 'https://pub-8d0beb1d35c94104b42407e76d04e44b.r2.dev/'
+  workflow_dispatch: {}
 
 jobs:
   discover:
@@ -27,8 +22,14 @@ jobs:
 
       - name: Run discovery
         id: run
+        env:
+          R2_ROOT_URL: ${{ secrets.R2_ROOT_URL }}
         run: |
-          python tools/discover_from_r2.py --r2-root "${{ github.event.inputs.r2_root }}" --out discovery_report.json --outdir downloaded_servants
+          if [ -z "$R2_ROOT_URL" ]; then
+            echo "ERROR: R2_ROOT_URL secret is not set" >&2
+            exit 2
+          fi
+          python tools/discover_from_r2.py --r2-root "$R2_ROOT_URL" --out discovery_report.json --outdir downloaded_servants
           cat discovery_report.json
 
       - name: Upload discovery artifact
