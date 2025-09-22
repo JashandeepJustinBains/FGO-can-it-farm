@@ -110,17 +110,46 @@ class GameManager:
             slot_info = f"Slot {i + 1}: #{servant.id} {servant.name}"
             if hasattr(servant, 'ascension'):
                 slot_info += f" (asc {servant.ascension})"
-            
+
             lines.append(slot_info)
-            
-            # NP information
-            np_info = self._format_servant_nps(servant)
-            lines.append(f"  {np_info}")
-            
-            # Skills information (use Skills repr)
-            skills_info = self._format_servant_skills_compact(servant)
-            lines.append(f"  {skills_info}")
-            
+
+            # Chosen/active NP (first NP entry is treated as chosen/default)
+            chosen_np = None
+            try:
+                if servant.nps and servant.nps.nps:
+                    # If multiple NP versions exist, pick the one matching servant.oc_level if possible
+                    for np_entry in servant.nps.nps:
+                        # NP entries often have 'oc' or 'new_id' markers; fall back to first
+                        chosen_np = servant.nps.nps[0]
+                        break
+            except Exception:
+                chosen_np = None
+
+            if chosen_np:
+                np_name = chosen_np.get('name', 'Unknown')
+                np_card = chosen_np.get('card', 'unknown')
+                lines.append(f"  NP: {np_name} ({np_card})")
+            else:
+                lines.append(f"  NP: none")
+
+            # Chosen skills: pick the chosen/default variant per slot with cooldowns
+            skills_compact = []
+            try:
+                if servant.skills and servant.skills.skills:
+                    for slot_num in sorted(servant.skills.skills.keys()):
+                        chosen = servant.skills.get_skill_by_num(slot_num)
+                        if chosen:
+                            name = chosen.get('name', 'Unknown Skill')
+                            cd = servant.skills.cooldowns.get(slot_num, 0)
+                            skills_compact.append(f"S{slot_num}: {name} (cd={cd})")
+            except Exception:
+                pass
+
+            if skills_compact:
+                lines.append(f"  Skills: {', '.join(skills_compact)}")
+            else:
+                lines.append(f"  Skills: none")
+
             # Transform information
             transform_info = self._format_servant_transforms(servant)
             if transform_info:

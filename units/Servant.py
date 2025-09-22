@@ -156,15 +156,14 @@ class Servant:
         self.ascension = ascension; # currently working on High Prio TODOs
         self.atk_growth = self.data.get('atkGrowth', [])
         
-        # Example integration with ascension-aware data selection (commented for minimal changes):
-        # ascension_data = select_ascension_data(self.data, ascension)
-        # self.skills = Skills(ascension_data.get('skills', self.data.get('skills', [])), append_5=append_5)
-        # self.nps = NP(ascension_data.get('noblePhantasms', self.data.get('noblePhantasms', [])))
-        
-        self.skills = Skills(self.data.get('skills', []), append_5=append_5)
+        # Use ascension-aware data selection so Servant picks ascension-specific
+        # skills and noblePhantasms when present in the JSON. Falls back to
+        # legacy fields if ascension-specific data is not available.
+        ascension_data = select_ascension_data(self.data, ascension)
+        self.skills = Skills(ascension_data.get('skills', self.data.get('skills', [])), append_5=append_5)
         self.np_level = np
         self.oc_level = 1
-        self.nps = NP(self.data.get('noblePhantasms', []))
+        self.nps = NP(ascension_data.get('noblePhantasms', self.data.get('noblePhantasms', [])))
         self.rarity = self.data.get('rarity')
         self.np_gauge = initialCharge
         self.np_gain_mod = 1
@@ -177,7 +176,10 @@ class Servant:
         self.q_up = quickUp
         self.power_mod = {damageUp}
         self.np_damage_mod = 0
-        self.card_type = self.nps.nps[0]['card'] #if self.nps.nps else None
+        # Use the NP helper's default card type (NP.card) which selects the
+        # appropriate NP version's card. Previously this used the first NP
+        # entry which caused mismatches for upgraded NPs.
+        self.card_type = getattr(self.nps, 'card', None)
         self.class_base_multiplier = 1 if self.id == 426 else base_multipliers[self.class_name]
 
         self.passives = self.buffs.parse_passive(self.data.get('classPassive', []))
@@ -270,6 +272,10 @@ class Servant:
         if 'data' in state and hasattr(state['data'], 'collection'):  # crude check for pymongo object
             state['data'] = None
         return state
+
+    def get_lvl(self):
+        return self.lvl
+
 
 def select_character(character_id):
     servant = db.servants.find_one({'collectionNo': character_id})
