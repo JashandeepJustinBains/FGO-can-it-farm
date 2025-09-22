@@ -1,0 +1,219 @@
+{
+  "id": 99999,
+  "name": "Test Noble Phantasm",
+  "card": "buster",
+  "functions": [
+    {
+      "funcId": 338,
+      "funcType": "addStateShort",
+      "funcTargetType": "self",
+      "funcTargetTeam": "player",
+      "funcPopupText": "NP獲得アップ",
+      "funcPopupIcon": "https://static.atlasacademy.io/JP/BuffIcons/bufficon_303.png",
+      "functvals": [],
+      "overWriteTvalsList": [],
+      "funcquestTvals": [],
+      "script": {},
+      "funcGroup": [],
+      "buffs": [
+        {
+          "id": 140,
+          "name": "NP Gain Up",
+          "originalName": "NP獲得アップ",
+          "detail": "NP獲得量をアップ",
+          "icon": "https://static.atlasacademy.io/JP/BuffIcons/bufficon_303.png",
+          "type": "upDropnp",
+          "buffGroup": 0,
+          "script": {},
+          "originalScript": {},
+          "vals": [
+            {
+              "id": 3004,
+              "name": "buffPositiveEffect"
+            },
+            {
+              "id": 3084,
+              "name": "unknown"
+            }
+          ],
+          "tvals": [],
+          "ckSelfIndv": [],
+          "ckOpIndv": [],
+          "maxRate": 5000
+        }
+      ],
+      "svals": [
+        {
+          "Rate": 1000,
+          "Turn": 1,
+          "Count": -1,
+          "Value": 2000
+        },
+        {
+          "Rate": 1000,
+          "Turn": 1,
+          "Count": -1,
+          "Value": 2200
+        },
+        {
+          "Rate": 1000,
+          "Turn": 1,
+          "Count": -1,
+          "Value": 2400
+        },
+        {
+          "Rate": 1000,
+          "Turn": 1,
+          "Count": -1,
+          "Value": 2600
+        },
+        {
+          "Rate": 1000,
+          "Turn": 1,
+          "Count": -1,
+          "Value": 2800
+        },
+        {
+          "Rate": 1000,
+          "Turn": 1,
+          "Count": -1,
+          "Value": 3000
+        },
+        {
+          "Rate": 1000,
+          "Turn": 1,
+          "Count": -1,
+          "Value": 3200
+        },
+        {
+          "Rate": 1000,
+          "Turn": 1,
+          "Count": -1,
+          "Value": 3400
+        },
+        {
+          "Rate": 1000,
+          "Turn": 1,
+          "Count": -1,
+          "Value": 3600
+        },
+        {
+          "Rate": 1000,
+          "Turn": 1,
+          "Count": -1,
+          "Value": 4000
+        }
+      ]
+    },
+    {
+      "funcId": 181,
+      "funcType": "addState",
+      "funcTargetType": "ptAll",
+      "funcTargetTeam": "playerAndEnemy",
+      "funcPopupText": "防御力アップ",
+      "funcPopupIcon": "https://static.atlasacademy.io/JP/BuffIcons/bufficon_301.png",
+      "functvals": [],
+      "overWriteTvalsList": [],
+      "funcquestTvals": [],
+      "script": {},
+      "funcGroup": [],
+      "buffs": [
+        {
+          "id": 146,
+          "name": "DEF Up",
+          "originalName": "防御力アップ",
+          "detail": "防御力をアップ",
+          "icon": "https://static.atlasacademy.io/JP/BuffIcons/bufficon_301.png",
+          "type": "upDefence",
+          "buffGroup": 0,
+          "script": {},
+          "originalScript": {},
+          "vals": [
+            {
+              "id": 3004,
+              "name": "buffPositiveEffect"
+            },
+            {
+              "id": 3007,
+              "name": "buffIncreaseDefence"
+            },
+            {
+              "id": 3040,
+              "name": "buffDefenceUp"
+            },
+            {
+              "id": 3058,
+              "name": "buffDefUp"
+            }
+          ],
+          "tvals": [],
+          "ckSelfIndv": [],
+          "ckOpIndv": [],
+          "maxRate": 5000
+        }
+      ],
+      "svals": [
+        {
+          "Rate": 1000,
+          "Turn": 3,
+          "Count": -1,
+          "Value": 100
+        },
+        {
+          "Rate": 1000,
+          "Turn": 3,
+          "Count": -1,
+          "Value": 105
+        },
+        {
+          "Rate": 1000,
+          "Turn": 3,
+          "Count": -1,
+          "Value": 110
+        },
+        {
+          "Rate": 1000,
+          "Turn": 3,
+          "Count": -1,
+          "Value": 115
+        },
+        {
+          "Rate": 1000,
+          "Turn": 3,
+          "Count": -1,
+          "Value": 120
+        },
+        {
+          "Rate": 1000,
+          "Turn": 3,
+          "Count": -1,
+          "Value": 125
+        },
+        {
+          "Rate": 1000,
+          "Turn": 3,
+          "Count": -1,
+          "Value": 130
+        },
+        {
+          "Rate": 1000,
+          "Turn": 3,
+          "Count": -1,
+          "Value": 135
+        },
+        {
+          "Rate": 1000,
+          "Turn": 3,
+          "Count": -1,
+          "Value": 140
+        },
+        {
+          "Rate": 1000,
+          "Turn": 3,
+          "Count": -1,
+          "Value": 150
+        }
+      ]
+    }
+  ]
+}

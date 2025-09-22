@@ -1,0 +1,314 @@
+[
+  {
+    "funcId": 181,
+    "funcType": "addState",
+    "funcTargetType": "ptAll",
+    "funcTargetTeam": "playerAndEnemy",
+    "funcPopupText": "防御力アップ",
+    "funcPopupIcon": "https://static.atlasacademy.io/JP/BuffIcons/bufficon_301.png",
+    "functvals": [],
+    "overWriteTvalsList": [],
+    "funcquestTvals": [],
+    "script": {},
+    "funcGroup": [],
+    "buffs": [
+      {
+        "id": 146,
+        "name": "DEF Up",
+        "originalName": "防御力アップ",
+        "detail": "防御力をアップ",
+        "icon": "https://static.atlasacademy.io/JP/BuffIcons/bufficon_301.png",
+        "type": "upDefence",
+        "buffGroup": 0,
+        "script": {},
+        "originalScript": {},
+        "vals": [
+          {
+            "id": 3004,
+            "name": "buffPositiveEffect"
+          },
+          {
+            "id": 3007,
+            "name": "buffIncreaseDefence"
+          },
+          {
+            "id": 3040,
+            "name": "buffDefenceUp"
+          },
+          {
+            "id": 3058,
+            "name": "buffDefUp"
+          }
+        ],
+        "tvals": [],
+        "ckSelfIndv": [],
+        "ckOpIndv": [],
+        "maxRate": 5000
+      }
+    ],
+    "svals": [
+      {
+        "Rate": 1000,
+        "Turn": 3,
+        "Count": -1,
+        "Value": 100
+      },
+      {
+        "Rate": 1000,
+        "Turn": 3,
+        "Count": -1,
+        "Value": 105
+      },
+      {
+        "Rate": 1000,
+        "Turn": 3,
+        "Count": -1,
+        "Value": 110
+      },
+      {
+        "Rate": 1000,
+        "Turn": 3,
+        "Count": -1,
+        "Value": 115
+      },
+      {
+        "Rate": 1000,
+        "Turn": 3,
+        "Count": -1,
+        "Value": 120
+      },
+      {
+        "Rate": 1000,
+        "Turn": 3,
+        "Count": -1,
+        "Value": 125
+      },
+      {
+        "Rate": 1000,
+        "Turn": 3,
+        "Count": -1,
+        "Value": 130
+      },
+      {
+        "Rate": 1000,
+        "Turn": 3,
+        "Count": -1,
+        "Value": 135
+      },
+      {
+        "Rate": 1000,
+        "Turn": 3,
+        "Count": -1,
+        "Value": 140
+      },
+      {
+        "Rate": 1000,
+        "Turn": 3,
+        "Count": -1,
+        "Value": 150
+      }
+    ]
+  },
+  {
+    "funcId": 290,
+    "funcType": "addState",
+    "funcTargetType": "ptOne",
+    "funcTargetTeam": "playerAndEnemy",
+    "funcPopupText": "無敵",
+    "funcPopupIcon": "https://static.atlasacademy.io/JP/BuffIcons/bufficon_311.png",
+    "functvals": [],
+    "overWriteTvalsList": [],
+    "funcquestTvals": [],
+    "script": {},
+    "funcGroup": [],
+    "buffs": [
+      {
+        "id": 155,
+        "name": "Invincible",
+        "originalName": "無敵",
+        "detail": "必中を無視して、攻撃によるダメージを0にする",
+        "icon": "https://static.atlasacademy.io/JP/BuffIcons/bufficon_311.png",
+        "type": "invincible",
+        "buffGroup": 400,
+        "script": {},
+        "originalScript": {},
+        "vals": [
+          {
+            "id": 3004,
+            "name": "buffPositiveEffect"
+          },
+          {
+            "id": 3018,
+            "name": "buffEvadeAndInvincible"
+          },
+          {
+            "id": 3022,
+            "name": "buffInvincible"
+          },
+          {
+            "id": 3007,
+            "name": "buffIncreaseDefence"
+          }
+        ],
+        "tvals": [],
+        "ckSelfIndv": [],
+        "ckOpIndv": [],
+        "maxRate": 0
+      }
+    ],
+    "svals": [
+      {
+        "Rate": 1000,
+        "Turn": 1,
+        "Count": -1
+      },
+      {
+        "Rate": 1000,
+        "Turn": 1,
+        "Count": -1
+      },
+      {
+        "Rate": 1000,
+        "Turn": 1,
+        "Count": -1
+      },
+      {
+        "Rate": 1000,
+        "Turn": 1,
+        "Count": -1
+      },
+      {
+        "Rate": 1000,
+        "Turn": 1,
+        "Count": -1
+      },
+      {
+        "Rate": 1000,
+        "Turn": 1,
+        "Count": -1
+      },
+      {
+        "Rate": 1000,
+        "Turn": 1,
+        "Count": -1
+      },
+      {
+        "Rate": 1000,
+        "Turn": 1,
+        "Count": -1
+      },
+      {
+        "Rate": 1000,
+        "Turn": 1,
+        "Count": -1
+      },
+      {
+        "Rate": 1000,
+        "Turn": 1,
+        "Count": -1
+      }
+    ]
+  },
+  {
+    "funcId": 358,
+    "funcType": "addState",
+    "funcTargetType": "self",
+    "funcTargetTeam": "player",
+    "funcPopupText": "タゲ集中アップ",
+    "funcPopupIcon": "https://static.atlasacademy.io/JP/BuffIcons/bufficon_323.png",
+    "functvals": [],
+    "overWriteTvalsList": [],
+    "funcquestTvals": [],
+    "script": {},
+    "funcGroup": [],
+    "buffs": [
+      {
+        "id": 181,
+        "name": "Target Focused",
+        "originalName": "タゲ集中アップ",
+        "detail": "敵からの狙われやすさをアップ",
+        "icon": "https://static.atlasacademy.io/JP/BuffIcons/bufficon_323.png",
+        "type": "upHate",
+        "buffGroup": 700,
+        "script": {},
+        "originalScript": {},
+        "vals": [
+          {
+            "id": 3004,
+            "name": "buffPositiveEffect"
+          },
+          {
+            "id": 3023,
+            "name": "buffTargetFocus"
+          }
+        ],
+        "tvals": [],
+        "ckSelfIndv": [],
+        "ckOpIndv": [],
+        "maxRate": 50000
+      }
+    ],
+    "svals": [
+      {
+        "Rate": 5000,
+        "Turn": 1,
+        "Count": -1,
+        "Value": 1000
+      },
+      {
+        "Rate": 5000,
+        "Turn": 1,
+        "Count": -1,
+        "Value": 1200
+      },
+      {
+        "Rate": 5000,
+        "Turn": 1,
+        "Count": -1,
+        "Value": 1400
+      },
+      {
+        "Rate": 5000,
+        "Turn": 1,
+        "Count": -1,
+        "Value": 1600
+      },
+      {
+        "Rate": 5000,
+        "Turn": 1,
+        "Count": -1,
+        "Value": 1800
+      },
+      {
+        "Rate": 5000,
+        "Turn": 1,
+        "Count": -1,
+        "Value": 2000
+      },
+      {
+        "Rate": 5000,
+        "Turn": 1,
+        "Count": -1,
+        "Value": 2200
+      },
+      {
+        "Rate": 5000,
+        "Turn": 1,
+        "Count": -1,
+        "Value": 2400
+      },
+      {
+        "Rate": 5000,
+        "Turn": 1,
+        "Count": -1,
+        "Value": 2600
+      },
+      {
+        "Rate": 5000,
+        "Turn": 1,
+        "Count": -1,
+        "Value": 3000
+      }
+    ]
+  }
+]
