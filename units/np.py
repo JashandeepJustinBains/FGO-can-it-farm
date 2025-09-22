@@ -1,3 +1,12 @@
+# Enhanced NP effect parser for FGO Noble Phantasms
+# Provides normalized effect schema with OC/NP level matrix handling
+# for the full diversity of NP effects from FGOCombatSim MongoDB servants collection.
+#
+# Extends the normalized effect schema for NP-specific features:
+# - OC level variations (svals2, svals3, svals4, svals5)
+# - NP level scaling (1-5)
+# - Special NP damage calculation functions
+
 class NP:
     def __init__(self, nps_data):
         self.nps = self.parse_noble_phantasms(nps_data)
@@ -28,9 +37,17 @@ class NP:
         np = self.get_np_by_id(new_id)
         result = []
         for func in np['functions']:
-            # Determine the key dynamically
-            svals_key = f'svals{overcharge_level}' if overcharge_level > 1 else 'svals'
+            # Parse into normalized effect schema
+            normalized_effect = self._parse_np_function_to_effect(
+                func, 
+                np_level=np_level,
+                overcharge_level=overcharge_level,
+                variant_id=np.get('id')
+            )
+            result.append(normalized_effect)
             
+            # Keep legacy format for backward compatibility
+            svals_key = f'svals{overcharge_level}' if overcharge_level > 1 else 'svals'
             func_values = func[svals_key][np_level - 1] if svals_key in func else {}
 
             # Parse buffs with the same value names as parse_skills
@@ -46,17 +63,18 @@ class NP:
                 for buff in func.get('buffs', [])
             ]
             
-            result.append(
-                {
-                    'funcType': func['funcType'],
-                    'funcTargetType': func['funcTargetType'],
-                    'functvals': func.get('functvals', []),
-                    'fieldReq': func.get('fieldReq', []),
-                    'condTarget': func.get('condTarget', []),
-                    'svals': func_values,
-                    'buffs': buffs
-                }
-            )
+            legacy_result = {
+                'funcType': func['funcType'],
+                'funcTargetType': func['funcTargetType'],
+                'functvals': func.get('functvals', []),
+                'fieldReq': func.get('fieldReq', []),
+                'condTarget': func.get('condTarget', []),
+                'svals': func_values,
+                'buffs': buffs
+            }
+            
+            # Add legacy data to normalized effect
+            result[-1]['_legacy'] = legacy_result
         
         return result
 
@@ -147,3 +165,155 @@ class NP:
             lines.append(f"  Default NP: ver {default_np.get('new_id', len(self.nps))}")
         
         return "\n".join(lines)
+        
+    def _parse_np_function_to_effect(self, function, np_level=1, overcharge_level=1, variant_id=None):
+        """Parse an NP function into normalized effect schema with OC/NP level handling."""
+        try:
+            # Extract base parameters
+            func_type = function.get('funcType', 'unknown')
+            target_type = function.get('funcTargetType', 'unknown')
+            
+            # Normalize svals structure - handle all OC variations
+            svals_normalized = self._normalize_np_svals(function)
+            
+            # Extract numeric parameters for current NP/OC level
+            parameters = self._extract_np_parameters(function, svals_normalized, np_level, overcharge_level)
+            
+            # Parse buffs
+            buffs_normalized = []
+            for buff in function.get('buffs', []):
+                buff_normalized = self._normalize_np_buff(buff)
+                buffs_normalized.append(buff_normalized)
+            
+            # Create normalized effect
+            effect = {
+                "source": "np",
+                "slot": None,
+                "variant_id": variant_id,
+                "funcType": func_type,
+                "targetType": target_type,
+                "parameters": parameters,
+                "svals": svals_normalized,
+                "buffs": buffs_normalized,
+                "raw": function
+            }
+            
+            return effect
+            
+        except Exception as e:
+            # Fallback to raw preservation if parsing fails
+            return {
+                "source": "np",
+                "slot": None,
+                "variant_id": variant_id,
+                "funcType": function.get('funcType', 'unknown'),
+                "targetType": function.get('funcTargetType', 'unknown'),
+                "parameters": {},
+                "svals": {"base": [], "oc": {}},
+                "buffs": [],
+                "raw": function,
+                "_parse_error": str(e)
+            }
+    
+    def _normalize_np_svals(self, function):
+        """Normalize NP svals structure with OC level support."""
+        normalized = {"base": [], "oc": {}}
+        
+        # Handle base svals (NP level 1-5)
+        base_svals = function.get('svals', [])
+        if base_svals:
+            normalized["base"] = base_svals
+        
+        # Handle overcharge variations (svals2-svals5 for OC 2-5)
+        for oc_level in range(2, 6):
+            oc_key = f'svals{oc_level}'
+            if oc_key in function:
+                normalized["oc"][oc_level] = function[oc_key]
+        
+        return normalized
+    
+    def _extract_np_parameters(self, function, svals_normalized, np_level, overcharge_level):
+        """Extract numeric parameters for specific NP/OC level."""
+        parameters = {}
+        
+        # Extract common parameters from functvals
+        functvals = function.get('functvals', [])
+        if functvals:
+            parameters['functvals'] = functvals
+        
+        # Get appropriate svals based on OC level
+        if overcharge_level > 1 and overcharge_level in svals_normalized["oc"]:
+            current_svals = svals_normalized["oc"][overcharge_level]
+        else:
+            current_svals = svals_normalized["base"]
+        
+        # Extract from current NP level
+        if current_svals and np_level <= len(current_svals):
+            np_level_svals = current_svals[np_level - 1]
+            if isinstance(np_level_svals, dict):
+                for key, value in np_level_svals.items():
+                    if key in ['Value', 'Value2', 'Turn', 'Correction', 'Target', 'TargetList', 'Count', 'Rate']:
+                        parameters[key.lower()] = value
+        
+        # Add level context
+        parameters['np_level'] = np_level
+        parameters['overcharge_level'] = overcharge_level
+            
+        return parameters
+    
+    def _normalize_np_buff(self, buff):
+        """Normalize NP buff structure."""
+        normalized = {
+            "name": buff.get('name', 'unknown'),
+            "params": {}
+        }
+        
+        # Extract buff parameters
+        tvals = buff.get('tvals', [])
+        if tvals:
+            normalized["params"]["tvals"] = tvals
+        
+        # Extract from buff svals
+        buff_svals = buff.get('svals', [])
+        if buff_svals and len(buff_svals) > 9:
+            max_svals = buff_svals[9]
+            if isinstance(max_svals, dict):
+                for key, value in max_svals.items():
+                    if key in ['Value', 'Turn', 'Count', 'Rate']:
+                        normalized["params"][key.lower()] = value
+        
+        return normalized
+    
+    # NP-specific effect interpretation helpers
+    def get_np_damage_multiplier(self, np_level=1, overcharge_level=1, new_id=None):
+        """Get normalized damage multiplier for NP effects."""
+        np_values = self.get_np_values(np_level, overcharge_level, new_id)
+        damage_multiplier = 0
+        
+        for effect in np_values:
+            func_type = effect.get('funcType', '').lower()
+            if 'damage' in func_type:
+                svals = effect.get('svals', {})
+                if isinstance(svals, dict) and 'Value' in svals:
+                    damage_multiplier = svals['Value'] / 1000
+                elif hasattr(effect, '_legacy') and 'svals' in effect['_legacy']:
+                    legacy_svals = effect['_legacy']['svals']
+                    if isinstance(legacy_svals, dict) and 'Value' in legacy_svals:
+                        damage_multiplier = legacy_svals['Value'] / 1000
+                break
+        
+        return damage_multiplier
+    
+    def get_np_special_damage(self, np_level=1, overcharge_level=1, new_id=None):
+        """Get special damage parameters (individual, sum, etc.)."""
+        np_values = self.get_np_values(np_level, overcharge_level, new_id)
+        special_damage = {}
+        
+        for effect in np_values:
+            func_type = effect.get('funcType', '')
+            if func_type in ['damageNpIndividual', 'damageNpStateIndividualFix', 'damageNpIndividualSum']:
+                parameters = effect.get('parameters', {})
+                special_damage.update(parameters)
+                break
+        
+        return special_damage

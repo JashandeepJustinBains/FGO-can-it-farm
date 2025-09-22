@@ -117,3 +117,104 @@ class Stats:
 
     def get_quick_card_damage_up(self):
         return getattr(self.servant, 'quick_card_damage_up', 0)
+        
+    def resolve_generic_effect(self, effect, target=None):
+        """Interpret a normalized effect for runtime use."""
+        func_type = effect.get('funcType', '').lower()
+        parameters = effect.get('parameters', {})
+        
+        # Damage calculation effects
+        if 'damage' in func_type:
+            return self._resolve_damage_effect(effect, target)
+        
+        # Stat modification effects
+        elif any(pattern in func_type for pattern in ['up', 'buff', 'boost']):
+            return self._resolve_stat_effect(effect)
+        
+        # Trait manipulation effects
+        elif 'trait' in func_type:
+            return self._resolve_trait_effect(effect, target)
+        
+        # Counter effects
+        elif 'counter' in func_type:
+            return self._resolve_counter_effect(effect)
+        
+        # Default: return raw effect data
+        return effect
+    
+    def _resolve_damage_effect(self, effect, target):
+        """Resolve damage-related effect parameters."""
+        parameters = effect.get('parameters', {})
+        damage_info = {
+            'type': 'damage',
+            'base_multiplier': parameters.get('value', 0) / 1000 if parameters.get('value') else 0,
+            'correction': parameters.get('correction', 0) / 1000 if parameters.get('correction') else 0,
+            'target_traits': parameters.get('targetlist', []),
+            'special_target': parameters.get('target', 0)
+        }
+        return damage_info
+    
+    def _resolve_stat_effect(self, effect):
+        """Resolve stat modification effect parameters."""
+        parameters = effect.get('parameters', {})
+        stat_info = {
+            'type': 'stat_modification',
+            'value': parameters.get('value', 0),
+            'duration': parameters.get('turn', 1),
+            'target_type': effect.get('targetType', 'self')
+        }
+        return stat_info
+    
+    def _resolve_trait_effect(self, effect, target):
+        """Resolve trait manipulation effect parameters."""
+        parameters = effect.get('parameters', {})
+        trait_info = {
+            'type': 'trait_manipulation',
+            'trait_ids': parameters.get('tvals', []),
+            'operation': 'add' if 'add' in effect.get('funcType', '').lower() else 'remove',
+            'duration': parameters.get('turn', -1)
+        }
+        return trait_info
+    
+    def _resolve_counter_effect(self, effect):
+        """Resolve counter effect parameters."""
+        parameters = effect.get('parameters', {})
+        counter_info = {
+            'type': 'counter',
+            'counter_id': parameters.get('counter_id', effect.get('variant_id')),
+            'increment': parameters.get('count', 1),
+            'max_count': parameters.get('max_count', 99)
+        }
+        return counter_info
+    
+    def resolve_np_damage_components(self, target, np_level=5, oc_level=3):
+        """Calculate NP damage with all bonuses."""
+        # Get NP damage multiplier
+        np_damage_multiplier = self.servant.nps.get_np_damage_multiplier(np_level, oc_level)
+        
+        # Get special damage parameters
+        special_damage = self.servant.nps.get_np_special_damage(np_level, oc_level)
+        
+        damage_components = {
+            'base_multiplier': np_damage_multiplier,
+            'special_damage': special_damage,
+            'servant_atk': self.get_base_atk(),
+            'atk_mod': self.get_atk_mod(),
+            'card_mod': self._get_card_mod(),
+            'np_damage_mod': self.get_np_damage_mod(),
+            'class_modifier': self.get_class_multiplier(target.class_name) if target else 1.0,
+            'attribute_modifier': self.get_attribute_modifier(target) if target else 1.0
+        }
+        
+        return damage_components
+    
+    def _get_card_mod(self):
+        """Get card type modifier based on NP card type."""
+        card_type = self.servant.card_type
+        if card_type == 'buster':
+            return self.get_b_up()
+        elif card_type == 'arts':
+            return self.get_a_up()
+        elif card_type == 'quick':
+            return self.get_q_up()
+        return 0
