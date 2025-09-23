@@ -14,7 +14,7 @@ logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
 class Servant:
     special_servants = [312, 394, 391, 413, 385, 350, 306, 305]
 
-    def __init__(self, collectionNo, np=1, initialCharge=0, attack=0, atkUp=0, artsUp=0, quickUp=0, busterUp=0, npUp=0, damageUp=0, busterDamageUp=0, quickDamageUp=0, artsDamageUp=0, append_5=False):
+    def __init__(self, collectionNo, np=1, oc=1, ascension=1, initialCharge=0, attack=0, atkUp=0, artsUp=0, quickUp=0, busterUp=0, npUp=0, damageUp=0, busterDamageUp=0, quickDamageUp=0, artsDamageUp=0, append_5=False):
         self.id = collectionNo
         self.data = select_character(collectionNo)
         if self.data is None:
@@ -29,14 +29,15 @@ class Servant:
         self.atk_growth = self.data.get('atkGrowth', [])
         self.skills = Skills(self.data.get('skills', []), append_5=append_5)
         self.np_level = np
-        self.oc_level = 1
+        self.oc_level = oc # TODO reset to 0 after np is used
+        self.ascension = ascension
         self.nps = NP(self.data.get('noblePhantasms', []))
         self.rarity = self.data.get('rarity')
         self.np_gauge = initialCharge
         self.np_gain_mod = 1
         self.buffs = Buffs(self)
         self.stats = Stats(self)
-        self.ce_attack = attack # TODO unused
+        self.ce_attack = attack
         self.atk_mod = atkUp
         self.b_up = busterUp
         self.a_up = artsUp
@@ -120,15 +121,9 @@ class Servant:
 
         self.buffs.add_buff({'buff': buff, 'functvals': functvals, 'value': value, 'tvals': tvals, 'turns': turns})
 
-    def apply_ce_effects(self, ce_effects):
-        for effect in ce_effects:
-            state = {
-                'buff_name': effect.get('name', 'Unknown'),
-                'value': effect.get('value', 0),
-                'turns': -1,  # Infinite duration
-                'functvals': effect.get('functvals', [])
-            }
-            self.apply_buff(state)
+    def change_ascension(self, new_ascension):
+        # TODO similar to aoko exchange character with different ascension and copy over buffs, cooldowns, np gauge
+        return
 
     def __getstate__(self):
         state = self.__dict__.copy()

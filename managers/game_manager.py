@@ -26,6 +26,12 @@ class GameManager:
             #   Servant(**params) for params in self.servant_init_dicts for aoko's params only
             self.saoko = Servant(collectionNo=4132)
 
+    def team_repr(self):
+        repr_strings = []
+        for idx, servant in enumerate(self.servants):
+            repr_strings.append(f"Position {idx + 1}: {servant.name} {servant}")
+        return "\n".join(repr_strings)
+
     def reset_servants(self):
         self.servants = [Servant(**params) for params in self.servant_init_dicts]
 
@@ -40,6 +46,10 @@ class GameManager:
 
     def swap_servants(self, frontline_idx, backline_idx):
         self.servants[frontline_idx], self.servants[backline_idx] = self.servants[backline_idx], self.servants[frontline_idx]
+
+    def change_ascension(self, servant_idx, new_ascension):
+        # TODO similar to aoko exchange character with different ascension and copy over buffs, cooldowns, np gauge
+        return
 
     def transform_aoko(self, aoko_buffs, aoko_cooldowns, aoko_np_gauge=None):
         print("What? \nAoko is transforming!")
