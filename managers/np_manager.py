@@ -5,16 +5,18 @@ logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 # needed to increase consecutivly used NPs OC levels
+# should be static 
 np_oc_1_turn = {'funcType': 'addStateShort', 'funcTargetType': 'ptAll', 'functvals': [], 'fieldReq': [], 'condTarget': [], 'svals': {'Rate': 1000, 'Turn': 1, 'Count': 1, 'Value': 1}, 'buffs': [{'name': 'Overcharge Lv. Up', 'functvals': '', 'tvals': [], 'svals': None, 'value': 0, 'turns': 1}]}
 
 class npManager:
-    def __init__(self, skill_manager, np_copy=None):
+    def __init__(self, skill_manager):
         self.sm = skill_manager
         self.tm = self.sm.tm
         self.gm = self.tm.gm
 
     def use_np(self, servant):
-        logging.info("\n BEGINNING NP LOG \n")
+        # Log which servant is about to use NP for easier tracing
+        logging.info(f"\n BEGINNING NP LOG for servant id={getattr(servant,'id',None)} name={getattr(servant,'name',None)} np_gauge={getattr(servant,'np_gauge',None)} \n")
                 
         if servant.stats.get_npgauge() >= 99:
             for i in range(int(servant.stats.get_npgauge() // 100)-1):
@@ -81,12 +83,38 @@ class npManager:
             for s in self.gm.servants[0:2]:
                 if s is not servant:
                     self.sm.apply_effect(np_oc_1_turn, s)
+            # Special-case: Aoko transforms on NP use. Instrument and call transform.
             if servant.id == 413:
-                self.gm.transform_aoko(aoko_buffs=servant.buffs.buffs, aoko_cooldowns=servant.skills.cooldowns)
-            if servant.id == 4132: # remove upto 10 magic bullets per NP
-                for i in range(10):
-                    servant.buffs.remove_buff({'buff': 'Magic Bullet', 'functvals': [], 'value': 9999, 'tvals': [], 'turns': -1})
+                logging.info(f"Aoko NP use detected: id={servant.id}, name={servant.name}, np_gauge={servant.stats.get_npgauge()}")
+                try:
+                    self.gm.transform_aoko(aoko_buffs=servant.buffs.buffs, aoko_cooldowns=servant.skills.cooldowns)
+                    logging.info("transform_aoko called successfully")
+                except Exception as e:
+                    logging.exception(f"transform_aoko raised exception: {e}")
 
+            # If the NP had side-effects that mark the caster for death (self-sacrifice)
+            # handle removal immediately so the effect is visible to the rest of the command flow.
+            if getattr(servant, 'kill', False):
+                logging.info(f"Servant {servant.name} flagged for kill after NP; removing from party")
+                try:
+                    idx = self.gm.servants.index(servant)
+                except ValueError:
+                    idx = -1
+
+                if idx != -1:
+                    # If frontline, swap in a backline servant when possible
+                    if idx < 3 and len(self.gm.servants) > 3:
+                        swap = self.gm.servants[3]
+                        self.gm.servants[idx] = swap
+                        self.gm.servants.pop(3)
+                        logging.info(f"Replaced dead frontline servant with backline {swap.name}")
+                    else:
+                        # Otherwise just remove the servant from the list
+                        removed = self.gm.servants.pop(idx)
+                        logging.info(f"Removed servant {removed.name} from party")
+
+                # Reset the flag
+                servant.kill = False
 
             logging.info("\n ENDING NP LOG \n")
         else:
@@ -151,8 +179,32 @@ class npManager:
 
             np_per_hit = (np_gain * card_np_value * (1 + card_eff_mod) * specific_enemy_modifier * overkill_bonus)
 
-            if card_type != 'buster':
-                servant.set_npgauge(np_per_hit)
+            # Trigger handling: delegate to SkillManager.run_triggered_buff which
+            # understands the preserved svals/count and a registry of trigger
+            # handlers. This avoids hardcoding behaviors here and centralizes
+            # trigger semantics in SkillManager.
+            try:
+                for buff in list(servant.buffs.buffs):
+                    # let SkillManager decide if the buff should run for this card
+                    ran = False
+                    try:
+                        ran = self.sm.run_triggered_buff(buff=buff, source_servant=servant, target=target, card_type=card_type)
+                    except Exception:
+                        ran = False
+                    # If the triggered handler ran and the buff has a finite count,
+                    # decrement and drop if depleted. Handlers may also handle this.
+                    if ran:
+                        count = buff.get('count') or (buff.get('svals') or {}).get('Count')
+                        if isinstance(count, int):
+                            new_count = count - 1
+                            buff['count'] = new_count
+                            if new_count <= 0:
+                                try:
+                                    servant.buffs.buffs.remove(buff)
+                                except ValueError:
+                                    pass
+            except Exception:
+                pass
 
             target.set_hp(hit_damage)
             logging.info(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np")
@@ -262,8 +314,32 @@ class npManager:
 
             np_per_hit = (np_gain * card_np_value * (1 + card_eff_mod) * specific_enemy_modifier * overkill_bonus)
 
-            if card_type != 'buster':
-                servant.set_npgauge(np_per_hit)
+            # Trigger handling: delegate to SkillManager.run_triggered_buff which
+            # understands the preserved svals/count and a registry of trigger
+            # handlers. This avoids hardcoding behaviors here and centralizes
+            # trigger semantics in SkillManager.
+            try:
+                for buff in list(servant.buffs.buffs):
+                    # let SkillManager decide if the buff should run for this card
+                    ran = False
+                    try:
+                        ran = self.sm.run_triggered_buff(buff=buff, source_servant=servant, target=target, card_type=card_type)
+                    except Exception:
+                        ran = False
+                    # If the triggered handler ran and the buff has a finite count,
+                    # decrement and drop if depleted. Handlers may also handle this.
+                    if ran:
+                        count = buff.get('count') or (buff.get('svals') or {}).get('Count')
+                        if isinstance(count, int):
+                            new_count = count - 1
+                            buff['count'] = new_count
+                            if new_count <= 0:
+                                try:
+                                    servant.buffs.buffs.remove(buff)
+                                except ValueError:
+                                    pass
+            except Exception:
+                pass
 
             target.set_hp(hit_damage)
             logging.info(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np")
