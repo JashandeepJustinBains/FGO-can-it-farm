@@ -7,13 +7,6 @@
 # - NP level scaling (1-5)
 # - Special NP damage calculation functions
 
-# Import effect mapping for data-driven parsing
-try:
-    from effect_mapping import get_effect_for_func
-    _HAS_EFFECT_MAPPING = True
-except ImportError:
-    _HAS_EFFECT_MAPPING = False
-
 class NP:
     def __init__(self, nps_data):
         self.nps = self.parse_noble_phantasms(nps_data)
@@ -44,21 +37,13 @@ class NP:
         np = self.get_np_by_id(new_id)
         result = []
         for func in np['functions']:
-            # Use effect mapping for data-driven parsing if available
-            if _HAS_EFFECT_MAPPING:
-                normalized_effect = get_effect_for_func(func, source='np')
-                # Set variant_id and NP-specific parameters
-                normalized_effect['variant_id'] = np.get('id')
-                normalized_effect['slot'] = None  # NPs don't have slots
-            else:
-                # Fallback to legacy parsing
-                normalized_effect = self._parse_np_function_to_effect(
-                    func, 
-                    np_level=np_level,
-                    overcharge_level=overcharge_level,
-                    variant_id=np.get('id')
-                )
-            
+            # Parse into normalized effect schema
+            normalized_effect = self._parse_np_function_to_effect(
+                func, 
+                np_level=np_level,
+                overcharge_level=overcharge_level,
+                variant_id=np.get('id')
+            )
             result.append(normalized_effect)
             
             # Keep legacy format for backward compatibility
