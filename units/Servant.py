@@ -455,9 +455,7 @@ class Servant:
 
         self.buffs.add_buff({'buff': buff, 'functvals': functvals, 'value': value, 'tvals': tvals, 'turns': turns})
 
-    def change_ascension(self, new_ascension):
-        # TODO similar to aoko exchange character with different ascension and copy over buffs, cooldowns, np gauge
-        return
+
 
     def __getstate__(self):
         state = self.__dict__.copy()
