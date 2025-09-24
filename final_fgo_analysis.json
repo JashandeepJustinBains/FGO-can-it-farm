@@ -1,0 +1,348 @@
+[
+  {
+    "servant_id": 1,
+    "checks": [
+      {
+        "ascension_input": "0",
+        "resolved_variant_svt_id": 800100,
+        "selected_skills": [
+          {
+            "num": 1,
+            "selected_id": 2476450,
+            "candidates": [2476450],
+            "source": "skills",
+            "json_snippet": "{\"id\": 2476450, \"num\": 1, \"name\": \"誉れ高き雪花の盾 B\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format, single skill per slot. No skillSvts matching variant."
+          },
+          {
+            "num": 2,
+            "selected_id": 970660,
+            "candidates": [970660],
+            "source": "skills",
+            "json_snippet": "{\"id\": 970660, \"num\": 2, \"name\": \"時に煙る白亜の壁 A\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format, single skill per slot. No skillSvts matching variant."
+          },
+          {
+            "num": 3,
+            "selected_id": 133550,
+            "candidates": [133550],
+            "source": "skills",
+            "json_snippet": "{\"id\": 133550, \"num\": 3, \"name\": \"奮い断つ決意の盾 A\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format, single skill per slot. No skillSvts matching variant."
+          }
+        ],
+        "selected_np": {
+          "selected_id": 800197,
+          "candidates": [800100, 800101, 800104, 800105, 800106, 800107, 800108, 800196, 800197],
+          "source": "noblePhantasms",
+          "json_snippet": "{\"id\": 800197, \"num\": 1, \"card\": \"arts\", \"name\": \"Lord Chaldeas\"}",
+          "code_location": {
+            "file": "units/np.py",
+            "function": "parse_noble_phantasms",
+            "code_snippet": "sorted_nps = sorted(selected_nps, key=lambda np: _extract_number(np.get('id', 0)))"
+          },
+          "reason": "Legacy format, highest ID NP (800197). No npSvts matching variant."
+        },
+        "trace": [
+          {"file": "units/Servant.py", "function": "compute_variant_svt_id", "line_snippet": "return top_level_svt_id", "why_relevant": "Returns 800100 as base variant for ascension 0"},
+          {"file": "units/Servant.py", "function": "select_ascension_data", "line_snippet": "result['skills'] = skills_data", "why_relevant": "Uses legacy skills format as no ascensions array found"},
+          {"file": "units/skills.py", "function": "parse_skills", "line_snippet": "is_skill_svts = 'svtId' in first_skill", "why_relevant": "Detects legacy format, not skillSvts"},
+          {"file": "units/np.py", "function": "parse_noble_phantasms", "line_snippet": "is_np_svts = 'svtId' in first_np", "why_relevant": "Detects legacy format, not npSvts"}
+        ]
+      },
+      {
+        "ascension_input": "800190",
+        "resolved_variant_svt_id": 800190,
+        "selected_skills": [
+          {
+            "num": 1,
+            "selected_id": 2476450,
+            "candidates": [2476450],
+            "source": "skills",
+            "json_snippet": "{\"id\": 2476450, \"num\": 1, \"name\": \"誉れ高き雪花の盾 B\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format fallback. No skillSvts entries with svtId=800190, uses base skills."
+          },
+          {
+            "num": 2,
+            "selected_id": 970660,
+            "candidates": [970660],
+            "source": "skills",
+            "json_snippet": "{\"id\": 970660, \"num\": 2, \"name\": \"時に煙る白亜の壁 A\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format fallback. No skillSvts entries with svtId=800190, uses base skills."
+          },
+          {
+            "num": 3,
+            "selected_id": 133550,
+            "candidates": [133550],
+            "source": "skills",
+            "json_snippet": "{\"id\": 133550, \"num\": 3, \"name\": \"奮い断つ決意の盾 A\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format fallback. No skillSvts entries with svtId=800190, uses base skills."
+          }
+        ],
+        "selected_np": {
+          "selected_id": 800197,
+          "candidates": [800100, 800101, 800104, 800105, 800106, 800107, 800108, 800196, 800197],
+          "source": "noblePhantasms",
+          "json_snippet": "{\"id\": 800197, \"num\": 1, \"card\": \"arts\", \"name\": \"Lord Chaldeas\"}",
+          "code_location": {
+            "file": "units/np.py",
+            "function": "parse_noble_phantasms",
+            "code_snippet": "sorted_nps = sorted(selected_nps, key=lambda np: _extract_number(np.get('id', 0)))"
+          },
+          "reason": "Legacy format fallback. No npSvts entries with svtId=800190, uses highest ID base NP."
+        },
+        "trace": [
+          {"file": "units/Servant.py", "function": "compute_variant_svt_id", "line_snippet": "if str(ascension) in costume_keys: return _extract_number(ascension)", "why_relevant": "Detects 800190 exists in ascensionAdd.individuality.costume keys"},
+          {"file": "units/Servant.py", "function": "select_ascension_data", "line_snippet": "result['skills'] = skills_data", "why_relevant": "Uses legacy skills format as no ascensions array found"},
+          {"file": "units/skills.py", "function": "parse_skills", "line_snippet": "variant_matches = [s for s in candidate_skills if _extract_number(s.get('svtId')) == variant_svt_id]", "why_relevant": "No skillSvts entries match svtId=800190, falls back to legacy"},
+          {"file": "units/np.py", "function": "_select_variant_nps", "line_snippet": "variant_matches = [np for np in np_svts if _extract_number(np.get('svtId')) == variant_svt_id]", "why_relevant": "No npSvts entries match svtId=800190, falls back to legacy"}
+        ]
+      },
+      {
+        "ascension_input": "800200",
+        "resolved_variant_svt_id": 800200,
+        "selected_skills": [
+          {
+            "num": 1,
+            "selected_id": 2476450,
+            "candidates": [2476450],
+            "source": "skills",
+            "json_snippet": "{\"id\": 2476450, \"num\": 1, \"name\": \"誉れ高き雪花の盾 B\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format fallback. No skillSvts entries with svtId=800200, uses base skills."
+          },
+          {
+            "num": 2,
+            "selected_id": 970660,
+            "candidates": [970660],
+            "source": "skills",
+            "json_snippet": "{\"id\": 970660, \"num\": 2, \"name\": \"時に煙る白亜の壁 A\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format fallback. No skillSvts entries with svtId=800200, uses base skills."
+          },
+          {
+            "num": 3,
+            "selected_id": 133550,
+            "candidates": [133550],
+            "source": "skills",
+            "json_snippet": "{\"id\": 133550, \"num\": 3, \"name\": \"奮い断つ決意の盾 A\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format fallback. No skillSvts entries with svtId=800200, uses base skills."
+          }
+        ],
+        "selected_np": {
+          "selected_id": 800197,
+          "candidates": [800100, 800101, 800104, 800105, 800106, 800107, 800108, 800196, 800197],
+          "source": "noblePhantasms",
+          "json_snippet": "{\"id\": 800197, \"num\": 1, \"card\": \"arts\", \"name\": \"Lord Chaldeas\"}",
+          "code_location": {
+            "file": "units/np.py",
+            "function": "parse_noble_phantasms",
+            "code_snippet": "sorted_nps = sorted(selected_nps, key=lambda np: _extract_number(np.get('id', 0)))"
+          },
+          "reason": "Legacy format fallback. No npSvts entries with svtId=800200, uses highest ID base NP."
+        },
+        "trace": [
+          {"file": "units/Servant.py", "function": "compute_variant_svt_id", "line_snippet": "if str(ascension) in costume_keys: return _extract_number(ascension)", "why_relevant": "Detects 800200 exists in ascensionAdd.individuality.costume keys"},
+          {"file": "units/Servant.py", "function": "select_ascension_data", "line_snippet": "result['skills'] = skills_data", "why_relevant": "Uses legacy skills format as no ascensions array found"},
+          {"file": "units/skills.py", "function": "parse_skills", "line_snippet": "variant_matches = [s for s in candidate_skills if _extract_number(s.get('svtId')) == variant_svt_id]", "why_relevant": "No skillSvts entries match svtId=800200, falls back to legacy"},
+          {"file": "units/np.py", "function": "_select_variant_nps", "line_snippet": "variant_matches = [np for np in np_svts if _extract_number(np.get('svtId')) == variant_svt_id]", "why_relevant": "No npSvts entries match svtId=800200, falls back to legacy"}
+        ]
+      }
+    ],
+    "notes": "Servant 1 (Mash) uses legacy skill/NP format. Variants 800190/800200 exist as costume definitions in ascensionAdd but have no corresponding skillSvts/npSvts entries, so they use the same base skills/NPs with different traits."
+  },
+  {
+    "servant_id": 312,
+    "checks": [
+      {
+        "ascension_input": "0",
+        "resolved_variant_svt_id": 304800,
+        "selected_skills": [
+          {
+            "num": 1,
+            "selected_id": 886450,
+            "candidates": [886450],
+            "source": "skills",
+            "json_snippet": "{\"id\": 886450, \"num\": 1, \"name\": \"Assault Dragon A\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format, single skill per slot."
+          },
+          {
+            "num": 2,
+            "selected_id": 887450,
+            "candidates": [887450],
+            "source": "skills",
+            "json_snippet": "{\"id\": 887450, \"num\": 2, \"name\": \"Innocent Monster (Dragon) B+\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format, single skill per slot."
+          },
+          {
+            "num": 3,
+            "selected_id": 888575,
+            "candidates": [888575],
+            "source": "skills",
+            "json_snippet": "{\"id\": 888575, \"num\": 3, \"name\": \"Aurora B+\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format, single skill per slot."
+          }
+        ],
+        "selected_np": {
+          "selected_id": 304802,
+          "candidates": [304802],
+          "source": "noblePhantasms",
+          "json_snippet": "{\"id\": 304802, \"num\": 1, \"card\": \"buster\", \"name\": \"Albion\"}",
+          "code_location": {
+            "file": "units/np.py",
+            "function": "parse_noble_phantasms",
+            "code_snippet": "sorted_nps = sorted(selected_nps, key=lambda np: _extract_number(np.get('id', 0)))"
+          },
+          "reason": "Legacy format, highest ID NP."
+        },
+        "trace": [
+          {"file": "units/Servant.py", "function": "compute_variant_svt_id", "line_snippet": "return top_level_svt_id", "why_relevant": "Returns 304800 as base variant"},
+          {"file": "units/Servant.py", "function": "select_ascension_data", "line_snippet": "result['skills'] = skills_data", "why_relevant": "Uses legacy skills format"},
+          {"file": "units/skills.py", "function": "parse_skills", "line_snippet": "is_skill_svts = 'svtId' in first_skill", "why_relevant": "Detects legacy format"},
+          {"file": "units/np.py", "function": "parse_noble_phantasms", "line_snippet": "is_np_svts = 'svtId' in first_np", "why_relevant": "Detects legacy format"}
+        ]
+      }
+    ],
+    "notes": "Servant 312 (Mélusine) uses legacy skill/NP format. No variant-specific skillSvts/npSvts entries exist, so all ascensions/variants use the same base skills/NPs. Variants 800190/800200 are not defined for this servant."
+  },
+  {
+    "servant_id": 444,
+    "checks": [
+      {
+        "ascension_input": "0",
+        "resolved_variant_svt_id": 4000100,
+        "selected_skills": [
+          {
+            "num": 1,
+            "selected_id": 2512650,
+            "candidates": [2512650],
+            "source": "skills",
+            "json_snippet": "{\"id\": 2512650, \"num\": 1, \"name\": \"Universal Observation EX\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format, single skill per slot."
+          },
+          {
+            "num": 2,
+            "selected_id": 2513450,
+            "candidates": [2513450],
+            "source": "skills",
+            "json_snippet": "{\"id\": 2513450, \"num\": 2, \"name\": \"Atomic Plant B\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format, single skill per slot."
+          },
+          {
+            "num": 3,
+            "selected_id": 2514650,
+            "candidates": [2514650],
+            "source": "skills",
+            "json_snippet": "{\"id\": 2514650, \"num\": 3, \"name\": \"Artemitt-U EX\"}",
+            "code_location": {
+              "file": "units/skills.py",
+              "function": "_parse_legacy_skills",
+              "code_snippet": "parsed_skill = self._parse_single_skill(skill, use_max_level=True)"
+            },
+            "reason": "Legacy format, single skill per slot."
+          }
+        ],
+        "selected_np": {
+          "selected_id": 4000101,
+          "candidates": [4000101],
+          "source": "noblePhantasms",
+          "json_snippet": "{\"id\": 4000101, \"num\": 1, \"card\": \"buster\", \"name\": \"Planet Olga Marie\"}",
+          "code_location": {
+            "file": "units/np.py",
+            "function": "parse_noble_phantasms",
+            "code_snippet": "sorted_nps = sorted(selected_nps, key=lambda np: _extract_number(np.get('id', 0)))"
+          },
+          "reason": "Legacy format, highest ID NP."
+        },
+        "trace": [
+          {"file": "units/Servant.py", "function": "compute_variant_svt_id", "line_snippet": "return top_level_svt_id", "why_relevant": "Returns 4000100 as base variant"},
+          {"file": "units/Servant.py", "function": "select_ascension_data", "line_snippet": "result['skills'] = skills_data", "why_relevant": "Uses legacy skills format"},
+          {"file": "units/skills.py", "function": "parse_skills", "line_snippet": "is_skill_svts = 'svtId' in first_skill", "why_relevant": "Detects legacy format"},
+          {"file": "units/np.py", "function": "parse_noble_phantasms", "line_snippet": "is_np_svts = 'svtId' in first_np", "why_relevant": "Detects legacy format"}
+        ]
+      }
+    ],
+    "notes": "Servant 444 (U-Olga Marie) uses legacy skill/NP format. No variant-specific skillSvts/npSvts entries exist, so all ascensions/variants use the same base skills/NPs. Variants 800190/800200 are not defined for this servant."
+  }
+]
+
+
+===============================
+SUMMARY FOR HUMAN READABILITY:
+===============================
+
+Servant 1 (Mash Kyrielight): This servant uses a legacy data format where skills and Noble Phantasms are stored in simple arrays rather than the newer skillSvts/npSvts format. The costume variants 800190 and 800200 are defined in the ascensionAdd.individuality.costume section but do not have corresponding skill or NP variants. Therefore, they use the same base skills (2476450, 970660, 133550) and NP (800197) regardless of ascension or variant, but with different trait sets applied based on the costume.
+
+Servant 312 (Mélusine): Similar to Mash, this servant uses legacy format with base skills (886450, 887450, 888575) and NP (304802). The variants 800190/800200 are not defined for this servant at all, so they fall back to the base variant 304800.
+
+Servant 444 (U-Olga Marie): Also uses legacy format with base skills (2512650, 2513450, 2514650) and NP (4000101). The variants 800190/800200 are not defined for this servant, so they fall back to the base variant 4000100.
+
+Key Finding: All three tested servants use the legacy data format, meaning skill/NP selection is very straightforward - there is only one skill per slot and one main NP per servant, with no ascension-specific or variant-specific alternatives in the skillSvts/npSvts arrays. The costume variants 800190/800200 exist only for servant 1 and affect traits but not skills or NPs.
