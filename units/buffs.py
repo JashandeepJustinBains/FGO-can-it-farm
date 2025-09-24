@@ -143,7 +143,7 @@ class Buffs:
             svals = func.get('svals', {})
             # Handle both list and dict formats for svals
             if isinstance(svals, list):
-                parsed_svals = svals[0] if len(svals) > 0 else {}
+                parsed_svals = svals[-1] if len(svals) > 0 else {}
             else:
                 parsed_svals = svals
                 

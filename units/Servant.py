@@ -5,30 +5,6 @@ from .buffs import Buffs
 from .np import NP
 from .traits import TraitSet, parse_trait_add_data, get_applicable_trait_adds
 
-# Mock DB connection for testing
-try:
-    from scripts.connectDB import db
-except (ImportError, ValueError):
-    # Create a mock DB for testing
-    class MockDB:
-        def __init__(self):
-            self.servants = MockCollection()
-    
-    class MockCollection:
-        def find_one(self, query):
-            # Try to load from example data files
-            collection_no = query.get('collectionNo')
-            if collection_no:
-                try:
-                    import json
-                    with open(f'example_servant_data/{collection_no}.json', 'r') as f:
-                        return json.load(f)
-                except FileNotFoundError:
-                    return None
-            return None
-    
-    db = MockDB()
-
 import logging
 
 # Configure logging
@@ -59,12 +35,13 @@ def select_ascension_data(servant_json: dict, ascension: int) -> dict:
     if ascensions_data:
         # Look for matching ascension
         selected_ascension = None
+        # ascensionAdd -> individuality -> costume -> ids
+
         for asc_data in ascensions_data:
             asc_index = asc_data.get('ascension', asc_data.get('ascensionIndex', asc_data.get('index', 0)))
             if asc_index == ascension:
                 selected_ascension = asc_data
                 break
-        
         if selected_ascension:
             # Extract data from the ascension object
             result['skills'] = selected_ascension.get('skills', [])
@@ -164,9 +141,25 @@ def compute_variant_svt_id(servant_json: dict, ascension: int, costume_svt_id=No
     Returns:
         Selected variant svtId
     """
-    # Step 1: Use costume_svt_id if provided
-    if costume_svt_id is not None:
-        return costume_svt_id
+
+    # Heuristic: sometimes the API returns a variant svt id in the 'ascension'
+    # field. If ascension looks like a variant id (large integer) or matches a
+    # costume key in ascensionAdd, prefer it directly for variant selection.
+    try:
+        asc_int = int(ascension)
+    except Exception:
+        asc_int = None
+
+    asc_add = servant_json.get('ascensionAdd', {}) or {}
+    costume_keys = set()
+    if isinstance(asc_add, dict):
+        ind = asc_add.get('individuality', {}) or {}
+        attr = asc_add.get('attribute', {}) or {}
+        costume_keys.update((ind.get('costume') or {}).keys())
+        costume_keys.update((attr.get('costume') or {}).keys())
+
+    if (asc_int is not None and asc_int >= 100000) or (str(ascension) in costume_keys):
+        return _extract_number(ascension)
     
     top_level_svt_id = _extract_number(servant_json.get('id', servant_json.get('svtId', 0)))
     
@@ -235,7 +228,7 @@ class Servant:
         # applies special effect per turn that needs a translation to its real effect
         350, 306, 305]
 
-    def __init__(self, collectionNo, np=1, oc=1, ascension=1, lvl=0, initialCharge=0, attack=0, atkUp=0, artsUp=0, quickUp=0, busterUp=0, npUp=0, damageUp=0, busterDamageUp=0, quickDamageUp=0, artsDamageUp=0, append_5=False):
+    def __init__(self, collectionNo, np=1, oc=1, ascension=1, lvl=0, initialCharge=0, attack=0, atkUp=0, artsUp=0, quickUp=0, busterUp=0, npUp=0, damageUp=0, busterDamageUp=0, quickDamageUp=0, artsDamageUp=0, append_5=False, variant_svt_id=None):
         self.id = collectionNo
         self.data = select_character(collectionNo)
         if self.data is None:
@@ -248,20 +241,48 @@ class Servant:
         
         # Store level and ascension
         self.lvl = lvl
-        self.ascension = ascension
+
+        # The API sometimes returns the selected variant svt id in the 'ascension'
+        # field. If ascension looks like a variant id (large number), treat it as
+        # such and allow an optional explicit variant_svt_id parameter as well.
+        incoming_ascension = ascension
+        self._user_supplied_variant = None
+
+        if variant_svt_id is not None:
+            # explicit override takes precedence
+            self._user_supplied_variant = variant_svt_id
+            self.ascension = 1
+        else:
+            # heuristic: treat large ints (>=100000) as svt ids
+            try:
+                if isinstance(incoming_ascension, int) and incoming_ascension >= 100000:
+                    self._user_supplied_variant = incoming_ascension
+                    self.ascension = 1
+                else:
+                    self.ascension = incoming_ascension
+            except Exception:
+                self.ascension = incoming_ascension
         self.atk_growth = self.data.get('atkGrowth', [])
-        
-        # Compute variant svtId for ascension/costume-specific data
-        self.variant_svt_id = compute_variant_svt_id(self.data, ascension)
-        
+
+        # Compute variant svtId for ascension/costume-specific data. Pass along
+        # any user-supplied variant id (from variant_svt_id param or detected
+        # from the incoming ascension).
+        variant_override = self._user_supplied_variant
+        self.variant_svt_id = compute_variant_svt_id(self.data, self.ascension, variant_override)
+
         # Use ascension-aware data selection so Servant picks ascension-specific
         # skills and noblePhantasms when present in the JSON. Falls back to
         # legacy fields if ascension-specific data is not available.
-        ascension_data = select_ascension_data(self.data, ascension)
-        
+        ascension_data = select_ascension_data(self.data, self.ascension)
+
         # Initialize traits system with base traits and ascension-specific additions
         self.trait_set = TraitSet(self.data.get('traits', []))
-        self._apply_ascension_traits()
+        # If a variant override was provided or detected, apply costume traits
+        # from ascensionAdd; otherwise apply ascension traits.
+        if self._user_supplied_variant:
+            self._apply_costume_traits(self._user_supplied_variant)
+        else:
+            self._apply_ascension_traits()
         
         # Initialize cards and other basic data
         self.cards = self.data.get('cards', [])

@@ -1,6 +1,5 @@
 from units.Enemy import Enemy
 from scripts.connectDB import db
-import numpy as np
 
 class Quest:
     def __init__(self, quest_id):
