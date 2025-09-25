@@ -1,0 +1,37 @@
+Goal: Ensure skills and NPs are selected at use-time according to current ascension/variant so mid-combat ascension/costume changes are reflected.
+
+Short instruction for reviewer:
+- IMPORTANT: Do NOT attempt to connect to any DB. This repository includes a curated set of example servants in `example_servant_data/` (e.g., 1.json, 312.json, 444.json) that exercise ascension/costume/NP swap edge cases. Use only those files for review and testing. The CI/agent does not have credentials for the MongoDB - please treat the DB as unavailable.
+
+Contract (inputs / outputs / success):
+- Inputs: example_servant_data/*.json (skillSvts, npSvts, ascensionAdd) and runtime ascension changes via Servant.change_ascension.
+- Outputs: when a skill or NP is executed, the simulator selects the variant-appropriate entry based on current `servant.variant_svt_id` and releaseConditions.
+- Success criteria: `tests/test_np_dynamic_selection.py` passes; no regressions in `units/skills.py` or `units/np.py` behavior for legacy formats.
+
+Files to inspect (priority order):
+1. `units/skills.py` — deferred candidate storage (`raw_candidates`), `_select_skill_from_candidates`, `_check_skill_release_condition`, `get_skill_by_num`, and `initialize_max_cooldowns`.
+2. `units/np.py` — compare NP selection logic for parity (releaseCondition grouping, priority rules).
+3. `units/Servant.py` — `compute_variant_svt_id` (honor explicit costume override) and `select_character` (file-fallback behavior).
+
+Explicit questions I want answered:
+- Is releaseCondition grouping implemented correctly (OR across groups, AND within a group) for skills? Any differences vs NP selection semantics that matter?
+- Any edge-cases where deferred selection could pick the wrong candidate (race/side-effects, or missing `svtId` fields)?
+- Are there small refactors or unit tests you recommend (what to assert and a minimal fixture)?
+
+How to run (local, no DB):
+# run only dynamic NP/skill tests
+env\Scripts\pytest -q tests/test_np_dynamic_selection.py
+
+# run subset that uses example_servant_data (may still reference other fixtures)
+env\Scripts\pytest -q tests/test_TraverseApiInput_1.py tests/test_variant_api_input.py
+
+Notes:
+- The branch to review is `feature/skills-runtime-selection` (committed locally). The commit message: "Make skill selection runtime-aware; add variant override and file fallback".
+- If you need more context, inspect `example_servant_data/*.json` to see the sample shapes.
+
+Deliverables expected from reviewer:
+- Inline code comments or suggested patch(es) addressing correctness or safety issues.
+- A short list of added tests to ensure correctness for 2-3 edge cases.
+- A single suggested patch (if small) that I can apply directly.
+
+Thanks — please use only `example_servant_data/` for any test runs.
