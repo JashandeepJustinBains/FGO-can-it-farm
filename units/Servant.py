@@ -186,6 +186,23 @@ def compute_variant_svt_id(servant_json: dict, ascension: int, costume_svt_id=No
         if ascension_image_index in image_index_mapping:
             return image_index_mapping[ascension_image_index]['svtId']
     
+    # Step 2b: Try sprite model data as fallback for ascension mapping
+    sprite_models = servant_json.get('extraAssets', {}).get('spriteModel', {}).get('ascension', {})
+    if sprite_models:
+        # Try to find sprite model for this ascension
+        ascension_key = str(ascension)
+        if ascension_key in sprite_models:
+            sprite_url = sprite_models[ascension_key]
+            # Extract svtId from URL pattern like "...Servants/4000120/manifest.json"
+            if 'Servants/' in sprite_url:
+                try:
+                    svt_id_str = sprite_url.split('Servants/')[1].split('/')[0]
+                    extracted_svt_id = int(svt_id_str)
+                    if extracted_svt_id != top_level_svt_id:  # Only use if different
+                        return extracted_svt_id
+                except (IndexError, ValueError):
+                    pass  # Continue to next step if extraction fails
+    
     # Step 4: Try skillSvts releaseConditions
     skill_svts = servant_json.get('skillSvts', [])
     if skill_svts:
@@ -204,7 +221,7 @@ def compute_variant_svt_id(servant_json: dict, ascension: int, costume_svt_id=No
 
 def select_character(character_id):
     """
-    Load character data from database or mock data.
+    Load character data from database or local fallback data.
     
     Args:
         character_id: Collection number of the character
@@ -212,8 +229,33 @@ def select_character(character_id):
     Returns:
         Character data dict or None if not found
     """
-    servant = db.servants.find_one({'collectionNo': character_id})
-    return servant  # Ensure character_id is an integer
+    # Try database first
+    try:
+        from scripts.connectDB import db
+        servant = db.servants.find_one({'collectionNo': character_id})
+        if servant:
+            return servant
+    except ImportError:
+        # Database connection not available, continue to fallback
+        pass
+    except Exception:
+        # Database query failed, continue to fallback
+        pass
+    
+    # Fallback to local JSON data
+    import json
+    import os
+    
+    json_file = f"example_servant_data/{character_id}.json"
+    if os.path.exists(json_file):
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data
+        except Exception as e:
+            logging.warning(f"Failed to load {json_file}: {e}")
+    
+    return None
 
 class Servant:
     special_servants = [
@@ -463,7 +505,3 @@ class Servant:
         if 'data' in state and hasattr(state['data'], 'collection'):  # crude check for pymongo object
             state['data'] = None
         return state
-
-def select_character(character_id):
-    servant = db.servants.find_one({'collectionNo': character_id})
-    return servant  # Ensure character_id is an integer
