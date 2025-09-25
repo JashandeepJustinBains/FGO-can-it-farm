@@ -108,7 +108,8 @@ class Skills:
         
         This method collects all skill entries from the main skills array that match
         each slot number, treating each as a candidate. For skills with nested skillSvts,
-        it includes both the main skill and all its skillSvt variants as separate candidates.
+        it includes both the main skill and all its skillSvt variants as separate candidates,
+        but prioritizes skillSvts when they exist.
         
         Returns a structure like:
         {1: [{'raw_candidates': [skill1, skill2, skillsvt1, skillsvt2, ...]}], ...}
@@ -123,20 +124,28 @@ class Skills:
             if skill_num not in [1, 2, 3]:
                 continue
             
-            # Add the main skill itself as a candidate
-            # Make a copy so we don't modify the original
-            main_candidate = dict(main_skill)
-            candidates_by_slot[skill_num].append(main_candidate)
-            
-            # Add all nested skillSvts variants as additional candidates
             skill_svts = main_skill.get('skillSvts', [])
-            for skill_svt in skill_svts:
-                # Create a combined candidate from main skill + skillSvt data
-                combined_candidate = dict(main_skill)  # Start with main skill data
-                combined_candidate.update(skill_svt)   # Override with skillSvt-specific data
-                # Make sure the skill number is preserved from the main skill
-                combined_candidate['num'] = main_skill.get('num')
-                candidates_by_slot[skill_num].append(combined_candidate)
+            
+            if skill_svts:
+                # If skillSvts exist, use them as the primary candidates
+                for skill_svt in skill_svts:
+                    # Create a combined candidate from main skill + skillSvt data
+                    combined_candidate = dict(main_skill)  # Start with main skill data
+                    combined_candidate.update(skill_svt)   # Override with skillSvt-specific data
+                    # Make sure the skill number is preserved from the main skill
+                    combined_candidate['num'] = main_skill.get('num')
+                    candidates_by_slot[skill_num].append(combined_candidate)
+                
+                # Also include the main skill if it doesn't look like a "template"
+                # (i.e., if it has realistic game parameters)
+                main_priority = self._extract_number(main_skill.get('priority', 0))
+                if main_priority <= 5:  # Low priority suggests it's a real skill, not just template
+                    main_candidate = dict(main_skill)
+                    candidates_by_slot[skill_num].append(main_candidate)
+            else:
+                # No skillSvts, treat main skill as the only candidate
+                main_candidate = dict(main_skill)
+                candidates_by_slot[skill_num].append(main_candidate)
         
         # Store candidates for each slot
         for skill_num in [1, 2, 3]:
@@ -183,16 +192,27 @@ class Skills:
         """Select a single skill entry from candidates using proper priority logic.
         
         Selection strategy:
-        1. Filter candidates by release conditions (include those with no conditions)
-        2. Among available candidates, prefer exact svtId matches
+        1. Filter candidates by svtId match (costume-specific filtering)
+        2. Filter by release conditions (include those with no conditions)
         3. Use priority + id for tie-breaking (highest wins)
         """
         if not candidate_skills:
             return None
 
-        # Step 1: Filter by release conditions
+        # Step 1: Filter by svtId to get costume-appropriate candidates
+        if variant_svt_id is not None:
+            svt_matches = [s for s in candidate_skills if self._extract_number(s.get('svtId')) == variant_svt_id]
+            if svt_matches:
+                candidates_to_check = svt_matches
+            else:
+                # No exact svtId matches, use all candidates as fallback
+                candidates_to_check = candidate_skills
+        else:
+            candidates_to_check = candidate_skills
+
+        # Step 2: Filter by release conditions among svtId matches
         available = []
-        for s in candidate_skills:
+        for s in candidates_to_check:
             release_conditions = s.get('releaseConditions', [])
             if not release_conditions:
                 # No release conditions = always available
@@ -221,17 +241,10 @@ class Skills:
                 available.append(s)
 
         if not available:
-            # No candidates met their conditions, fall back to all candidates
-            available = candidate_skills
+            # No candidates met their conditions, fall back to all svt-matched candidates
+            available = candidates_to_check
 
-        # Step 2: Among available candidates, prefer exact svtId match
-        if variant_svt_id is not None:
-            variant_matches = [s for s in available if self._extract_number(s.get('svtId')) == variant_svt_id]
-            if variant_matches:
-                # Use highest priority then highest id among variant matches
-                return max(variant_matches, key=lambda x: (self._extract_number(x.get('priority', 0)), self._extract_number(x.get('id', 0))))
-
-        # Step 3: Use highest priority then highest id among all available
+        # Step 3: Use highest priority then highest id among available
         return max(available, key=lambda x: (self._extract_number(x.get('priority', 0)), self._extract_number(x.get('id', 0))))
 
     def _check_skill_release_condition(self, condition):
