@@ -83,22 +83,32 @@ class NP:
         # Step 2: Try exact svtId match
         variant_matches = [np for np in available_nps if self._extract_number(np.get('svtId')) == variant_svt_id]
         if variant_matches:
-            return variant_matches
-        
-        # Step 3: Try imageIndex mapping (ascension-based)
-        # Ascension 1-4 typically maps to imageIndex 0-3
+            # If multiple entries share the same svtId, prefer the one(s) whose
+            # imageIndex matches the current ascension (most common case). If no
+            # exact imageIndex is available among them, fall back to priority.
+            expected_image_index = self.servant.ascension - 1
+            vm_image_matches = [np for np in variant_matches if self._extract_number(np.get('imageIndex')) == expected_image_index]
+            if vm_image_matches:
+                return vm_image_matches
+
+            # No imageIndex match among variant_matches: pick highest priority
+            max_priority = max(self._extract_number(np.get('priority', 0)) for np in variant_matches)
+            priority_matches = [np for np in variant_matches if self._extract_number(np.get('priority', 0)) == max_priority]
+            return priority_matches
+
+        # Step 3: Try imageIndex mapping across all available entries
         expected_image_index = self.servant.ascension - 1
         image_matches = [np for np in available_nps if self._extract_number(np.get('imageIndex')) == expected_image_index]
         if image_matches:
             return image_matches
-        
+
         # Step 4: Use highest priority among available NPs
         if available_nps:
             max_priority = max(self._extract_number(np.get('priority', 0)) for np in available_nps)
             priority_matches = [np for np in available_nps if self._extract_number(np.get('priority', 0)) == max_priority]
             if priority_matches:
                 return priority_matches
-        
+
         # Step 5: Fallback to all available NPs
         return available_nps if available_nps else np_svts
     
