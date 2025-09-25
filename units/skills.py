@@ -54,9 +54,10 @@ class Skills:
         Parse skills with variant-aware selection.
         
         For skillSvts format (nested within skills):
-        1. Each skill object has its own skillSvts array
-        2. Store raw candidates for deferred selection 
-        3. Use current servant variant_svt_id at runtime in get_skill_by_num
+        1. Collect all skill entries from main skills array that match each slot
+        2. For each skill entry, include it and its nested skillSvts variants as candidates
+        3. Store raw candidates for deferred selection 
+        4. Use current servant variant_svt_id at runtime in get_skill_by_num
         
         For legacy format: use as-is for backwards compatibility
         """
@@ -68,10 +69,9 @@ class Skills:
             has_nested_skill_svts = 'skillSvts' in first_skill
             
             if has_nested_skill_svts:
-                # For nested skillSvts format, store raw candidate lists per slot and
-                # defer final selection to get_skill_by_num so selection can
-                # consider the servant's current ascension/variant at call time.
-                skills = self._parse_nested_skill_svts(skills_data)
+                # For nested skillSvts format: collect ALL skill entries from the main array
+                # that match each slot, including both the main skill and its nested skillSvts
+                skills = self._parse_all_skill_candidates(skills_data)
             else:
                 # If the caller provided a servant with a computed variant, and
                 # there exists a top-level `skillSvts` in the servant data, we
@@ -103,6 +103,48 @@ class Skills:
             return int(value['$numberInt'])
         return int(value) if value is not None else 0
     
+    def _parse_all_skill_candidates(self, skills_data):
+        """Parse all skill candidates from the main skills array.
+        
+        This method collects all skill entries from the main skills array that match
+        each slot number, treating each as a candidate. For skills with nested skillSvts,
+        it includes both the main skill and all its skillSvt variants as separate candidates.
+        
+        Returns a structure like:
+        {1: [{'raw_candidates': [skill1, skill2, skillsvt1, skillsvt2, ...]}], ...}
+        """
+        skills = {1: [], 2: [], 3: []}
+        
+        # Group all candidates by skill slot number
+        candidates_by_slot = {1: [], 2: [], 3: []}
+        
+        for main_skill in skills_data:
+            skill_num = self._extract_number(main_skill.get('num', 0))
+            if skill_num not in [1, 2, 3]:
+                continue
+            
+            # Add the main skill itself as a candidate
+            # Make a copy so we don't modify the original
+            main_candidate = dict(main_skill)
+            candidates_by_slot[skill_num].append(main_candidate)
+            
+            # Add all nested skillSvts variants as additional candidates
+            skill_svts = main_skill.get('skillSvts', [])
+            for skill_svt in skill_svts:
+                # Create a combined candidate from main skill + skillSvt data
+                combined_candidate = dict(main_skill)  # Start with main skill data
+                combined_candidate.update(skill_svt)   # Override with skillSvt-specific data
+                # Make sure the skill number is preserved from the main skill
+                combined_candidate['num'] = main_skill.get('num')
+                candidates_by_slot[skill_num].append(combined_candidate)
+        
+        # Store candidates for each slot
+        for skill_num in [1, 2, 3]:
+            if candidates_by_slot[skill_num]:
+                skills[skill_num].append({'raw_candidates': candidates_by_slot[skill_num]})
+        
+        return skills
+
     def _parse_nested_skill_svts(self, skills_data):
         """Parse nested skillSvts format where each skill has its own skillSvts array.
         
@@ -138,9 +180,12 @@ class Skills:
         return skills
 
     def _select_skill_from_candidates(self, candidate_skills, variant_svt_id):
-        """Select a single skill entry from candidates using the same
-        strategy as NP selection: filter by releaseConditions, prefer exact
-        svtId match, then pick the entry with highest id as tie-breaker.
+        """Select a single skill entry from candidates using proper priority logic.
+        
+        Selection strategy:
+        1. Filter candidates by release conditions (include those with no conditions)
+        2. Among available candidates, prefer exact svtId matches
+        3. Use priority + id for tie-breaking (highest wins)
         """
         if not candidate_skills:
             return None
@@ -150,9 +195,12 @@ class Skills:
         for s in candidate_skills:
             release_conditions = s.get('releaseConditions', [])
             if not release_conditions:
+                # No release conditions = always available
                 available.append(s)
                 continue
-            # Group by condGroup
+                
+            # Check if release conditions are met
+            # Group conditions by condGroup (OR between groups, AND within groups)
             groups = {}
             for cond in release_conditions:
                 grp = self._extract_number(cond.get('condGroup', 0))
@@ -168,60 +216,37 @@ class Skills:
                 if group_ok:
                     cond_met = True
                     break
+            
             if cond_met:
                 available.append(s)
 
         if not available:
+            # No candidates met their conditions, fall back to all candidates
             available = candidate_skills
 
-        # Prefer candidates that explicitly had releaseConditions which were met
-        matched_by_release = []
-        for s in candidate_skills:
-            rc = s.get('releaseConditions', [])
-            if not rc:
-                continue
-            # check if any condGroup in this candidate is satisfied
-            groups = {}
-            for cond in rc:
-                grp = self._extract_number(cond.get('condGroup', 0))
-                groups.setdefault(grp, []).append(cond)
-            group_ok = False
-            for group_conds in groups.values():
-                ok = True
-                for cond in group_conds:
-                    if not self._check_skill_release_condition(cond):
-                        ok = False
-                        break
-                if ok:
-                    group_ok = True
-                    break
-            if group_ok:
-                matched_by_release.append(s)
-
-        if matched_by_release:
-            available = matched_by_release
-
-        # Step 2: prefer exact svtId match among the available set (use priority/id as tie-breaker)
+        # Step 2: Among available candidates, prefer exact svtId match
         if variant_svt_id is not None:
             variant_matches = [s for s in available if self._extract_number(s.get('svtId')) == variant_svt_id]
             if variant_matches:
+                # Use highest priority then highest id among variant matches
                 return max(variant_matches, key=lambda x: (self._extract_number(x.get('priority', 0)), self._extract_number(x.get('id', 0))))
 
-        # Step 3: pick highest priority then id among available
+        # Step 3: Use highest priority then highest id among all available
         return max(available, key=lambda x: (self._extract_number(x.get('priority', 0)), self._extract_number(x.get('id', 0))))
 
     def _check_skill_release_condition(self, condition):
         """Check a single release condition for skills.
 
-        Mirrors NP._check_release_condition behavior: treat
-        'equipWithTargetCostume' as an ascension threshold encoded in condNum.
-        Unknown condition types are assumed met to avoid blocking.
+        Enhanced logic for costume/ascension requirements:
+        - equipWithTargetCostume with condNum > 10: decode as ascension requirement
+        - Must also consider whether the skill variant matches current costume context
+        - Skills with specific svtId requirements should only be available when using that variant
         """
         cond_type = condition.get('condType', '')
         cond_num = self._extract_number(condition.get('condNum', 0))
         if cond_type == 'equipWithTargetCostume':
             # Interpret condTargetId and condNum robustly:
-            # - condTargetId may be a costume/variant svt id (e.g. 800100)
+            # - condTargetId may be a costume/variant svt id (e.g. 800100, 800101, 800102)
             # - condNum sometimes encodes ascension as 10 + ascension (e.g. 12 -> ascension 2)
             cond_target = self._extract_number(condition.get('condTargetId', 0))
 
@@ -229,31 +254,35 @@ class Skills:
             if not self.servant:
                 return False
 
-            # Top-level servant id from data
-            try:
-                top_id = self._extract_number(getattr(self.servant, 'id', 0))
-            except Exception:
-                top_id = 0
-
+            # Get servant context
+            top_id = self._extract_number(getattr(self.servant, 'id', 0))
             variant_id = getattr(self.servant, 'variant_svt_id', None)
+            current_ascension = getattr(self.servant, 'ascension', 1)
 
-            # If condTargetId refers to this servant (top-level or variant), use condNum semantics
-            if cond_target:
-                if cond_target == top_id or (variant_id is not None and cond_target == variant_id):
-                    # If condNum uses 10+ascension encoding, decode it
-                    if cond_num > 10:
-                        expected_asc = cond_num - 10
-                        return self.servant and self.servant.ascension == expected_asc
-                    # Otherwise treat condNum as a minimum ascension requirement
-                    return self.servant and self.servant.ascension >= cond_num
-                # If condTargetId is a costume/variant id different from top-level, require exact variant match
-                return self.servant and variant_id is not None and cond_target == variant_id
-
-            # No condTargetId present: fall back to condNum semantics
+            # Decode condNum to ascension if it uses the 10+ encoding
             if cond_num > 10:
-                expected_asc = cond_num - 10
-                return self.servant and self.servant.ascension == expected_asc
-            return self.servant and self.servant.ascension >= cond_num
+                required_ascension = cond_num - 10
+            else:
+                required_ascension = cond_num
+
+            # Check ascension requirement
+            ascension_met = current_ascension >= required_ascension
+
+            # If condTargetId matches the base servant id (800100 for Mash), this is 
+            # an ascension-based unlock for the base form
+            if cond_target == top_id:
+                # This condition is for base servant ascension requirements
+                return ascension_met
+                
+            # If condTargetId is a different id (800101, 800102, etc.), this requires
+            # using that specific costume/variant
+            if cond_target != top_id:
+                # Must be using the exact variant specified AND meet ascension requirement
+                return variant_id == cond_target and ascension_met
+
+            # No condTargetId present: fall back to ascension-only check
+            return ascension_met
+            
         elif cond_type in ('questClear', 'friendshipRank'):
             return True
         else:
