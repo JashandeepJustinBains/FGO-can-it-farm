@@ -634,6 +634,7 @@ base_multipliers = {
     "alterEgo":     1.0,
     "foreigner":    1.0,
     "pretender":    1.0,
+    "unBeastOlgaMarie": 1.0,  # U-Olga Marie's special Beast class
 }
 
 # class indices used for getting correct class advantage

@@ -66,37 +66,121 @@ class NP:
     
     def _select_variant_nps(self, np_svts):
         """
-        Select appropriate NP entries based on variant.
+        Select appropriate NP entries based on variant and release conditions.
         
         Selection priority:
-        1. npSvts with svtId == variant_svt_id
-        2. npSvts with matching imageIndex
-        3. npSvts with highest priority
-        4. All npSvts (fallback)
+        1. Filter by release conditions (ascension/costume requirements)
+        2. npSvts with svtId == variant_svt_id
+        3. npSvts with matching imageIndex
+        4. npSvts with highest priority
+        5. All npSvts (fallback)
         """
         variant_svt_id = self.servant.variant_svt_id
         
-        # Step 1: Try exact svtId match
-        variant_matches = [np for np in np_svts if self._extract_number(np.get('svtId')) == variant_svt_id]
+        # Step 1: Filter by release conditions first
+        available_nps = self._filter_by_release_conditions(np_svts)
+        
+        # Step 2: Try exact svtId match
+        variant_matches = [np for np in available_nps if self._extract_number(np.get('svtId')) == variant_svt_id]
         if variant_matches:
             return variant_matches
         
-        # Step 2: Try imageIndex mapping (ascension-based)
+        # Step 3: Try imageIndex mapping (ascension-based)
         # Ascension 1-4 typically maps to imageIndex 0-3
         expected_image_index = self.servant.ascension - 1
-        image_matches = [np for np in np_svts if self._extract_number(np.get('imageIndex')) == expected_image_index]
+        image_matches = [np for np in available_nps if self._extract_number(np.get('imageIndex')) == expected_image_index]
         if image_matches:
             return image_matches
         
-        # Step 3: Use highest priority
-        if np_svts:
-            max_priority = max(self._extract_number(np.get('priority', 0)) for np in np_svts)
-            priority_matches = [np for np in np_svts if self._extract_number(np.get('priority', 0)) == max_priority]
+        # Step 4: Use highest priority among available NPs
+        if available_nps:
+            max_priority = max(self._extract_number(np.get('priority', 0)) for np in available_nps)
+            priority_matches = [np for np in available_nps if self._extract_number(np.get('priority', 0)) == max_priority]
             if priority_matches:
                 return priority_matches
         
-        # Step 4: Fallback to all
-        return np_svts
+        # Step 5: Fallback to all available NPs
+        return available_nps if available_nps else np_svts
+    
+    def _filter_by_release_conditions(self, np_svts):
+        """
+        Filter NP entries by release conditions based on current servant state.
+        
+        Args:
+            np_svts: List of NP entries to filter
+            
+        Returns:
+            List of NP entries that meet their release conditions
+        """
+        if not self.servant:
+            return np_svts
+            
+        available_nps = []
+        
+        for np in np_svts:
+            release_conditions = np.get('releaseConditions', [])
+            
+            # If no release conditions, NP is always available
+            if not release_conditions:
+                available_nps.append(np)
+                continue
+            
+            # Check if any release condition is met (OR logic between different condGroups)
+            condition_met = False
+            condition_groups = {}
+            
+            # Group conditions by condGroup
+            for condition in release_conditions:
+                group = self._extract_number(condition.get('condGroup', 0))
+                if group not in condition_groups:
+                    condition_groups[group] = []
+                condition_groups[group].append(condition)
+            
+            # Check each condition group (groups are OR'd together)
+            for group_conditions in condition_groups.values():
+                # All conditions in a group must be met (AND logic within group)
+                group_met = True
+                for condition in group_conditions:
+                    if not self._check_release_condition(condition):
+                        group_met = False
+                        break
+                
+                if group_met:
+                    condition_met = True
+                    break
+            
+            if condition_met:
+                available_nps.append(np)
+        
+        return available_nps
+    
+    def _check_release_condition(self, condition):
+        """
+        Check if a single release condition is met.
+        
+        Args:
+            condition: Dict containing condition details
+            
+        Returns:
+            bool: True if condition is met
+        """
+        cond_type = condition.get('condType', '')
+        cond_num = self._extract_number(condition.get('condNum', 0))
+        
+        if cond_type == 'equipWithTargetCostume':
+            # For ascension-based unlocks, condNum typically represents minimum ascension
+            return self.servant.ascension >= cond_num
+        elif cond_type == 'questClear':
+            # Quest completion conditions - assume met for now
+            # In a full implementation, this would check quest completion status
+            return True
+        elif cond_type == 'friendshipRank':
+            # Bond level conditions - assume met for now
+            # In a full implementation, this would check bond level
+            return True
+        else:
+            # Unknown condition type - assume met to avoid breaking functionality
+            return True
 
     def get_np_by_id(self, new_id=None):
         if new_id is None:
