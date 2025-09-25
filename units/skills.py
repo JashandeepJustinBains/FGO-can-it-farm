@@ -53,25 +53,25 @@ class Skills:
         """
         Parse skills with variant-aware selection.
         
-        For skillSvts format:
-        1. Filter skills by variant_svt_id
-        2. For each skill number, pick the entry with highest id
-        3. Use last svals and cooldown values (level 10/upgraded)
+        For skillSvts format (nested within skills):
+        1. Each skill object has its own skillSvts array
+        2. Store raw candidates for deferred selection 
+        3. Use current servant variant_svt_id at runtime in get_skill_by_num
         
         For legacy format: use as-is for backwards compatibility
         """
         skills = {1: [], 2: [], 3: []}
         
-        # Check if this is skillSvts format or legacy
+        # Check if this is nested skillSvts format or legacy
         if skills_data and isinstance(skills_data, list) and len(skills_data) > 0:
             first_skill = skills_data[0]
-            is_skill_svts = 'svtId' in first_skill
+            has_nested_skill_svts = 'skillSvts' in first_skill
             
-            if is_skill_svts:
-                # For skillSvts format, store raw candidate lists per slot and
+            if has_nested_skill_svts:
+                # For nested skillSvts format, store raw candidate lists per slot and
                 # defer final selection to get_skill_by_num so selection can
                 # consider the servant's current ascension/variant at call time.
-                skills = self._parse_skill_svts(skills_data)
+                skills = self._parse_nested_skill_svts(skills_data)
             else:
                 # Use legacy parsing
                 skills = self._parse_legacy_skills(skills_data)
@@ -84,45 +84,39 @@ class Skills:
             return int(value['$numberInt'])
         return int(value) if value is not None else 0
     
-    def _parse_skill_svts(self, skill_svts):
-        """Parse skillSvts format.
-
-        If defer_selection is True, we return a structure where each slot
-        contains a single dict with key 'raw_candidates' holding the raw
-        skill entries. Final selection is done in get_skill_by_num using
-        current servant state.
+    def _parse_nested_skill_svts(self, skills_data):
+        """Parse nested skillSvts format where each skill has its own skillSvts array.
+        
+        Each skill object has a 'skillSvts' array with different variant entries.
+        We store these as raw candidates for dynamic selection at runtime.
         """
-        def _inner_parse(defer_selection=False):
-            skills = {1: [], 2: [], 3: []}
-
-            # Group skills by number
-            skills_by_num = {}
-            for skill in skill_svts:
-                num = self._extract_number(skill.get('num', 0))
-                if num not in skills_by_num:
-                    skills_by_num[num] = []
-                skills_by_num[num].append(skill)
-
-            for skill_num in [1, 2, 3]:
-                if skill_num not in skills_by_num:
-                    continue
-                candidate_skills = skills_by_num[skill_num]
-
-                if defer_selection:
-                    # store raw candidates for dynamic selection
-                    skills[skill_num].append({'raw_candidates': candidate_skills})
-                else:
-                    # perform immediate selection (fallback behavior)
-                    variant_svt_id = self.servant.variant_svt_id if self.servant else None
-                    selected = self._select_skill_from_candidates(candidate_skills, variant_svt_id)
-                    if selected:
-                        parsed_skill = self._parse_single_skill(selected, use_max_level=True)
-                        skills[skill_num].append(parsed_skill)
-
-            return skills
-
-        # default: defer selection so runtime ascension/costume can be used
-        return _inner_parse(defer_selection=True)
+        skills = {1: [], 2: [], 3: []}
+        
+        for skill in skills_data:
+            skill_num = self._extract_number(skill.get('num', 0))
+            if skill_num not in [1, 2, 3]:
+                continue
+                
+            skill_svts = skill.get('skillSvts', [])
+            if skill_svts:
+                # Create candidate entries by combining base skill data with each skillSvt
+                raw_candidates = []
+                for skill_svt in skill_svts:
+                    # Create a combined entry with skill data and skillSvt-specific info
+                    candidate = dict(skill)  # Copy base skill data
+                    candidate.update(skill_svt)  # Override with skillSvt-specific data
+                    # Ensure the skill number is preserved
+                    candidate['num'] = skill.get('num')
+                    raw_candidates.append(candidate)
+                
+                # Store raw candidates for deferred selection
+                skills[skill_num].append({'raw_candidates': raw_candidates})
+            else:
+                # No skillSvts, treat as legacy single entry
+                parsed_skill = self._parse_single_skill(skill, use_max_level=True)
+                skills[skill_num].append(parsed_skill)
+        
+        return skills
 
     def _select_skill_from_candidates(self, candidate_skills, variant_svt_id):
         """Select a single skill entry from candidates using the same
