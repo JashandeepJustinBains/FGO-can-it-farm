@@ -142,6 +142,10 @@ def compute_variant_svt_id(servant_json: dict, ascension: int, costume_svt_id=No
         Selected variant svtId
     """
 
+    # If an explicit costume override was provided, use it immediately.
+    if costume_svt_id is not None:
+        return _extract_number(costume_svt_id)
+
     # Heuristic: sometimes the API returns a variant svt id in the 'ascension'
     # field. If ascension looks like a variant id (large integer) or matches a
     # costume key in ascensionAdd, prefer it directly for variant selection.
@@ -212,8 +216,42 @@ def select_character(character_id):
     Returns:
         Character data dict or None if not found
     """
-    servant = db.servants.find_one({'collectionNo': character_id})
-    return servant  # Ensure character_id is an integer
+    # Try to use a global `db` object if available (test harness may provide one).
+    db = globals().get('db', None)
+    if db:
+        try:
+            servant = db.servants.find_one({'collectionNo': character_id})
+            if servant:
+                return servant
+        except Exception:
+            # If any DB access error occurs, fall back to file-based loading
+            pass
+
+    # File fallback for local tests / environments without a DB.
+    # Look for example_servant_data/<collectionNo>.json relative to repo root.
+    import json
+    import os
+
+    # Compute the path to the example_servant_data directory (repo root is one
+    # level up from the units package).
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    example_dir = os.path.join(repo_root, 'example_servant_data')
+
+    try:
+        filename = f"{int(character_id)}.json"
+    except Exception:
+        filename = f"{str(character_id)}.json"
+
+    filepath = os.path.join(example_dir, filename)
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, 'r', encoding='utf-8') as fh:
+                return json.load(fh)
+        except Exception:
+            # If reading fails, return None so caller can raise a clear error
+            return None
+
+    return None  # Ensure character_id is an integer
 
 class Servant:
     special_servants = [

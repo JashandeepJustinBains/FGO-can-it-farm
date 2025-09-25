@@ -30,7 +30,18 @@ class Skills:
             mystic_code: Mystic code instance
         """
         self.servant = servant
-        self.skills = self.parse_skills(skills_data)
+        # For skillSvts format we store raw entries and select the proper
+        # skill at use-time (dynamic selection) so runtime ascension/costume
+        # changes (e.g., via Servant.change_ascension or skill effects)
+        # are respected. Legacy format remains parsed eagerly.
+        parsed = self.parse_skills(skills_data)
+        # parsed may be a dict mapping skill numbers -> parsed entries for legacy
+        self._is_skill_svts = isinstance(parsed, dict) and any(isinstance(v, list) and v and 'raw_candidates' in v[0] for v in parsed.values())
+        if self._is_skill_svts:
+            # keep parsed structure but will select on demand
+            self.skills = parsed
+        else:
+            self.skills = parsed
         self.cooldowns = {1: 0, 2: 0, 3: 0}
         self.max_cooldowns = self.initialize_max_cooldowns()
         self.cooldown_reduction_applied = {1: False, 2: False, 3: False}
@@ -56,8 +67,10 @@ class Skills:
             first_skill = skills_data[0]
             is_skill_svts = 'svtId' in first_skill
             
-            if is_skill_svts and self.servant:
-                # Use variant-aware selection for skillSvts
+            if is_skill_svts:
+                # For skillSvts format, store raw candidate lists per slot and
+                # defer final selection to get_skill_by_num so selection can
+                # consider the servant's current ascension/variant at call time.
                 skills = self._parse_skill_svts(skills_data)
             else:
                 # Use legacy parsing
@@ -72,40 +85,107 @@ class Skills:
         return int(value) if value is not None else 0
     
     def _parse_skill_svts(self, skill_svts):
-        """Parse skillSvts format with variant-aware selection."""
-        skills = {1: [], 2: [], 3: []}
-        variant_svt_id = self.servant.variant_svt_id
-        
-        # Group skills by number
-        skills_by_num = {}
-        for skill in skill_svts:
-            num = self._extract_number(skill.get('num', 0))
-            if num not in skills_by_num:
-                skills_by_num[num] = []
-            skills_by_num[num].append(skill)
-        
-        for skill_num in [1, 2, 3]:
-            if skill_num not in skills_by_num:
+        """Parse skillSvts format.
+
+        If defer_selection is True, we return a structure where each slot
+        contains a single dict with key 'raw_candidates' holding the raw
+        skill entries. Final selection is done in get_skill_by_num using
+        current servant state.
+        """
+        def _inner_parse(defer_selection=False):
+            skills = {1: [], 2: [], 3: []}
+
+            # Group skills by number
+            skills_by_num = {}
+            for skill in skill_svts:
+                num = self._extract_number(skill.get('num', 0))
+                if num not in skills_by_num:
+                    skills_by_num[num] = []
+                skills_by_num[num].append(skill)
+
+            for skill_num in [1, 2, 3]:
+                if skill_num not in skills_by_num:
+                    continue
+                candidate_skills = skills_by_num[skill_num]
+
+                if defer_selection:
+                    # store raw candidates for dynamic selection
+                    skills[skill_num].append({'raw_candidates': candidate_skills})
+                else:
+                    # perform immediate selection (fallback behavior)
+                    variant_svt_id = self.servant.variant_svt_id if self.servant else None
+                    selected = self._select_skill_from_candidates(candidate_skills, variant_svt_id)
+                    if selected:
+                        parsed_skill = self._parse_single_skill(selected, use_max_level=True)
+                        skills[skill_num].append(parsed_skill)
+
+            return skills
+
+        # default: defer selection so runtime ascension/costume can be used
+        return _inner_parse(defer_selection=True)
+
+    def _select_skill_from_candidates(self, candidate_skills, variant_svt_id):
+        """Select a single skill entry from candidates using the same
+        strategy as NP selection: filter by releaseConditions, prefer exact
+        svtId match, then pick the entry with highest id as tie-breaker.
+        """
+        if not candidate_skills:
+            return None
+
+        # Step 1: Filter by release conditions
+        available = []
+        for s in candidate_skills:
+            release_conditions = s.get('releaseConditions', [])
+            if not release_conditions:
+                available.append(s)
                 continue
-                
-            candidate_skills = skills_by_num[skill_num]
-            
-            # Step 1: Filter by variant_svt_id if possible
-            variant_matches = [s for s in candidate_skills if self._extract_number(s.get('svtId')) == variant_svt_id]
-            
-            # Step 2: If no variant matches, use all candidates
+            # Group by condGroup
+            groups = {}
+            for cond in release_conditions:
+                grp = self._extract_number(cond.get('condGroup', 0))
+                groups.setdefault(grp, []).append(cond)
+
+            cond_met = False
+            for group_conds in groups.values():
+                group_ok = True
+                for cond in group_conds:
+                    if not self._check_skill_release_condition(cond):
+                        group_ok = False
+                        break
+                if group_ok:
+                    cond_met = True
+                    break
+            if cond_met:
+                available.append(s)
+
+        if not available:
+            available = candidate_skills
+
+        # Step 2: prefer exact svtId match
+        if variant_svt_id is not None:
+            variant_matches = [s for s in available if self._extract_number(s.get('svtId')) == variant_svt_id]
             if variant_matches:
-                candidates = variant_matches
-            else:
-                candidates = candidate_skills
-            
-            # Step 3: Pick entry with highest id
-            if candidates:
-                selected_skill = max(candidates, key=lambda s: self._extract_number(s.get('id', 0)))
-                parsed_skill = self._parse_single_skill(selected_skill, use_max_level=True)
-                skills[skill_num].append(parsed_skill)
-        
-        return skills
+                # choose highest id among matches
+                return max(variant_matches, key=lambda x: self._extract_number(x.get('id', 0)))
+
+        # Step 3: pick highest id among available
+        return max(available, key=lambda x: self._extract_number(x.get('id', 0)))
+
+    def _check_skill_release_condition(self, condition):
+        """Check a single release condition for skills.
+
+        Mirrors NP._check_release_condition behavior: treat
+        'equipWithTargetCostume' as an ascension threshold encoded in condNum.
+        Unknown condition types are assumed met to avoid blocking.
+        """
+        cond_type = condition.get('condType', '')
+        cond_num = self._extract_number(condition.get('condNum', 0))
+        if cond_type == 'equipWithTargetCostume':
+            return self.servant and self.servant.ascension >= cond_num
+        elif cond_type in ('questClear', 'friendshipRank'):
+            return True
+        else:
+            return True
     
     def _parse_legacy_skills(self, skills_data):
         """Parse legacy skills format for backwards compatibility."""
@@ -215,12 +295,43 @@ class Skills:
     def initialize_max_cooldowns(self):
         max_cooldowns = {}
         for i in range(1, len(self.skills) + 1):
-            max_cooldowns[i] = self.skills[i][-1]['cooldown']
+            slot_list = self.skills.get(i, [])
+            if not slot_list:
+                max_cooldowns[i] = 0
+                continue
+
+            first = slot_list[0]
+            # If deferred raw_candidates stored, select candidate now using
+            # the servant's current variant and parse to get cooldown.
+            if isinstance(first, dict) and 'raw_candidates' in first:
+                raw_candidates = first['raw_candidates']
+                selected = self._select_skill_from_candidates(raw_candidates, self.servant.variant_svt_id if self.servant else None)
+                if selected:
+                    parsed = self._parse_single_skill(selected, use_max_level=True)
+                    max_cooldowns[i] = parsed.get('cooldown', 0)
+                else:
+                    max_cooldowns[i] = 0
+            else:
+                # legacy parsed skill entry
+                try:
+                    max_cooldowns[i] = slot_list[-1].get('cooldown', 0)
+                except Exception:
+                    max_cooldowns[i] = 0
+
         return max_cooldowns
 
     def get_skill_by_num(self, num):
+        # Dynamic selection for skillSvts format: if we stored raw_candidates,
+        # select appropriate candidate using current servant state.
         if 1 <= num < len(self.skills) + 1:
-
+            slot_list = self.skills.get(num, [])
+            if slot_list and isinstance(slot_list[0], dict) and 'raw_candidates' in slot_list[0]:
+                raw_candidates = slot_list[0]['raw_candidates']
+                selected = self._select_skill_from_candidates(raw_candidates, self.servant.variant_svt_id)
+                if selected:
+                    return self._parse_single_skill(selected, use_max_level=True)
+                # fallback to legacy behavior if selection fails
+            # Legacy parsed skills path
             if self.melusine_skill == False and self.skills[num][0]['id'] == 888550:
                 self.melusine_skill = True
                 return self.skills[num][0]
