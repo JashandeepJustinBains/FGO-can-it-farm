@@ -30,7 +30,18 @@ class Skills:
             mystic_code: Mystic code instance
         """
         self.servant = servant
-        self.skills = self.parse_skills(skills_data)
+        # For skillSvts format we store raw entries and select the proper
+        # skill at use-time (dynamic selection) so runtime ascension/costume
+        # changes (e.g., via Servant.change_ascension or skill effects)
+        # are respected. Legacy format remains parsed eagerly.
+        parsed = self.parse_skills(skills_data)
+        # parsed may be a dict mapping skill numbers -> parsed entries for legacy
+        self._is_skill_svts = isinstance(parsed, dict) and any(isinstance(v, list) and v and 'raw_candidates' in v[0] for v in parsed.values())
+        if self._is_skill_svts:
+            # keep parsed structure but will select on demand
+            self.skills = parsed
+        else:
+            self.skills = parsed
         self.cooldowns = {1: 0, 2: 0, 3: 0}
         self.max_cooldowns = self.initialize_max_cooldowns()
         self.cooldown_reduction_applied = {1: False, 2: False, 3: False}
@@ -42,26 +53,47 @@ class Skills:
         """
         Parse skills with variant-aware selection.
         
-        For skillSvts format:
-        1. Filter skills by variant_svt_id
-        2. For each skill number, pick the entry with highest id
-        3. Use last svals and cooldown values (level 10/upgraded)
+        For skillSvts format (nested within skills):
+        1. Each skill object has its own skillSvts array
+        2. Store raw candidates for deferred selection 
+        3. Use current servant variant_svt_id at runtime in get_skill_by_num
         
         For legacy format: use as-is for backwards compatibility
         """
         skills = {1: [], 2: [], 3: []}
         
-        # Check if this is skillSvts format or legacy
+        # Check if this is nested skillSvts format or legacy
         if skills_data and isinstance(skills_data, list) and len(skills_data) > 0:
             first_skill = skills_data[0]
-            is_skill_svts = 'svtId' in first_skill
+            has_nested_skill_svts = 'skillSvts' in first_skill
             
-            if is_skill_svts and self.servant:
-                # Use variant-aware selection for skillSvts
-                skills = self._parse_skill_svts(skills_data)
+            if has_nested_skill_svts:
+                # For nested skillSvts format, store raw candidate lists per slot and
+                # defer final selection to get_skill_by_num so selection can
+                # consider the servant's current ascension/variant at call time.
+                skills = self._parse_nested_skill_svts(skills_data)
             else:
-                # Use legacy parsing
-                skills = self._parse_legacy_skills(skills_data)
+                # If the caller provided a servant with a computed variant, and
+                # there exists a top-level `skillSvts` in the servant data, we
+                # prefer using those variant candidates rather than the legacy
+                # skill entries. This makes variant-aware selection the
+                # default when the API supplies a variant id.
+                if self.servant and isinstance(self.servant, object):
+                    svc_data = getattr(self.servant, 'data', {}) or {}
+                    top_skill_svts = svc_data.get('skillSvts', [])
+                    if top_skill_svts:
+                        skills = self._parse_top_level_skill_svts(top_skill_svts)
+                    else:
+                        # Try to discover any scattered 'skillSvts' blocks
+                        # elsewhere in the servant JSON and use them if present.
+                        discovered = self._collect_skill_svts_from_data(svc_data)
+                        if discovered:
+                            skills = self._parse_top_level_skill_svts(discovered)
+                        else:
+                            skills = self._parse_legacy_skills(skills_data)
+                else:
+                    # Use legacy parsing
+                    skills = self._parse_legacy_skills(skills_data)
         
         return skills
     
@@ -71,119 +103,224 @@ class Skills:
             return int(value['$numberInt'])
         return int(value) if value is not None else 0
     
-    def _parse_skill_svts(self, skill_svts):
-        """Parse skillSvts format with variant-aware selection."""
+    def _parse_nested_skill_svts(self, skills_data):
+        """Parse nested skillSvts format where each skill has its own skillSvts array.
+        
+        Each skill object has a 'skillSvts' array with different variant entries.
+        We store these as raw candidates for dynamic selection at runtime.
+        """
         skills = {1: [], 2: [], 3: []}
-        variant_svt_id = self.servant.variant_svt_id
         
-        # Special case: For servant 444, handle position-based ascension logic
-        if self.servant and hasattr(self.servant, 'id') and self.servant.id == 444:
-            return self._parse_skill_svts_position_based(skill_svts)
-        
-        # Group skills by number
-        skills_by_num = {}
-        for skill in skill_svts:
-            num = self._extract_number(skill.get('num', 0))
-            if num not in skills_by_num:
-                skills_by_num[num] = []
-            skills_by_num[num].append(skill)
-        
-        for skill_num in [1, 2, 3]:
-            if skill_num not in skills_by_num:
+        for skill in skills_data:
+            skill_num = self._extract_number(skill.get('num', 0))
+            if skill_num not in [1, 2, 3]:
                 continue
                 
-            candidate_skills = skills_by_num[skill_num]
-            
-            # Step 1: Filter by variant_svt_id if possible
-            variant_matches = [s for s in candidate_skills if self._extract_number(s.get('svtId')) == variant_svt_id]
-            
-            # Step 2: If no variant matches, use all candidates
-            if variant_matches:
-                candidates = variant_matches
+            skill_svts = skill.get('skillSvts', [])
+            if skill_svts:
+                # Create candidate entries by combining base skill data with each skillSvt
+                raw_candidates = []
+                for skill_svt in skill_svts:
+                    # Create a combined entry with skill data and skillSvt-specific info
+                    candidate = dict(skill)  # Copy base skill data
+                    candidate.update(skill_svt)  # Override with skillSvt-specific data
+                    # Ensure the skill number is preserved
+                    candidate['num'] = skill.get('num')
+                    raw_candidates.append(candidate)
+                
+                # Store raw candidates for deferred selection
+                skills[skill_num].append({'raw_candidates': raw_candidates})
             else:
-                candidates = candidate_skills
-            
-            # Step 3: Pick entry with highest id
-            if candidates:
-                selected_skill = max(candidates, key=lambda s: self._extract_number(s.get('id', 0)))
-                parsed_skill = self._parse_single_skill(selected_skill, use_max_level=True)
+                # No skillSvts, treat as legacy single entry
+                parsed_skill = self._parse_single_skill(skill, use_max_level=True)
                 skills[skill_num].append(parsed_skill)
         
         return skills
-    
-    def _parse_skill_svts_position_based(self, skill_svts):
-        """Parse skillSvts with position-based ascension logic for special servants."""
-        skills = {1: [], 2: [], 3: []}
-        skills_by_num_and_order = {}  # Track order of appearance for each skill num
-        
-        for i, skill in enumerate(skill_svts):
-            skill_num = self._extract_number(skill.get('num', 1))
-            
-            if skill_num not in skills_by_num_and_order:
-                skills_by_num_and_order[skill_num] = []
-            
-            parsed_skill = self._parse_single_skill(skill, use_max_level=True)
-            # Add metadata to track which ascension this skill is for
-            parsed_skill['_ascension_range'] = self._determine_ascension_range(i, len(skill_svts))
-            parsed_skill['_original_index'] = i
-            skills_by_num_and_order[skill_num].append(parsed_skill)
-            
-        # Store all variants for runtime selection
-        for skill_num, skill_variants in skills_by_num_and_order.items():
-            skills[skill_num] = skill_variants
-            
-        return skills
+
+    def _select_skill_from_candidates(self, candidate_skills, variant_svt_id):
+        """Select a single skill entry from candidates using the same
+        strategy as NP selection: filter by releaseConditions, prefer exact
+        svtId match, then pick the entry with highest id as tie-breaker.
+        """
+        if not candidate_skills:
+            return None
+
+        # Step 1: Filter by release conditions
+        available = []
+        for s in candidate_skills:
+            release_conditions = s.get('releaseConditions', [])
+            if not release_conditions:
+                available.append(s)
+                continue
+            # Group by condGroup
+            groups = {}
+            for cond in release_conditions:
+                grp = self._extract_number(cond.get('condGroup', 0))
+                groups.setdefault(grp, []).append(cond)
+
+            cond_met = False
+            for group_conds in groups.values():
+                group_ok = True
+                for cond in group_conds:
+                    if not self._check_skill_release_condition(cond):
+                        group_ok = False
+                        break
+                if group_ok:
+                    cond_met = True
+                    break
+            if cond_met:
+                available.append(s)
+
+        if not available:
+            available = candidate_skills
+
+        # Prefer candidates that explicitly had releaseConditions which were met
+        matched_by_release = []
+        for s in candidate_skills:
+            rc = s.get('releaseConditions', [])
+            if not rc:
+                continue
+            # check if any condGroup in this candidate is satisfied
+            groups = {}
+            for cond in rc:
+                grp = self._extract_number(cond.get('condGroup', 0))
+                groups.setdefault(grp, []).append(cond)
+            group_ok = False
+            for group_conds in groups.values():
+                ok = True
+                for cond in group_conds:
+                    if not self._check_skill_release_condition(cond):
+                        ok = False
+                        break
+                if ok:
+                    group_ok = True
+                    break
+            if group_ok:
+                matched_by_release.append(s)
+
+        if matched_by_release:
+            available = matched_by_release
+
+        # Step 2: prefer exact svtId match among the available set (use priority/id as tie-breaker)
+        if variant_svt_id is not None:
+            variant_matches = [s for s in available if self._extract_number(s.get('svtId')) == variant_svt_id]
+            if variant_matches:
+                return max(variant_matches, key=lambda x: (self._extract_number(x.get('priority', 0)), self._extract_number(x.get('id', 0))))
+
+        # Step 3: pick highest priority then id among available
+        return max(available, key=lambda x: (self._extract_number(x.get('priority', 0)), self._extract_number(x.get('id', 0))))
+
+    def _check_skill_release_condition(self, condition):
+        """Check a single release condition for skills.
+
+        Mirrors NP._check_release_condition behavior: treat
+        'equipWithTargetCostume' as an ascension threshold encoded in condNum.
+        Unknown condition types are assumed met to avoid blocking.
+        """
+        cond_type = condition.get('condType', '')
+        cond_num = self._extract_number(condition.get('condNum', 0))
+        if cond_type == 'equipWithTargetCostume':
+            # Interpret condTargetId and condNum robustly:
+            # - condTargetId may be a costume/variant svt id (e.g. 800100)
+            # - condNum sometimes encodes ascension as 10 + ascension (e.g. 12 -> ascension 2)
+            cond_target = self._extract_number(condition.get('condTargetId', 0))
+
+            # If we don't have a servant context, be conservative and return False
+            if not self.servant:
+                return False
+
+            # Top-level servant id from data
+            try:
+                top_id = self._extract_number(getattr(self.servant, 'id', 0))
+            except Exception:
+                top_id = 0
+
+            variant_id = getattr(self.servant, 'variant_svt_id', None)
+
+            # If condTargetId refers to this servant (top-level or variant), use condNum semantics
+            if cond_target:
+                if cond_target == top_id or (variant_id is not None and cond_target == variant_id):
+                    # If condNum uses 10+ascension encoding, decode it
+                    if cond_num > 10:
+                        expected_asc = cond_num - 10
+                        return self.servant and self.servant.ascension == expected_asc
+                    # Otherwise treat condNum as a minimum ascension requirement
+                    return self.servant and self.servant.ascension >= cond_num
+                # If condTargetId is a costume/variant id different from top-level, require exact variant match
+                return self.servant and variant_id is not None and cond_target == variant_id
+
+            # No condTargetId present: fall back to condNum semantics
+            if cond_num > 10:
+                expected_asc = cond_num - 10
+                return self.servant and self.servant.ascension == expected_asc
+            return self.servant and self.servant.ascension >= cond_num
+        elif cond_type in ('questClear', 'friendshipRank'):
+            return True
+        else:
+            return True
     
     def _parse_legacy_skills(self, skills_data):
-        """Parse legacy skills format with ascension-aware selection."""
+        """Parse legacy skills format for backwards compatibility."""
         skills = {1: [], 2: [], 3: []}
-        
-        # For special servants like 444, we need ascension-aware skill selection
-        if self.servant and hasattr(self.servant, 'id') and self.servant.id == 444:
-            return self._parse_ascension_aware_legacy_skills(skills_data)
-        
-        # Standard legacy parsing for other servants
         for skill in skills_data:
             parsed_skill = self._parse_single_skill(skill, use_max_level=True)
             skill_num = self._extract_number(skill.get('num', 1))
             skills[skill_num].append(parsed_skill)
         return skills
-    
-    def _parse_ascension_aware_legacy_skills(self, skills_data):
-        """Parse legacy skills format with ascension awareness for special servants."""
-        # For servant 444, the structure is:
-        # - Skills 0,1,2 (first occurrence of each num): ascensions 1-2
-        # - Skills 3,4,5 (second occurrence of each num): ascensions 3-4
-        
+
+    def _parse_top_level_skill_svts(self, skill_svts):
+        """Parse the top-level skillSvts array (svt-wide list of variant skill entries).
+
+        Groups entries by their `num` field (skill slot) and stores raw
+        candidates for deferred selection.
+        """
         skills = {1: [], 2: [], 3: []}
-        skills_by_num_and_order = {}  # Track order of appearance for each skill num
-        
-        for i, skill in enumerate(skills_data):
-            skill_num = self._extract_number(skill.get('num', 1))
-            
-            if skill_num not in skills_by_num_and_order:
-                skills_by_num_and_order[skill_num] = []
-            
-            parsed_skill = self._parse_single_skill(skill, use_max_level=True)
-            # Add metadata to track which ascension this skill is for
-            parsed_skill['_ascension_range'] = self._determine_ascension_range(i, len(skills_data))
-            skills_by_num_and_order[skill_num].append(parsed_skill)
-            
-        # Store all variants for runtime selection
-        for skill_num, skill_variants in skills_by_num_and_order.items():
-            skills[skill_num] = skill_variants
-            
+
+        # Group by skill number
+        skills_by_num = {}
+        for entry in skill_svts:
+            num = self._extract_number(entry.get('num', 0))
+            if num not in [1, 2, 3]:
+                continue
+            skills_by_num.setdefault(num, []).append(entry)
+
+        for skill_num in [1, 2, 3]:
+            candidates = skills_by_num.get(skill_num, [])
+            if not candidates:
+                continue
+            # Store raw candidates for deferred selection
+            # Note: top-level entries are already variant-specific; we keep
+            # them as-is so selection logic can filter by svtId/releaseConditions.
+            skills[skill_num].append({'raw_candidates': candidates})
+
         return skills
-    
-    def _determine_ascension_range(self, skill_index, total_skills):
-        """Determine ascension range for a skill based on its position."""
-        # For servant 444 with 6 skills total:
-        # Skills 0,1,2 -> ascensions 1-2
-        # Skills 3,4,5 -> ascensions 3-4
-        if skill_index < total_skills // 2:
-            return (1, 2)  # First half: ascensions 1-2
-        else:
-            return (3, 4)  # Second half: ascensions 3-4
+
+    def _collect_skill_svts_from_data(self, data):
+        """Recursively search servant JSON for any lists named 'skillSvts' and
+        aggregate their entries. Returns a flat list of skillSvt entries or []
+        if none found.
+        """
+        found = []
+
+        def visit(obj):
+            if isinstance(obj, dict):
+                for k, v in obj.items():
+                    if k == 'skillSvts' and isinstance(v, list):
+                        for e in v:
+                            if isinstance(e, dict) and ('svtId' in e or 'num' in e):
+                                found.append(e)
+                    else:
+                        visit(v)
+            elif isinstance(obj, list):
+                for item in obj:
+                    visit(item)
+
+        try:
+            visit(data or {})
+        except Exception:
+            return []
+
+        return found
     
     def _parse_single_skill(self, skill, use_max_level=True):
         """
@@ -284,39 +421,50 @@ class Skills:
     def initialize_max_cooldowns(self):
         max_cooldowns = {}
         for i in range(1, len(self.skills) + 1):
-            max_cooldowns[i] = self.skills[i][-1]['cooldown']
+            slot_list = self.skills.get(i, [])
+            if not slot_list:
+                max_cooldowns[i] = 0
+                continue
+
+            first = slot_list[0]
+            # If deferred raw_candidates stored, select candidate now using
+            # the servant's current variant and parse to get cooldown.
+            if isinstance(first, dict) and 'raw_candidates' in first:
+                raw_candidates = first['raw_candidates']
+                selected = self._select_skill_from_candidates(raw_candidates, self.servant.variant_svt_id if self.servant else None)
+                if selected:
+                    parsed = self._parse_single_skill(selected, use_max_level=True)
+                    max_cooldowns[i] = parsed.get('cooldown', 0)
+                else:
+                    max_cooldowns[i] = 0
+            else:
+                # legacy parsed skill entry
+                try:
+                    max_cooldowns[i] = slot_list[-1].get('cooldown', 0)
+                except Exception:
+                    max_cooldowns[i] = 0
+
         return max_cooldowns
 
     def get_skill_by_num(self, num):
+        # Dynamic selection for skillSvts format: if we stored raw_candidates,
+        # select appropriate candidate using current servant state.
         if 1 <= num < len(self.skills) + 1:
-            # Handle special Melusine case
-            if self.melusine_skill == False and self.skills[num] and self.skills[num][0]['id'] == 888550:
+            slot_list = self.skills.get(num, [])
+            if slot_list and isinstance(slot_list[0], dict) and 'raw_candidates' in slot_list[0]:
+                raw_candidates = slot_list[0]['raw_candidates']
+                selected = self._select_skill_from_candidates(raw_candidates, self.servant.variant_svt_id)
+                if selected:
+                    return self._parse_single_skill(selected, use_max_level=True)
+                # fallback to legacy behavior if selection fails
+            # Legacy parsed skills path
+            if self.melusine_skill == False and self.skills[num][0]['id'] == 888550:
                 self.melusine_skill = True
                 return self.skills[num][0]
-            
-            # For ascension-aware servants, select skill based on current ascension
-            if self.servant and hasattr(self.servant, 'ascension') and len(self.skills[num]) > 1:
-                return self._select_skill_for_ascension(num)
             else:
-                # Standard behavior: return last (highest priority) skill
-                return self.skills[num][-1] if self.skills[num] else None
+                return self.skills[num][-1]
         else:
             raise IndexError(f"Skill number {num} is out of range")
-    
-    def _select_skill_for_ascension(self, skill_num):
-        """Select the appropriate skill variant based on current ascension."""
-        skill_variants = self.skills[skill_num]
-        current_ascension = getattr(self.servant, 'ascension', 1)
-        
-        # Find the skill that matches the current ascension
-        for skill_variant in skill_variants:
-            if '_ascension_range' in skill_variant:
-                asc_min, asc_max = skill_variant['_ascension_range']
-                if asc_min <= current_ascension <= asc_max:
-                    return skill_variant
-        
-        # Fallback to last skill if no ascension match found
-        return skill_variants[-1] if skill_variants else None
 
     def __iter__(self):
         return iter(self.skills)

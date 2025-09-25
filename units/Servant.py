@@ -142,6 +142,10 @@ def compute_variant_svt_id(servant_json: dict, ascension: int, costume_svt_id=No
         Selected variant svtId
     """
 
+    # If an explicit costume override was provided, use it immediately.
+    if costume_svt_id is not None:
+        return _extract_number(costume_svt_id)
+
     # Heuristic: sometimes the API returns a variant svt id in the 'ascension'
     # field. If ascension looks like a variant id (large integer) or matches a
     # costume key in ascensionAdd, prefer it directly for variant selection.
@@ -186,34 +190,36 @@ def compute_variant_svt_id(servant_json: dict, ascension: int, costume_svt_id=No
         if ascension_image_index in image_index_mapping:
             return image_index_mapping[ascension_image_index]['svtId']
     
-    # Step 2b: Try sprite model data as fallback for ascension mapping
-    sprite_models = servant_json.get('extraAssets', {}).get('spriteModel', {}).get('ascension', {})
-    if sprite_models:
-        # Try to find sprite model for this ascension
-        ascension_key = str(ascension)
-        if ascension_key in sprite_models:
-            sprite_url = sprite_models[ascension_key]
-            # Extract svtId from URL pattern like "...Servants/4000120/manifest.json"
-            if 'Servants/' in sprite_url:
-                try:
-                    svt_id_str = sprite_url.split('Servants/')[1].split('/')[0]
-                    extracted_svt_id = int(svt_id_str)
-                    if extracted_svt_id != top_level_svt_id:  # Only use if different
-                        return extracted_svt_id
-                except (IndexError, ValueError):
-                    pass  # Continue to next step if extraction fails
-    
-    # Step 4: Try skillSvts releaseConditions
+    # Step 4: Try spriteModel mapping (some exports include per-ascension sprite model -> variant mapping)
+    extra_assets = servant_json.get('extraAssets', {}) or {}
+    sprite_models = extra_assets.get('spriteModel', {}) or {}
+    asc_sprite_map = sprite_models.get('ascension', {}) or {}
+    try:
+        # asc_sprite_map may map ascension index -> svtId
+        if ascension in asc_sprite_map:
+            return _extract_number(asc_sprite_map[ascension])
+        # or keys might be strings
+        if str(ascension) in asc_sprite_map:
+            return _extract_number(asc_sprite_map[str(ascension)])
+    except Exception:
+        pass
+
+    # Step 5: Try skillSvts releaseConditions
     skill_svts = servant_json.get('skillSvts', [])
     if skill_svts:
         for skill_entry in skill_svts:
             release_conditions = skill_entry.get('releaseConditions', [])
             for condition in release_conditions:
                 if condition.get('condType') == 'equipWithTargetCostume':
-                    cond_target_id = _extract_number(condition.get('condTargetId', 0))
-                    # This maps costume/ascension to svtId
-                    if cond_target_id and (cond_target_id == ascension or cond_target_id == ascension + 10):
-                        return _extract_number(skill_entry.get('svtId', top_level_svt_id))
+                    cond_target_id = _extract_number(condition.get('condTargetId', condition.get('condNum', 0)))
+                    # condTargetId may be encoded as a costume svt id or a small ascension threshold
+                    if cond_target_id:
+                        # If cond_target_id looks like a small ascension number (<=10) compare to ascension
+                        if cond_target_id <= 10 and (cond_target_id == ascension or cond_target_id == ascension + 10):
+                            return _extract_number(skill_entry.get('svtId', top_level_svt_id))
+                        # Otherwise treat as a svt id mapping
+                        if cond_target_id == top_level_svt_id or cond_target_id == ascension:
+                            return _extract_number(skill_entry.get('svtId', top_level_svt_id))
     
     # Step 5: Fallback to top-level svtId
     return top_level_svt_id
@@ -221,7 +227,7 @@ def compute_variant_svt_id(servant_json: dict, ascension: int, costume_svt_id=No
 
 def select_character(character_id):
     """
-    Load character data from database or local fallback data.
+    Load character data from database or mock data.
     
     Args:
         character_id: Collection number of the character
@@ -229,33 +235,42 @@ def select_character(character_id):
     Returns:
         Character data dict or None if not found
     """
-    # Try database first
-    try:
-        from scripts.connectDB import db
-        servant = db.servants.find_one({'collectionNo': character_id})
-        if servant:
-            return servant
-    except ImportError:
-        # Database connection not available, continue to fallback
-        pass
-    except Exception:
-        # Database query failed, continue to fallback
-        pass
-    
-    # Fallback to local JSON data
+    # Try to use a global `db` object if available (test harness may provide one).
+    db = globals().get('db', None)
+    if db:
+        try:
+            servant = db.servants.find_one({'collectionNo': character_id})
+            if servant:
+                return servant
+        except Exception:
+            # If any DB access error occurs, fall back to file-based loading
+            pass
+
+    # File fallback for local tests / environments without a DB.
+    # Look for example_servant_data/<collectionNo>.json relative to repo root.
     import json
     import os
-    
-    json_file = f"example_servant_data/{character_id}.json"
-    if os.path.exists(json_file):
+
+    # Compute the path to the example_servant_data directory (repo root is one
+    # level up from the units package).
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    example_dir = os.path.join(repo_root, 'example_servant_data')
+
+    try:
+        filename = f"{int(character_id)}.json"
+    except Exception:
+        filename = f"{str(character_id)}.json"
+
+    filepath = os.path.join(example_dir, filename)
+    if os.path.exists(filepath):
         try:
-            with open(json_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                return data
-        except Exception as e:
-            logging.warning(f"Failed to load {json_file}: {e}")
-    
-    return None
+            with open(filepath, 'r', encoding='utf-8') as fh:
+                return json.load(fh)
+        except Exception:
+            # If reading fails, return None so caller can raise a clear error
+            return None
+
+    return None  # Ensure character_id is an integer
 
 class Servant:
     special_servants = [
@@ -505,3 +520,4 @@ class Servant:
         if 'data' in state and hasattr(state['data'], 'collection'):  # crude check for pymongo object
             state['data'] = None
         return state
+
