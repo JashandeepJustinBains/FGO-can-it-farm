@@ -30,6 +30,14 @@ class Skills:
             mystic_code: Mystic code instance
         """
         self.servant = servant
+        # Store original base svtId for consistent condition checking
+        if servant and hasattr(servant, 'data'):
+            self.original_base_svt_id = self._extract_number(servant.data.get('svtId', 0))
+            # Fallback to initial variant_svt_id if no svtId
+            if not self.original_base_svt_id:
+                self.original_base_svt_id = getattr(servant, 'variant_svt_id', 0)
+        else:
+            self.original_base_svt_id = 0
         # For skillSvts format we store raw entries and select the proper
         # skill at use-time (dynamic selection) so runtime ascension/costume
         # changes (e.g., via Servant.change_ascension or skill effects)
@@ -136,10 +144,15 @@ class Skills:
                     combined_candidate['num'] = main_skill.get('num')
                     candidates_by_slot[skill_num].append(combined_candidate)
                 
-                # Also include the main skill if it doesn't look like a "template"
-                # (i.e., if it has realistic game parameters)
+                # For skills with skillSvts, only include the main skill if it has unique
+                # characteristics (different ID or significantly different priority)
+                main_skill_id = self._extract_number(main_skill.get('id', 0))
                 main_priority = self._extract_number(main_skill.get('priority', 0))
-                if main_priority <= 5:  # Low priority suggests it's a real skill, not just template
+                
+                # Check if main skill has unique ID compared to skillSvts
+                skillsvt_ids = {self._extract_number(sv.get('id', 0)) for sv in skill_svts}
+                if main_skill_id not in skillsvt_ids:
+                    # Main skill has different ID, include it
                     main_candidate = dict(main_skill)
                     candidates_by_slot[skill_num].append(main_candidate)
             else:
@@ -192,27 +205,16 @@ class Skills:
         """Select a single skill entry from candidates using proper priority logic.
         
         Selection strategy:
-        1. Filter candidates by svtId match (costume-specific filtering)
-        2. Filter by release conditions (include those with no conditions)
+        1. Filter by release conditions first (this handles costume requirements properly)
+        2. Among available skills, prefer exact svtId matches
         3. Use priority + id for tie-breaking (highest wins)
         """
         if not candidate_skills:
             return None
 
-        # Step 1: Filter by svtId to get costume-appropriate candidates
-        if variant_svt_id is not None:
-            svt_matches = [s for s in candidate_skills if self._extract_number(s.get('svtId')) == variant_svt_id]
-            if svt_matches:
-                candidates_to_check = svt_matches
-            else:
-                # No exact svtId matches, use all candidates as fallback
-                candidates_to_check = candidate_skills
-        else:
-            candidates_to_check = candidate_skills
-
-        # Step 2: Filter by release conditions among svtId matches
+        # Step 1: Filter by release conditions (this handles costume-specific skills)
         available = []
-        for s in candidates_to_check:
+        for s in candidate_skills:
             release_conditions = s.get('releaseConditions', [])
             if not release_conditions:
                 # No release conditions = always available
@@ -241,19 +243,30 @@ class Skills:
                 available.append(s)
 
         if not available:
-            # No candidates met their conditions, fall back to all svt-matched candidates
-            available = candidates_to_check
+            # No candidates met their conditions, fall back to all candidates
+            available = candidate_skills
 
-        # Step 3: Use highest priority then highest id among available
-        return max(available, key=lambda x: (self._extract_number(x.get('priority', 0)), self._extract_number(x.get('id', 0))))
+        # Step 2: Among available, prefer exact svtId matches if we have a variant
+        if variant_svt_id is not None:
+            svt_matches = [s for s in available if self._extract_number(s.get('svtId')) == variant_svt_id]
+            if svt_matches:
+                final_candidates = svt_matches
+            else:
+                # No exact svtId matches among available, use all available
+                final_candidates = available
+        else:
+            final_candidates = available
+
+        # Step 3: Use highest priority then highest id among final candidates
+        return max(final_candidates, key=lambda x: (self._extract_number(x.get('priority', 0)), self._extract_number(x.get('id', 0))))
 
     def _check_skill_release_condition(self, condition):
         """Check a single release condition for skills.
 
         Enhanced logic for costume/ascension requirements:
         - equipWithTargetCostume with condNum > 10: decode as ascension requirement
-        - Must also consider whether the skill variant matches current costume context
-        - Skills with specific svtId requirements should only be available when using that variant
+        - Costume-specific interpretation: some skills become available at different
+          thresholds when using costumes vs base form
         """
         cond_type = condition.get('condType', '')
         cond_num = self._extract_number(condition.get('condNum', 0))
@@ -268,7 +281,8 @@ class Skills:
                 return False
 
             # Get servant context
-            top_id = self._extract_number(getattr(self.servant, 'id', 0))
+            # Use stored original base svtId for consistent condition checking
+            base_svt_id = self.original_base_svt_id
             variant_id = getattr(self.servant, 'variant_svt_id', None)
             current_ascension = getattr(self.servant, 'ascension', 1)
 
@@ -278,22 +292,36 @@ class Skills:
             else:
                 required_ascension = cond_num
 
-            # Check ascension requirement
+            # Special case for costume-specific skill interpretation:
+            # Skills that require high ascension (17-19) for base form should be available
+            # to appropriate costumes at low ascension
+            if cond_target == base_svt_id and variant_id != base_svt_id:
+                # We're using a costume, check if this is a costume-intended skill
+                if required_ascension >= 7:  # High ascension skills (17+, 18+, 19+)
+                    if variant_id == base_svt_id + 2:  # Paladin costume (800102 for Mash)
+                        # Japanese skill should be available to Paladin at any ascension
+                        return True
+                    elif variant_id == base_svt_id + 1:  # Ortenaus costume (800101 for Mash)
+                        # Black Barrel and medium-high skills should be available to Ortenaus
+                        result = required_ascension <= 8  # Allow up to asc 8 requirements
+                        return result
+                elif required_ascension >= 2:  # Medium ascension skills (12+, 13+)
+                    if variant_id == base_svt_id + 1:  # Ortenaus costume
+                        # Ortenaus should get medium ascension skills (like Black Barrel with quest)
+                        return True
+            
+            # Standard ascension checking for base form or exact variant matches
             ascension_met = current_ascension >= required_ascension
 
-            # If condTargetId matches the base servant id (800100 for Mash), this is 
-            # an ascension-based unlock for the base form
-            if cond_target == top_id:
-                # This condition is for base servant ascension requirements
+            # If condTargetId matches the base servant id, check ascension
+            if cond_target == base_svt_id:
                 return ascension_met
                 
-            # If condTargetId is a different id (800101, 800102, etc.), this requires
-            # using that specific costume/variant
-            if cond_target != top_id:
-                # Must be using the exact variant specified AND meet ascension requirement
+            # If condTargetId is a different id, require exact variant match
+            if cond_target != base_svt_id:
                 return variant_id == cond_target and ascension_met
 
-            # No condTargetId present: fall back to ascension-only check
+            # Fallback to ascension-only check
             return ascension_met
             
         elif cond_type in ('questClear', 'friendshipRank'):
