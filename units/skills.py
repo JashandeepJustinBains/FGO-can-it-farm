@@ -31,9 +31,11 @@ class Skills:
         """
         self.servant = servant
         # Store original base svtId for consistent condition checking
-        if servant and hasattr(servant, 'data'):
+        if servant and hasattr(servant, 'original_base_svt_id'):
+            self.original_base_svt_id = servant.original_base_svt_id
+        elif servant and hasattr(servant, 'data'):
+            # Fallback: derive from servant data
             self.original_base_svt_id = self._extract_number(servant.data.get('svtId', 0))
-            # Fallback to initial variant_svt_id if no svtId
             if not self.original_base_svt_id:
                 self.original_base_svt_id = getattr(servant, 'variant_svt_id', 0)
         else:
@@ -207,7 +209,8 @@ class Skills:
         Selection strategy:
         1. Filter by release conditions first (this handles costume requirements properly)
         2. Among available skills, prefer exact svtId matches
-        3. Use priority + id for tie-breaking (highest wins)
+        3. For base form, exclude skills that appear to be costume-intended
+        4. Use priority + id for tie-breaking (highest wins)
         """
         if not candidate_skills:
             return None
@@ -246,7 +249,39 @@ class Skills:
             # No candidates met their conditions, fall back to all candidates
             available = candidate_skills
 
-        # Step 2: Among available, prefer exact svtId matches if we have a variant
+        # Step 2: For base form, filter out skills that appear to be costume-intended
+        if variant_svt_id == self.original_base_svt_id:
+            # We're using base form - exclude skills that have costume-specific variants
+            filtered_available = []
+            skill_ids_with_costume_conditions = set()
+            
+            # First pass: identify skill IDs that have costume-specific release conditions
+            for s in candidate_skills:
+                skill_id = self._extract_number(s.get('id', 0))
+                release_conditions = s.get('releaseConditions', [])
+                for cond in release_conditions:
+                    if cond.get('condType') == 'equipWithTargetCostume':
+                        cond_num = self._extract_number(cond.get('condNum', 0))
+                        # If condNum suggests medium/high ascension (12+), this skill has costume variants
+                        if cond_num >= 12:
+                            skill_ids_with_costume_conditions.add(skill_id)
+            
+            # Second pass: for base form, exclude no-condition entries of skills that have costume conditions
+            for s in available:
+                skill_id = self._extract_number(s.get('id', 0))
+                release_conditions = s.get('releaseConditions', [])
+                
+                if not release_conditions and skill_id in skill_ids_with_costume_conditions:
+                    # This is a no-condition entry of a skill that has costume-specific variants
+                    # Skip it for base form (it's probably intended for costumes)
+                    continue
+                else:
+                    filtered_available.append(s)
+            
+            if filtered_available:
+                available = filtered_available
+
+        # Step 3: Among available, prefer exact svtId matches if we have a variant
         if variant_svt_id is not None:
             svt_matches = [s for s in available if self._extract_number(s.get('svtId')) == variant_svt_id]
             if svt_matches:
@@ -257,7 +292,7 @@ class Skills:
         else:
             final_candidates = available
 
-        # Step 3: Use highest priority then highest id among final candidates
+        # Step 4: Use highest priority then highest id among final candidates
         return max(final_candidates, key=lambda x: (self._extract_number(x.get('priority', 0)), self._extract_number(x.get('id', 0))))
 
     def _check_skill_release_condition(self, condition):

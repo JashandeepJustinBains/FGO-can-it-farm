@@ -326,6 +326,10 @@ class Servant:
         # from the incoming ascension).
         variant_override = self._user_supplied_variant
         self.variant_svt_id = compute_variant_svt_id(self.data, self.ascension, variant_override)
+        
+        # Store the original base svtId for consistent release condition checking
+        # This is the base variant before any costume changes are applied
+        self.original_base_svt_id = _extract_number(self.data.get('svtId', self.variant_svt_id))
 
         # Use ascension-aware data selection so Servant picks ascension-specific
         # skills and noblePhantasms when present in the JSON. Falls back to
