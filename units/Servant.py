@@ -118,7 +118,18 @@ def _extract_number(value):
     """Extract number handling MongoDB format."""
     if isinstance(value, dict) and '$numberInt' in value:
         return int(value['$numberInt'])
-    return int(value) if value is not None else 0
+    elif isinstance(value, dict) and '$numberLong' in value:
+        return int(value['$numberLong'])
+    elif isinstance(value, dict) and '$numberDouble' in value:
+        return int(float(value['$numberDouble']))
+    elif isinstance(value, (int, float)):
+        return int(value)
+    elif isinstance(value, str) and value.isdigit():
+        return int(value)
+    elif value is None:
+        return 0
+    else:
+        return 0
 
 
 def compute_variant_svt_id(servant_json: dict, ascension: int, costume_svt_id=None) -> int:
@@ -329,7 +340,7 @@ class Servant:
         
         # Store the original base svtId for consistent release condition checking
         # This is the base variant before any costume changes are applied
-        self.original_base_svt_id = _extract_number(self.data.get('svtId', self.variant_svt_id))
+        self.original_base_svt_id = _extract_number(self.data.get('id', self.data.get('svtId', self.variant_svt_id)))
 
         # Use ascension-aware data selection so Servant picks ascension-specific
         # skills and noblePhantasms when present in the JSON. Falls back to

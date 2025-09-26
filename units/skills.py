@@ -111,7 +111,18 @@ class Skills:
         """Extract number handling MongoDB format."""
         if isinstance(value, dict) and '$numberInt' in value:
             return int(value['$numberInt'])
-        return int(value) if value is not None else 0
+        elif isinstance(value, dict) and '$numberLong' in value:
+            return int(value['$numberLong'])
+        elif isinstance(value, dict) and '$numberDouble' in value:
+            return int(float(value['$numberDouble']))
+        elif isinstance(value, (int, float)):
+            return int(value)
+        elif isinstance(value, str) and value.isdigit():
+            return int(value)
+        elif value is None:
+            return 0
+        else:
+            return 0
     
     def _parse_all_skill_candidates(self, skills_data):
         """Parse all skill candidates from the main skills array.
@@ -292,8 +303,23 @@ class Skills:
         else:
             final_candidates = available
 
-        # Step 4: Use highest priority then highest id among final candidates
-        return max(final_candidates, key=lambda x: (self._extract_number(x.get('priority', 0)), self._extract_number(x.get('id', 0))))
+        # Step 4: Among final candidates, prefer those with more stringent release conditions
+        # (indicating they're higher-tier/ascension skills), then by priority, then by ID
+        def skill_selection_key(skill):
+            # Calculate "ascension requirement" from release conditions
+            max_ascension_req = 0
+            for cond in skill.get('releaseConditions', []):
+                if cond.get('condType') == 'equipWithTargetCostume':
+                    cond_num = self._extract_number(cond.get('condNum', 0))
+                    max_ascension_req = max(max_ascension_req, cond_num)
+            
+            priority = self._extract_number(skill.get('priority', 999))
+            skill_id = self._extract_number(skill.get('id', 0))
+            
+            # Prefer skills with higher ascension requirements, then lower priority numbers, then higher IDs
+            return (-max_ascension_req, priority, -skill_id)
+        
+        return min(final_candidates, key=skill_selection_key)
 
     def _check_skill_release_condition(self, condition):
         """Check a single release condition for skills.

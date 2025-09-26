@@ -62,20 +62,93 @@ class NP:
         else:
             selected_nps = nps_data if isinstance(nps_data, list) else []
 
-        # Sort NPs by their original ID to ensure the highest ID is last
+        # Sort NPs by their original ID first for consistent ordering
         sorted_nps = sorted(selected_nps, key=lambda np: self._extract_number(np.get('id', 0)))
-
-        # Assign new IDs from 1 to the highest upgrade
-        for i, np in enumerate(sorted_nps):
+        
+        # Select the best NP from the filtered/sorted results
+        result_nps = sorted_nps
+        if len(result_nps) > 1 and self.servant:
+            # Apply ascension-aware selection similar to skills
+            result_nps = self._apply_ascension_aware_np_selection(result_nps)
+        
+        # Assign new IDs from 1 to the selected NPs
+        for i, np in enumerate(result_nps):
             np['new_id'] = i + 1
 
-        return sorted_nps
+        return result_nps
+    
+    def _apply_ascension_aware_np_selection(self, np_candidates):
+        """Apply ascension-aware NP selection similar to skill selection logic."""
+        if not np_candidates:
+            return []
+            
+        # Filter by release conditions first
+        available_nps = []
+        for np in np_candidates:
+            release_conditions = np.get('releaseConditions', [])
+            if not release_conditions:
+                available_nps.append(np)
+                continue
+                
+            # Check if release conditions are met
+            # Group conditions by condGroup (OR between groups, AND within groups)
+            groups = {}
+            for cond in release_conditions:
+                grp = self._extract_number(cond.get('condGroup', 0))
+                groups.setdefault(grp, []).append(cond)
+
+            cond_met = False
+            for group_conds in groups.values():
+                group_ok = True
+                for cond in group_conds:
+                    if not self._check_release_condition(cond):
+                        group_ok = False
+                        break
+                if group_ok:
+                    cond_met = True
+                    break
+            
+            if cond_met:
+                available_nps.append(np)
+        
+        if not available_nps:
+            # No NPs met their conditions, fall back to all candidates
+            available_nps = np_candidates
+
+        # Among available NPs, prefer those with higher ascension requirements
+        def np_selection_key(np):
+            # Calculate "ascension requirement" from release conditions
+            max_ascension_req = 0
+            for cond in np.get('releaseConditions', []):
+                if cond.get('condType') == 'equipWithTargetCostume':
+                    cond_num = self._extract_number(cond.get('condNum', 0))
+                    max_ascension_req = max(max_ascension_req, cond_num)
+            
+            priority = self._extract_number(np.get('priority', 999))
+            np_id = self._extract_number(np.get('id', 0))
+            
+            # Prefer NPs with higher ascension requirements, then lower priority numbers, then higher IDs
+            return (-max_ascension_req, priority, -np_id)
+        
+        best_np = min(available_nps, key=np_selection_key)
+        return [best_np]
     
     def _extract_number(self, value):
         """Extract number handling MongoDB format."""
         if isinstance(value, dict) and '$numberInt' in value:
             return int(value['$numberInt'])
-        return int(value) if value is not None else 0
+        elif isinstance(value, dict) and '$numberLong' in value:
+            return int(value['$numberLong'])
+        elif isinstance(value, dict) and '$numberDouble' in value:
+            return int(float(value['$numberDouble']))
+        elif isinstance(value, (int, float)):
+            return int(value)
+        elif isinstance(value, str) and value.isdigit():
+            return int(value)
+        elif value is None:
+            return 0
+        else:
+            return 0
     
     def _select_variant_nps(self, np_svts):
         """
@@ -104,9 +177,9 @@ class NP:
             if vm_image_matches:
                 return vm_image_matches
 
-            # No imageIndex match among variant_matches: pick highest priority
-            max_priority = max(self._extract_number(np.get('priority', 0)) for np in variant_matches)
-            priority_matches = [np for np in variant_matches if self._extract_number(np.get('priority', 0)) == max_priority]
+            # No imageIndex match among variant_matches: pick lowest priority (highest precedence)
+            min_priority = min(self._extract_number(np.get('priority', 999)) for np in variant_matches)
+            priority_matches = [np for np in variant_matches if self._extract_number(np.get('priority', 999)) == min_priority]
             return priority_matches
 
         # Step 3: Try imageIndex mapping across all available entries
@@ -115,10 +188,10 @@ class NP:
         if image_matches:
             return image_matches
 
-        # Step 4: Use highest priority among available NPs
+        # Step 4: Use lowest priority (highest precedence) among available NPs
         if available_nps:
-            max_priority = max(self._extract_number(np.get('priority', 0)) for np in available_nps)
-            priority_matches = [np for np in available_nps if self._extract_number(np.get('priority', 0)) == max_priority]
+            min_priority = min(self._extract_number(np.get('priority', 999)) for np in available_nps)
+            priority_matches = [np for np in available_nps if self._extract_number(np.get('priority', 999)) == min_priority]
             if priority_matches:
                 return priority_matches
 

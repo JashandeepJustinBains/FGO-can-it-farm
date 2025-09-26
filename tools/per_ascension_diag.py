@@ -124,6 +124,107 @@ def diag_servant(collection_no, asc_min=1, asc_max=4):
 
         print('\n')
 
+
+def enhanced_diag_servant(collection_no, start_ascension=1, end_ascension=4, output_json=True, output_dir="outputs/per_ascension"):
+    """
+    Enhanced diagnostic that outputs both human-readable and machine-readable formats.
+    
+    Args:
+        collection_no: Servant collection number
+        start_ascension: Starting ascension to test (default 1)
+        end_ascension: Ending ascension to test (default 4)
+        output_json: Whether to output machine-readable JSON (default True)
+        output_dir: Output directory for JSON files (default "outputs/per_ascension")
+    
+    Returns:
+        Dictionary with diagnostic results for each ascension
+    """
+    import os
+    import json
+    from datetime import datetime
+    
+    # Ensure output directory exists
+    if output_json:
+        os.makedirs(output_dir, exist_ok=True)
+    
+    results = {
+        "collection_no": collection_no,
+        "timestamp": datetime.now().isoformat(),
+        "ascensions": {}
+    }
+    
+    print(f"=== Enhanced Diagnostic for Servant {collection_no} ===")
+    
+    for asc in range(start_ascension, end_ascension + 1):
+        print(f"\n--- Ascension {asc} ---")
+        
+        try:
+            # Create servant instance
+            servant = Servant(collection_no, ascension=asc)
+            
+            asc_result = {
+                "ascension": asc,
+                "variant_svt_id": getattr(servant, 'variant_svt_id', None),
+                "original_base_svt_id": getattr(servant, 'original_base_svt_id', None),
+                "skills": {},
+                "noble_phantasms": [],
+                "error": None
+            }
+            
+            # Analyze skills for each slot
+            if hasattr(servant, 'skills') and servant.skills:
+                for slot in [1, 2, 3]:
+                    try:
+                        selected_skill = servant.skills.get_skill_by_num(slot)
+                        
+                        asc_result["skills"][slot] = {
+                            "selected_id": selected_skill.get('id') if selected_skill else None,
+                            "selected_name": selected_skill.get('name') if selected_skill else None,
+                            "cooldown": selected_skill.get('cooldown') if selected_skill else None
+                        }
+                        
+                        if selected_skill:
+                            print(f"  Slot {slot}: {selected_skill.get('name', 'Unknown')} (id={selected_skill.get('id')}, cooldown={selected_skill.get('cooldown')})")
+                        else:
+                            print(f"  Slot {slot}: No skill selected")
+                        
+                    except Exception as e:
+                        asc_result["skills"][slot] = {"error": str(e)}
+                        print(f"  Slot {slot}: ERROR - {e}")
+            
+            # Analyze NPs
+            if hasattr(servant, 'nps') and servant.nps:
+                for np in servant.nps.nps:
+                    np_info = {
+                        "id": np.get('id'),
+                        "name": np.get('name'),
+                        "new_id": np.get('new_id'),
+                        "priority": np.get('priority'),
+                        "svt_id": np.get('svtId')
+                    }
+                    asc_result["noble_phantasms"].append(np_info)
+                    print(f"  NP: {np.get('name', 'Unknown')} (id={np.get('id')}, new_id={np.get('new_id')})")
+            
+            results["ascensions"][asc] = asc_result
+            print(f"  Status: OK")
+            
+        except Exception as e:
+            error_msg = str(e)
+            results["ascensions"][asc] = {
+                "ascension": asc,
+                "error": error_msg
+            }
+            print(f"  Status: ERROR - {error_msg}")
+    
+    # Save JSON output
+    if output_json:
+        output_file = os.path.join(output_dir, f"{collection_no}.json")
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(results, f, indent=2, ensure_ascii=False)
+        print(f"\nMachine-readable output saved to: {output_file}")
+    
+    return results
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print('Usage: per_ascension_diag.py <collectionNo> [asc_min] [asc_max]')
