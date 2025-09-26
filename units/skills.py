@@ -303,8 +303,23 @@ class Skills:
         else:
             final_candidates = available
 
-        # Step 4: Use highest priority then highest id among final candidates
-        return max(final_candidates, key=lambda x: (self._extract_number(x.get('priority', 0)), self._extract_number(x.get('id', 0))))
+        # Step 4: Among final candidates, prefer those with more stringent release conditions
+        # (indicating they're higher-tier/ascension skills), then by priority, then by ID
+        def skill_selection_key(skill):
+            # Calculate "ascension requirement" from release conditions
+            max_ascension_req = 0
+            for cond in skill.get('releaseConditions', []):
+                if cond.get('condType') == 'equipWithTargetCostume':
+                    cond_num = self._extract_number(cond.get('condNum', 0))
+                    max_ascension_req = max(max_ascension_req, cond_num)
+            
+            priority = self._extract_number(skill.get('priority', 999))
+            skill_id = self._extract_number(skill.get('id', 0))
+            
+            # Prefer skills with higher ascension requirements, then lower priority numbers, then higher IDs
+            return (-max_ascension_req, priority, -skill_id)
+        
+        return min(final_candidates, key=skill_selection_key)
 
     def _check_skill_release_condition(self, condition):
         """Check a single release condition for skills.
