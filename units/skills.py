@@ -111,7 +111,18 @@ class Skills:
         """Extract number handling MongoDB format."""
         if isinstance(value, dict) and '$numberInt' in value:
             return int(value['$numberInt'])
-        return int(value) if value is not None else 0
+        elif isinstance(value, dict) and '$numberLong' in value:
+            return int(value['$numberLong'])
+        elif isinstance(value, dict) and '$numberDouble' in value:
+            return int(float(value['$numberDouble']))
+        elif isinstance(value, (int, float)):
+            return int(value)
+        elif isinstance(value, str) and value.isdigit():
+            return int(value)
+        elif value is None:
+            return 0
+        else:
+            return 0
     
     def _parse_all_skill_candidates(self, skills_data):
         """Parse all skill candidates from the main skills array.
