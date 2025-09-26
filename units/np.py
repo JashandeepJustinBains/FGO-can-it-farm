@@ -1,338 +1,238 @@
-# Enhanced NP effect parser for FGO Noble Phantasms
-# Provides normalized effect schema with OC/NP level matrix handling
-# for the full diversity of NP effects from FGOCombatSim MongoDB servants collection.
-#
-# Extends the normalized effect schema for NP-specific features:
-# - OC level variations (svals2, svals3, svals4, svals5)
-# - NP level scaling (1-5)
-# - Special NP damage calculation functions
+"""Minimal legacy-only NP helper (single implementation).
+
+This module intentionally contains one compact NP helper that exposes the
+legacy-compatible API. All variant-aware and duplicate code was removed to
+keep the minimal branch focused on API-driven behavior.
+"""
+
+from typing import List, Dict, Any
+
 
 class NP:
-    def __init__(self, nps_data, servant=None):
-        """
-        Initialize NP with variant-aware selection.
-        
-        Args:
-            nps_data: NP data from servant JSON (could be legacy or npSvts)
-            servant: Servant instance (provides variant_svt_id for selection)
-        """
+    def __init__(self, nps_data: List[Dict[str, Any]], servant=None):
         self.servant = servant
-        self.nps = self.parse_noble_phantasms(nps_data)
-        self.card = self.nps[-1]['card'] if self.nps else None  # Default to the highest ID NP
+        self.nps = nps_data or []
+        self.card = self.nps[0].get('card') if self.nps else None
 
-    def parse_noble_phantasms(self, nps_data):
-        """
-        Parse NPs with variant-aware selection.
-        
-        For npSvts format:
-        1. Prefer npSvts matching variant_svt_id
-        2. Use imageIndex mapping as fallback
-        3. Use highest priority as final fallback
-        4. When reading arrays, use last elements (most potent/upgraded)
-        
-        For legacy format: use as-is for backwards compatibility
-        """
-        if not nps_data:
-            # Try to discover npSvts anywhere in the servant data as a fallback
-            if self.servant and getattr(self.servant, 'data', None):
-                discovered = self._collect_np_svts_from_data(self.servant.data)
-                nps_data = discovered or []
+    def _get_np_entry(self, new_id=None):
+        if not self.nps:
+            raise ValueError('No noblePhantasms available')
+        if new_id is None:
+            return self.nps[-1]
+        idx = int(new_id) - 1
+        if 0 <= idx < len(self.nps):
+            return self.nps[idx]
+        raise ValueError(f'NP id {new_id} not found')
+
+    def get_np_values(self, np_level=1, overcharge_level=1, new_id=None):
+        np_entry = self._get_np_entry(new_id)
+        funcs = np_entry.get('functions', [])
+        result = []
+        for func in funcs:
+            result.append(func)
+            svals_key = f'svals{overcharge_level}' if overcharge_level > 1 else 'svals'
+            svals_array = func.get(svals_key, func.get('svals', []))
+            if svals_array and isinstance(svals_array, list):
+                try:
+                    svals_value = svals_array[np_level - 1]
+                except Exception:
+                    svals_value = svals_array[-1]
             else:
-                return []
+                svals_value = {}
 
-        # Check if this is npSvts format or legacy
-        if isinstance(nps_data, list) and len(nps_data) > 0:
-            first_np = nps_data[0]
-            is_np_svts = 'svtId' in first_np
+            legacy = {
+                'funcType': func.get('funcType'),
+                'funcTargetType': func.get('funcTargetType'),
+                'functvals': func.get('functvals', []),
+                'fieldReq': func.get('fieldReq', []),
+                'condTarget': func.get('condTarget', []),
+                'svals': svals_value,
+                'buffs': func.get('buffs', [])
+            }
+            result.append(legacy)
+        return result
 
-            if is_np_svts and self.servant:
-                # Use variant-aware selection for npSvts
-                selected_nps = self._select_variant_nps(nps_data)
-            else:
-                # If caller provided a servant, try to discover npSvts in its data
-                if self.servant and not is_np_svts:
-                    discovered = self._collect_np_svts_from_data(self.servant.data)
-                    if discovered:
-                        selected_nps = self._select_variant_nps(discovered)
-                    else:
-                        selected_nps = nps_data
-                else:
-                    # Use legacy parsing
-                    selected_nps = nps_data
-        else:
-            selected_nps = nps_data if isinstance(nps_data, list) else []
+    def get_np_damage_values(self, oc=1, np_level=1, new_id=None):
+        np_entry = self._get_np_entry(new_id)
+        for func in np_entry.get('functions', []):
+            ftype = func.get('funcType')
+            svals = func.get('svals', [])
+            try:
+                val = svals[np_level - 1].get('Value', 0) if isinstance(svals, list) and svals else 0
+            except Exception:
+                val = 0
+            if ftype in ('damageNp', 'damageNpPierce'):
+                return val / 1000, None, None, None, None
+            if ftype in ('damageNpIndividual', 'damageNpStateIndividualFix'):
+                target = svals[np_level - 1].get('Target', 0) if isinstance(svals, list) and svals else 0
+                corr = svals[np_level - 1].get('Correction', 0) if isinstance(svals, list) and svals else 0
+                return val / 1000, None, corr / 1000 if corr else None, None, target
+            if ftype == 'damageNpIndividualSum':
+                init = svals[np_level - 1].get('Value2', 0) if isinstance(svals, list) and svals else 0
+                corr = svals[np_level - 1].get('Correction', 0) if isinstance(svals, list) and svals else 0
+                target = svals[np_level - 1].get('Target', 0) if isinstance(svals, list) and svals else 0
+                ids = svals[np_level - 1].get('TargetList', []) if isinstance(svals, list) and svals else []
+                return val / 1000, init / 1000 if init else None, corr / 1000 if corr else None, ids, target
+        return 0, None, None, None, None
 
-        # Sort NPs by their original ID first for consistent ordering
-        sorted_nps = sorted(selected_nps, key=lambda np: self._extract_number(np.get('id', 0)))
-        
-        # Select the best NP from the filtered/sorted results
-        result_nps = sorted_nps
-        if len(result_nps) > 1 and self.servant:
-            # Apply ascension-aware selection similar to skills
-            result_nps = self._apply_ascension_aware_np_selection(result_nps)
-        
-        # Assign new IDs from 1 to the selected NPs
-        for i, np in enumerate(result_nps):
-            np['new_id'] = i + 1
-
-        return result_nps
-    
-    def _apply_ascension_aware_np_selection(self, np_candidates):
-        """Apply ascension-aware NP selection similar to skill selection logic."""
-        if not np_candidates:
-            return []
-            
-        # Filter by release conditions first
-        available_nps = []
-        for np in np_candidates:
-            release_conditions = np.get('releaseConditions', [])
-            if not release_conditions:
-                available_nps.append(np)
-                continue
-                
-            # Check if release conditions are met
-            # Group conditions by condGroup (OR between groups, AND within groups)
-            groups = {}
-            for cond in release_conditions:
-                grp = self._extract_number(cond.get('condGroup', 0))
-                groups.setdefault(grp, []).append(cond)
-
-            cond_met = False
-            for group_conds in groups.values():
-                group_ok = True
-                for cond in group_conds:
-                    if not self._check_release_condition(cond):
-                        group_ok = False
-                        break
-                if group_ok:
-                    cond_met = True
-                    break
-            
-            if cond_met:
-                available_nps.append(np)
-        
-        if not available_nps:
-            # No NPs met their conditions, fall back to all candidates
-            available_nps = np_candidates
-
-        # Among available NPs, prefer those with higher ascension requirements
-        def np_selection_key(np):
-            # Calculate "ascension requirement" from release conditions
-            max_ascension_req = 0
-            for cond in np.get('releaseConditions', []):
-                if cond.get('condType') == 'equipWithTargetCostume':
-                    cond_num = self._extract_number(cond.get('condNum', 0))
-                    max_ascension_req = max(max_ascension_req, cond_num)
-            
-            priority = self._extract_number(np.get('priority', 999))
-            np_id = self._extract_number(np.get('id', 0))
-            
-            # Prefer NPs with higher ascension requirements, then lower priority numbers, then higher IDs
-            return (-max_ascension_req, priority, -np_id)
-        
-        best_np = min(available_nps, key=np_selection_key)
-        return [best_np]
-    
-    def _extract_number(self, value):
-        """Extract number handling MongoDB format."""
-        if isinstance(value, dict) and '$numberInt' in value:
-            return int(value['$numberInt'])
-        elif isinstance(value, dict) and '$numberLong' in value:
-            return int(value['$numberLong'])
-        elif isinstance(value, dict) and '$numberDouble' in value:
-            return int(float(value['$numberDouble']))
-        elif isinstance(value, (int, float)):
-            return int(value)
-        elif isinstance(value, str) and value.isdigit():
-            return int(value)
-        elif value is None:
+    def get_npgain(self, card_type, new_id=None):
+        np_entry = self._get_np_entry(new_id)
+        ng = np_entry.get('npGain', {})
+        v = ng.get(card_type, []) if isinstance(ng, dict) else []
+        try:
+            return (v[0] / 100) if v else 0
+        except Exception:
             return 0
-        else:
-            return 0
-    
-    def _select_variant_nps(self, np_svts):
-        """
-        Select appropriate NP entries based on variant and release conditions.
-        
-        Selection priority:
-        1. Filter by release conditions (ascension/costume requirements)
-        2. npSvts with svtId == variant_svt_id
-        3. npSvts with matching imageIndex
-        4. npSvts with highest priority
-        5. All npSvts (fallback)
-        """
-        variant_svt_id = self.servant.variant_svt_id
-        
-        # Step 1: Filter by release conditions first
-        available_nps = self._filter_by_release_conditions(np_svts)
-        
-        # Step 2: Try exact svtId match
-        variant_matches = [np for np in available_nps if self._extract_number(np.get('svtId')) == variant_svt_id]
-        if variant_matches:
-            # If multiple entries share the same svtId, prefer the one(s) whose
-            # imageIndex matches the current ascension (most common case). If no
-            # exact imageIndex is available among them, fall back to priority.
-            expected_image_index = self.servant.ascension - 1
-            vm_image_matches = [np for np in variant_matches if self._extract_number(np.get('imageIndex')) == expected_image_index]
-            if vm_image_matches:
-                return vm_image_matches
 
-            # No imageIndex match among variant_matches: pick lowest priority (highest precedence)
-            min_priority = min(self._extract_number(np.get('priority', 999)) for np in variant_matches)
-            priority_matches = [np for np in variant_matches if self._extract_number(np.get('priority', 999)) == min_priority]
-            return priority_matches
+    def get_npdist(self, new_id=None):
+        np_entry = self._get_np_entry(new_id)
+        return np_entry.get('npDistribution', [100])
 
-        # Step 3: Try imageIndex mapping across all available entries
-        expected_image_index = self.servant.ascension - 1
-        image_matches = [np for np in available_nps if self._extract_number(np.get('imageIndex')) == expected_image_index]
-        if image_matches:
-            return image_matches
+"""Legacy-only NP helper.
 
-        # Step 4: Use lowest priority (highest precedence) among available NPs
-        if available_nps:
-            min_priority = min(self._extract_number(np.get('priority', 999)) for np in available_nps)
-            priority_matches = [np for np in available_nps if self._extract_number(np.get('priority', 999)) == min_priority]
-            if priority_matches:
-                return priority_matches
+This file intentionally keeps NP parsing minimal: it accepts legacy
+`noblePhantasms` arrays and exposes the small set of methods consumers use:
+- get_np_values(np_level, overcharge_level)
+- get_np_damage_values(oc, np_level)
+- get_npgain(card_type)
+- get_npdist()
 
-        # Step 5: Fallback to all available NPs
-        return available_nps if available_nps else np_svts
-    
-    def _filter_by_release_conditions(self, np_svts):
-        """
-        Filter NP entries by release conditions based on current servant state.
-        
-        Args:
-            np_svts: List of NP entries to filter
-            
-        Returns:
-            List of NP entries that meet their release conditions
-        """
-        if not self.servant:
-            return np_svts
-            
-        available_nps = []
-        
-        for np in np_svts:
-            release_conditions = np.get('releaseConditions', [])
+The complex variant-aware `npSvts` parsing was removed to start from a clean
+slate on the `minimal` branch.
+"""
 
-            # If no release conditions, NP is always available
-            if not release_conditions:
-                available_nps.append(np)
-                continue
+from typing import List, Dict, Any
 
-            # Check if any release condition group is met (OR between groups, AND within group)
-            condition_met = False
-            condition_groups = {}
 
-            # Group conditions by condGroup
-            for condition in release_conditions:
-                group = self._extract_number(condition.get('condGroup', 0))
-                condition_groups.setdefault(group, []).append(condition)
+class NP:
+    def __init__(self, nps_data: List[Dict[str, Any]], servant=None):
+        # Expect legacy format: a list of NP dicts. Keep as-is.
+        self.servant = servant
+        self.nps = nps_data or []
+        # default card type is taken from the first NP entry when present
+        self.card = self.nps[0].get('card') if self.nps else None
 
-            # Evaluate groups
-            for group_conditions in condition_groups.values():
-                group_met = True
-                for condition in group_conditions:
-                    if not self._check_release_condition(condition):
-                        group_met = False
-                        break
-                if group_met:
-                    condition_met = True
-                    break
+    def _get_np_entry(self, new_id=None):
+        if not self.nps:
+            raise ValueError('No noblePhantasms available')
+        # legacy: new_id None -> last element (most upgraded) or first
+        if new_id is None:
+            return self.nps[-1]
+        # new_id corresponds to index+1 in legacy code; support that mapping
+        idx = int(new_id) - 1
+        if 0 <= idx < len(self.nps):
+            return self.nps[idx]
+        raise ValueError(f'NP id {new_id} not found')
 
-            if condition_met:
-                available_nps.append(np)
-        
-        return available_nps
-    
-    def _check_release_condition(self, condition):
-        """
-        Check if a single release condition is met.
-        
-        Args:
-            condition: Dict containing condition details
-            
-        Returns:
-            bool: True if condition is met
-        """
-        cond_type = condition.get('condType', '')
-        cond_num = self._extract_number(condition.get('condNum', 0))
-
-        if cond_type == 'equipWithTargetCostume':
-            # Robust handling for equipWithTargetCostume
-            # condTargetId may be a costume svt id or missing; condNum sometimes encodes ascension as 10 + ascension
-            cond_target = self._extract_number(condition.get('condTargetId', condition.get('condTarget', condition.get('condNum', 0))))
-
-            # If servant context missing, conservatively assume False
-            if not self.servant:
-                return False
-
-            base_svt_id = getattr(self.servant, 'original_base_svt_id', None) or getattr(self.servant, 'variant_svt_id', None)
-            variant_id = getattr(self.servant, 'variant_svt_id', None)
-            current_ascension = getattr(self.servant, 'ascension', 1)
-
-            # Decode condNum if using 10+ encoding
-            if cond_num > 10:
-                required_ascension = cond_num - 10
+    def get_np_values(self, np_level=1, overcharge_level=1, new_id=None):
+        np_entry = self._get_np_entry(new_id)
+        # In legacy format, functions is the list of effect dicts
+        funcs = np_entry.get('functions', [])
+        # Build a conservative legacy-style list: return the raw functions and a
+        # simplified legacy dict per function for compatibility
+        result = []
+        for func in funcs:
+            result.append(func)
+            # add legacy-compatible dict
+            svals_key = f'svals{overcharge_level}' if overcharge_level > 1 else 'svals'
+            svals_array = func.get(svals_key, func.get('svals', []))
+            # pick appropriate svals element
+            if svals_array and isinstance(svals_array, list):
+                try:
+                    svals_value = svals_array[np_level - 1]
+                except Exception:
+                    svals_value = svals_array[-1]
             else:
-                required_ascension = cond_num
+                svals_value = {}
 
-            # If cond_target is small (<=10) it may represent an ascension threshold
-            if cond_target and cond_target <= 10:
-                # prefer explicit ascension check
-                return current_ascension >= cond_target or current_ascension >= required_ascension
+            legacy = {
+                'funcType': func.get('funcType'),
+                'funcTargetType': func.get('funcTargetType'),
+                'functvals': func.get('functvals', []),
+                'fieldReq': func.get('fieldReq', []),
+                'condTarget': func.get('condTarget', []),
+                'svals': svals_value,
+                'buffs': func.get('buffs', [])
+            }
+            result.append(legacy)
+        return result
 
-            # If cond_target matches base id and we're using a costume variant, allow some costume mappings
-            if cond_target and base_svt_id and cond_target == base_svt_id and variant_id and variant_id != base_svt_id:
-                # Some costume entries expect high condNum values; permit reasonable mappings
-                # Accept if current ascension meets required or if variant has explicit matching svtId elsewhere
-                if current_ascension >= required_ascension:
-                    return True
-                # Also allow when variant_id equals base+1 or base+2 as heuristic
-                # (many costumes use base_svt_id+1/+2 encoding in example data)
-                if variant_id in (base_svt_id + 1, base_svt_id + 2):
-                    # accept medium/low ascension requirements for costumes
-                    return required_ascension <= 8
+    def get_np_damage_values(self, oc=1, np_level=1, new_id=None):
+        np_entry = self._get_np_entry(new_id)
+        for func in np_entry.get('functions', []):
+            ftype = func.get('funcType')
+            svals = func.get('svals', [])
+            try:
+                val = svals[np_level - 1].get('Value', 0) if isinstance(svals, list) and svals else 0
+            except Exception:
+                val = 0
+            if ftype in ('damageNp', 'damageNpPierce'):
+                return val / 1000, None, None, None, None
+            if ftype in ('damageNpIndividual', 'damageNpStateIndividualFix'):
+                target = svals[np_level - 1].get('Target', 0) if isinstance(svals, list) and svals else 0
+                corr = svals[np_level - 1].get('Correction', 0) if isinstance(svals, list) and svals else 0
+                return val / 1000, None, corr / 1000 if corr else None, None, target
+            if ftype == 'damageNpIndividualSum':
+                init = svals[np_level - 1].get('Value2', 0) if isinstance(svals, list) and svals else 0
+                corr = svals[np_level - 1].get('Correction', 0) if isinstance(svals, list) and svals else 0
+                target = svals[np_level - 1].get('Target', 0) if isinstance(svals, list) and svals else 0
+                ids = svals[np_level - 1].get('TargetList', []) if isinstance(svals, list) and svals else []
+                return val / 1000, init / 1000 if init else None, corr / 1000 if corr else None, ids, target
+        return 0, None, None, None, None
 
-            # If cond_target explicitly matches the variant_id, require ascension check
-            if cond_target and variant_id and cond_target == variant_id:
-                return current_ascension >= required_ascension
+    def get_npgain(self, card_type, new_id=None):
+        np_entry = self._get_np_entry(new_id)
+        ng = np_entry.get('npGain', {})
+        # legacy npGain may be a dict mapping card type -> list
+        v = ng.get(card_type, []) if isinstance(ng, dict) else []
+        try:
+            return (v[0] / 100) if v else 0
+        except Exception:
+            return 0
 
-            # If no cond_target provided, fallback to ascension-only check
-            return current_ascension >= required_ascension
-        elif cond_type == 'questClear':
-            # Quest completion conditions - assume met for now
-            # In a full implementation, this would check quest completion status
-            return True
-        elif cond_type == 'friendshipRank':
-            # Bond level conditions - assume met for now
-            # In a full implementation, this would check bond level
-            return True
-        else:
-            # Unknown condition type - assume met to avoid breaking functionality
-            return True
+    def get_npdist(self, new_id=None):
+        np_entry = self._get_np_entry(new_id)
+        return np_entry.get('npDistribution', [100])
+"""Legacy-only NP helper.
 
-    def _collect_np_svts_from_data(self, data):
-        """Recursively search servant JSON for any `npSvts` arrays and return a flattened list.
+This file intentionally keeps NP parsing minimal: it accepts legacy
+`noblePhantasms` arrays and exposes the small set of methods consumers use:
+- get_np_values(np_level, overcharge_level)
+- get_np_damage_values(oc, np_level)
+- get_npgain(card_type)
+- get_npdist()
 
-        This ensures we find np entries whether they're top-level or nested in ascensions/forms.
-        """
-        found = []
+The complex variant-aware `npSvts` parsing was removed to start from a clean
+slate on the `minimal` branch.
+"""
 
-        def walk(obj):
-            if isinstance(obj, dict):
-                for k, v in obj.items():
-                    if k == 'npSvts' and isinstance(v, list):
-                        found.extend(v)
-                    else:
-                        walk(v)
-            elif isinstance(obj, list):
-                for item in obj:
-                    walk(item)
+from typing import List, Dict, Any
 
-        walk(data)
-        return found
+
+class NP:
+    def __init__(self, nps_data: List[Dict[str, Any]], servant=None):
+        # Expect legacy format: a list of NP dicts. Keep as-is.
+        self.servant = servant
+        self.nps = nps_data or []
+        # default card type is taken from the first NP entry when present
+        # TODO should be changed when skill/NP changing to a new NP
+        self.card = self.nps[0].get('card') if self.nps else None
+
+    def _get_np_entry(self, new_id=None):
+        if not self.nps:
+            raise ValueError('No noblePhantasms available')
+        # legacy: new_id None -> last element (most upgraded) or first
+        if new_id is None:
+            return self.nps[-1]
+        # new_id corresponds to index+1 in legacy code; support that mapping
+        idx = int(new_id) - 1
+        if 0 <= idx < len(self.nps):
+            return self.nps[idx]
+        raise ValueError(f'NP id {new_id} not found')
+
+    def get_np_values(self, np_level=1, overcharge_level=1, new_id=None):
+        # unfinished
+        return
 
     def get_np_by_id(self, new_id=None):
         if new_id is None:
@@ -346,15 +246,6 @@ class NP:
         np = self.get_np_by_id(new_id)
         result = []
         for func in np['functions']:
-            # Parse into normalized effect schema
-            normalized_effect = self._parse_np_function_to_effect(
-                func, 
-                np_level=np_level,
-                overcharge_level=overcharge_level,
-                variant_id=np.get('id')
-            )
-            result.append(normalized_effect)
-            
             # Keep legacy format for backward compatibility
             svals_key = f'svals{overcharge_level}' if overcharge_level > 1 else 'svals'
             svals_array = func.get(svals_key, [])
@@ -401,54 +292,6 @@ class NP:
 
         return result
     
-    def _parse_np_function_to_effect(self, function, np_level=1, overcharge_level=1, variant_id=None):
-        """Parse NP function into normalized effect schema."""
-        # Handle svals variations for different overcharge levels
-        svals_base_key = 'svals'
-        svals_oc_key = f'svals{overcharge_level}' if overcharge_level > 1 else 'svals'
-        
-        base_svals = function.get(svals_base_key, [])
-        oc_svals = function.get(svals_oc_key, [])
-        
-        # Use last element in arrays for most upgraded
-        if base_svals and np_level <= len(base_svals):
-            base_value = [base_svals[np_level - 1]]
-        elif base_svals:
-            base_value = [base_svals[-1]]
-        else:
-            base_value = []
-        
-        svals_data = {"base": base_value, "oc": {}}
-        
-        # Handle overcharge variations
-        for oc_level in [2, 3, 4, 5]:
-            oc_key = f'svals{oc_level}'
-            if oc_key in function:
-                oc_array = function[oc_key]
-                if oc_array and np_level <= len(oc_array):
-                    svals_data["oc"][oc_level] = [oc_array[np_level - 1]]
-                elif oc_array:
-                    svals_data["oc"][oc_level] = [oc_array[-1]]
-        
-        normalized_effect = {
-            "source": "np",
-            "slot": None,
-            "variant_id": variant_id,
-            "funcType": function.get('funcType', 'unknown'),
-            "targetType": function.get('funcTargetType', 'unknown'),
-            "parameters": {
-                "np_level": np_level,
-                "overcharge_level": overcharge_level
-            },
-            "svals": svals_data,
-            "buffs": [],
-            "raw": function
-        }
-        
-        return normalized_effect
-        
-        return result
-
 
     def get_np_damage_values(self, oc=1, np_level=1, new_id=None):
         np = self.get_np_by_id(new_id)
@@ -478,16 +321,15 @@ class NP:
                 np_correction_id = func['svals'][np_level - 1].get('TargetList', 0)
                 return np_damage / 1000, np_damage_correction_init / 1000, np_correction / 1000, np_correction_id, np_correction_target
 
+        # TODO we need to parse for NPs that have different damage functions
+        # example 1: romulus quirinus has an NP that counts "ROMAN" traits/buffs applied to enemy. base np damage= 1 + max{2, 0.2x(ROMAN)}
+        # example 2: super aoko NP counts "Magic Bullets" on self to increase damage by. base np damage = 1 + 0.?x(Magic Bullets)
         return 0, None, None, None, None  # Default values if no matching funcType is found
-
-
-
 
     def get_npgain(self, card_type, new_id=None):
         np = self.get_np_by_id(new_id)
         np_gain = np.get('npGain', {}).get(card_type, [0])[0]  # Safely get npgain and divide by 100
         return np_gain / 100
-
 
     def get_npdist(self, new_id=None):
         np = self.get_np_by_id(new_id)

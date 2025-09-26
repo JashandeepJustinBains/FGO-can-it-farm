@@ -212,24 +212,16 @@ class npManager:
             if target.get_hp() <= 0:
                 logging.info(f"{target.get_name()} has been defeated by hit {i+1}!")
 
-        # Store damage and HP info for FSM serialization
-        if hasattr(target, 'fsm_damage_log'):
-            target.fsm_damage_log.append({
-                'servant': servant.name,
-                'damage': total_damage,
-                'initial_hp': initial_hp,
-                'current_hp': target.get_hp(),
-                'fraction_remaining': round(target.get_hp()/initial_hp, 4) if initial_hp else None
-            })
-        else:
-            target.fsm_damage_log = [{
-                'servant': servant.name,
-                'damage': total_damage,
-                'initial_hp': initial_hp,
-                'current_hp': target.get_hp(),
-                'fraction_remaining': round(target.get_hp()/initial_hp, 4) if initial_hp else None
-            }]
-        print(f"{servant.name} deals {total_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np | HP: {target.get_hp()}/{initial_hp} | Fraction Remaining: {round(target.get_hp()/initial_hp, 4) if initial_hp else None}")
+    # Record damage summary
+        dmg_record = {
+            'servant': servant.name,
+            'damage': total_damage,
+            'initial_hp': initial_hp,
+            'current_hp': target.get_hp(),
+            'fraction_remaining': round(target.get_hp()/initial_hp, 4) if initial_hp else None
+        }
+        logging.info(f"Damage record: {dmg_record}")
+        print(f"{servant.name} deals {total_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np | HP: {target.get_hp()}/{initial_hp} | Fraction Remaining: {dmg_record['fraction_remaining']}")
 
     def apply_np_odd_damage(self, servant, target):
         card_damage_value = None
