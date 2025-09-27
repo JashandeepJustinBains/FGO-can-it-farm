@@ -11,7 +11,7 @@ class Stats:
 
     def get_base_atk(self):
         # 1000atk from silver fous
-        return ( self.servant.ce_attack + 1000 + self.get_atk_at_level() ) * self.get_class_base_multiplier()
+        return ( self.servant.attack + 1000 + self.get_atk_at_level() ) * self.get_class_base_multiplier()
 
     def get_atk_at_level(self, level=0):
         if level == 0:
@@ -83,6 +83,9 @@ class Stats:
             self.servant.np_gauge = 0
         else:
             self.servant.np_gauge += val
+        # Cap NP gauge at 300%
+        if self.servant.np_gauge > 300:
+            self.servant.np_gauge = 300
 
     def get_current_buffs(self):
         return [

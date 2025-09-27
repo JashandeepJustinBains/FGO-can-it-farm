@@ -407,7 +407,8 @@ class SkillManager:
         old = getattr(target, 'np_gauge', None)
         if old is None:
             old = target.get_npgauge()
-        new = old * multiplier
+        # Generalized: multiplier=1.0 means +100% (double), so new = old * (1 + multiplier)
+        new = old * (1 + multiplier)
         logging.info(f"apply_multiply_np: multiplier={multiplier} old={old} new={new} for {getattr(target,'name',None)}")
         # Set absolute gauge
         target.np_gauge = new

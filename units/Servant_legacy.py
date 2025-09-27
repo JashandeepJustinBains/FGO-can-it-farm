@@ -1,26 +1,19 @@
-"""
-Updated Servant.py with comprehensive ascension parser integration.
+from data import base_multipliers
+from .stats import Stats
+from .skills import Skills
+from .buffs import Buffs
+from .np import NP
+from .traits import TraitSet, parse_trait_add_data, get_applicable_trait_adds
 
-This file integrates the comprehensive ascension parser functions directly
-into the Servant class and updates select_ascension_data to use them.
-"""
-
-import json
 import logging
-import json
-from typing import Dict, List, Any, Optional, Tuple
-from collections import defaultdict
 
-from units.stats import Stats
-from units.skills import Skills
-from units.np import NP
-from units.buffs import Buffs
-from units.traits import TraitSet
+# Configure logging
+logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
+                    format='%(asctime)s:%(levelname)s:%(message)s')
 
+# Comprehensive Ascension Parser Functions
 
-# Comprehensive Ascension Parser Functions (integrated from scripts/comprehensive_ascension_parser.py)
-
-def get_skills_for_slot(servant_data: Dict[str, Any], slot: int) -> List[Dict[str, Any]]:
+def get_skills_for_slot(servant_data: dict, slot: int) -> list:
     """Get all skill candidates for a specific slot across all priorities."""
     skills = servant_data.get('skills', [])
     candidates = []
@@ -32,7 +25,7 @@ def get_skills_for_slot(servant_data: Dict[str, Any], slot: int) -> List[Dict[st
     return candidates
 
 
-def get_nps_for_slot(servant_data: Dict[str, Any], slot: int = 1) -> List[Dict[str, Any]]:
+def get_nps_for_slot(servant_data: dict, slot: int = 1) -> list:
     """Get all NP candidates for a specific slot across all priorities."""
     nps = servant_data.get('noblePhantasms', [])
     candidates = []
@@ -46,7 +39,7 @@ def get_nps_for_slot(servant_data: Dict[str, Any], slot: int = 1) -> List[Dict[s
     return candidates
 
 
-def is_skill_valid_for_ascension(skill: Dict[str, Any], ascension: int) -> bool:
+def is_skill_valid_for_ascension(skill: dict, ascension: int) -> bool:
     """Check if a skill is valid/available for a specific ascension."""
     # Check condition requirements
     cond_type = skill.get('condType', '')
@@ -69,13 +62,13 @@ def is_skill_valid_for_ascension(skill: Dict[str, Any], ascension: int) -> bool:
     return True
 
 
-def is_np_valid_for_ascension(np: Dict[str, Any], ascension: int) -> bool:
+def is_np_valid_for_ascension(np: dict, ascension: int) -> bool:
     """Check if an NP is valid/available for a specific ascension."""
     # Use same logic as skills for now
     return is_skill_valid_for_ascension(np, ascension)
 
 
-def select_highest_priority_for_ascension(candidates: List[Dict[str, Any]], ascension: int) -> Optional[Dict[str, Any]]:
+def select_highest_priority_for_ascension(candidates: list, ascension: int):
     """
     Select the highest priority skill/NP for a given ascension with ascension-aware logic.
     
@@ -117,7 +110,7 @@ def select_highest_priority_for_ascension(candidates: List[Dict[str, Any]], asce
         return valid_candidates[0]
 
 
-def get_base_traits(servant_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+def get_base_traits(servant_data: dict) -> list:
     """Get base traits from servant data."""
     traits = servant_data.get('traits', [])
     
@@ -133,7 +126,7 @@ def get_base_traits(servant_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     return base_traits
 
 
-def merge_traits_for_ascension(base_traits: List[Dict[str, Any]], servant_data: Dict[str, Any], ascension: int) -> List[Dict[str, Any]]:
+def merge_traits_for_ascension(base_traits: list, servant_data: dict, ascension: int) -> list:
     """Merge base traits with ascension-specific trait additions."""
     merged_traits = base_traits.copy()
     
@@ -163,7 +156,7 @@ def merge_traits_for_ascension(base_traits: List[Dict[str, Any]], servant_data: 
     return unique_traits
 
 
-def get_alignment_for_ascension(servant_data: Dict[str, Any], ascension: int) -> Dict[str, str]:
+def get_alignment_for_ascension(servant_data: dict, ascension: int) -> dict:
     """Get alignment (policy/personality) for specific ascension."""
     # Check limits array for ascension-specific alignment
     limits = servant_data.get('limits', [])
@@ -189,26 +182,7 @@ def get_alignment_for_ascension(servant_data: Dict[str, Any], ascension: int) ->
     return alignment
 
 
-def has_transformation(servant_data: Dict[str, Any], ascension: int) -> bool:
-    """Check if servant has transformations at this ascension."""
-    transforms = servant_data.get('transforms', [])
-    return len(transforms) > 0
-
-
-def apply_transformation(skills: List[Dict[str, Any]], nps: List[Dict[str, Any]], 
-                        servant_data: Dict[str, Any], ascension: int) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-    """Apply transformation logic to skills and NPs."""
-    # This is where complex transformation logic would go
-    # For now, return as-is but this can be expanded for specific servants
-    transforms = servant_data.get('transforms', [])
-    
-    # Placeholder for transformation logic
-    # Each transform would specify what changes at what ascension/condition
-    
-    return skills, nps
-
-
-def detect_max_ascensions(servant_data: Dict[str, Any]) -> int:
+def detect_max_ascensions(servant_data: dict) -> int:
     """Detect the maximum number of ascensions for this servant."""
     # Check various sources for max ascensions
     limits = servant_data.get('limits', [])
@@ -228,12 +202,12 @@ def detect_max_ascensions(servant_data: Dict[str, Any]) -> int:
     return 4  # Default to 4 ascensions
 
 
-def parse_servant_ascensions(servant_data: Dict[str, Any]) -> Dict[int, Dict[str, Any]]:
+def parse_servant_ascensions_comprehensive(servant_data: dict) -> dict:
     """
     Main parser function that creates per-ascension data.
     
     Returns:
-        Dict mapping ascension -> {skills, nps, traits, alignment, transforms}
+        Dict mapping ascension -> {skills, noblePhantasms, traits, alignment, transforms}
     """
     collection_no = servant_data.get('collectionNo')
     
@@ -293,10 +267,6 @@ def parse_servant_ascensions(servant_data: Dict[str, Any]) -> Dict[int, Dict[str
         # Get alignment for this ascension
         alignment = get_alignment_for_ascension(servant_data, asc)
         
-        # Handle transformation/swap logic
-        if has_transformation(servant_data, asc):
-            skills, nps = apply_transformation(skills, nps, servant_data, asc)
-        
         output[asc] = {
             "skills": skills,
             "noblePhantasms": nps,
@@ -309,7 +279,7 @@ def parse_servant_ascensions(servant_data: Dict[str, Any]) -> Dict[int, Dict[str
     return output
 
 
-def get_comprehensive_ascension_data(servant_data: Dict[str, Any], ascension: int) -> Dict[str, Any]:
+def get_comprehensive_ascension_data(servant_data: dict, ascension: int) -> dict:
     """
     Get comprehensive ascension data for a specific ascension.
     
@@ -320,58 +290,41 @@ def get_comprehensive_ascension_data(servant_data: Dict[str, Any], ascension: in
     Returns:
         Dictionary with ascension-specific data
     """
-    # Parse all ascensions
-    all_ascensions = parse_servant_ascensions(servant_data)
-    
-    if all_ascensions is None or ascension not in all_ascensions:
-        # Fallback to legacy behavior if comprehensive parsing fails
-        return select_ascension_data_legacy(servant_data, ascension)
-    
-    return all_ascensions[ascension]
+    try:
+        # Parse all ascensions
+        all_ascensions = parse_servant_ascensions_comprehensive(servant_data)
+        
+        if all_ascensions is None or ascension not in all_ascensions:
+            # Return None to trigger fallback
+            return None
+        
+        return all_ascensions[ascension]
+    except Exception as e:
+        logging.warning(f"Comprehensive parser failed: {e}")
+        return None
 
 
-# Updated select_ascension_data function
 def select_ascension_data(servant_json: dict, ascension: int) -> dict:
     """
-    Select ascension-specific data from servant JSON using enhanced comprehensive parser.
+    Select ascension-specific data from servant JSON using comprehensive parser.
     
-    This function now uses the enhanced ascension parser with comprehensive heuristics
-    for accurate per-ascension skill/NP/trait mapping with proper priority logic and
-    support for all edge cases including transformations, unlocks, and complex swaps.
+    This function now uses the comprehensive ascension parser for accurate
+    per-ascension skill/NP/trait mapping with proper priority logic.
+    Falls back to legacy behavior if comprehensive parsing fails.
     
     Args:
         servant_json: The servant data dictionary
         ascension: The requested ascension level (1-based)
     
     Returns:
-        Dictionary with selected ascension data (skills, noblePhantasms, passives, traits)
+        Dictionary with selected ascension data (skills, noblePhantasms, passives, transforms)
     """
-    try:
-        # Try enhanced comprehensive parser first
-        from scripts.enhanced_ascension_parser import parse_servant_ascensions_enhanced
-        all_ascensions = parse_servant_ascensions_enhanced(servant_json)
-        
-        if all_ascensions and ascension in all_ascensions:
-            return all_ascensions[ascension]
-        elif all_ascensions:
-            # Fallback to highest available ascension
-            available_ascensions = sorted(all_ascensions.keys())
-            highest_asc = available_ascensions[-1]
-            logging.warning(f"Ascension {ascension} not found, using highest available ascension {highest_asc}")
-            return all_ascensions[highest_asc]
-            
-    except Exception as e:
-        logging.warning(f"Enhanced parser failed for servant {servant_json.get('collectionNo')}, ascension {ascension}: {e}")
+    # Try comprehensive parser first
+    comprehensive_data = get_comprehensive_ascension_data(servant_json, ascension)
+    if comprehensive_data:
+        return comprehensive_data
     
     # Fallback to legacy parser
-    return select_ascension_data_legacy(servant_json, ascension)
-
-
-def select_ascension_data_legacy(servant_json: dict, ascension: int) -> dict:
-    """
-    Legacy select ascension data function (original implementation).
-    Used as fallback when comprehensive parser fails.
-    """
     result = {}
     
     # Check for explicit ascensions/forms array first
@@ -473,73 +426,263 @@ def _extract_number(value):
     elif value is None:
         return 0
     else:
-        # Fallback for other types
+        return 0
+
+
+def compute_variant_svt_id(servant_json: dict, ascension: int, costume_svt_id=None) -> int:
+    """
+    Compute the selected variant svtId for the current ascension/costume.
+    
+    Algorithm:
+    1. If user-supplied costume_svt_id is given, use it
+    2. Try to map ascension index → variant using npSvts.imageIndex and skillSvts/releaseConditions
+    3. Build mapping of imageIndex → most common svtId (use highest priority if priority field present)
+    4. If ascension index maps to an imageIndex found in the data, set variant_svt_id to that svtId
+    5. Scan skillSvts entries for releaseConditions with condType == "equipWithTargetCostume"
+    6. Fallback: top-level svtId field
+    
+    Args:
+        servant_json: The servant data dictionary
+        ascension: The requested ascension level (1-based)
+        costume_svt_id: Optional costume svtId override
+        
+    Returns:
+        Selected variant svtId
+    """
+
+    # If an explicit costume override was provided, use it immediately.
+    if costume_svt_id is not None:
+        return _extract_number(costume_svt_id)
+
+    # Heuristic: sometimes the API returns a variant svt id in the 'ascension'
+    # field. If ascension looks like a variant id (large integer) or matches a
+    # costume key in ascensionAdd, prefer it directly for variant selection.
+    try:
+        asc_int = int(ascension)
+    except Exception:
+        asc_int = None
+
+    asc_add = servant_json.get('ascensionAdd', {}) or {}
+    costume_keys = set()
+    if isinstance(asc_add, dict):
+        ind = asc_add.get('individuality', {}) or {}
+        attr = asc_add.get('attribute', {}) or {}
+        costume_keys.update((ind.get('costume') or {}).keys())
+        costume_keys.update((attr.get('costume') or {}).keys())
+
+    if (asc_int is not None and asc_int >= 100000) or (str(ascension) in costume_keys):
+        return _extract_number(ascension)
+    
+    top_level_svt_id = _extract_number(servant_json.get('id', servant_json.get('svtId', 0)))
+    
+    # Step 2-3: Try npSvts.imageIndex mapping
+    np_svts = servant_json.get('npSvts', [])
+    if np_svts:
+        # Build imageIndex → svtId mapping
+        image_index_mapping = {}
+        for np_entry in np_svts:
+            image_index = _extract_number(np_entry.get('imageIndex', 0))
+            svt_id = _extract_number(np_entry.get('svtId', top_level_svt_id))
+            priority = _extract_number(np_entry.get('priority', 0))
+            
+            if image_index not in image_index_mapping:
+                image_index_mapping[image_index] = {'svtId': svt_id, 'priority': priority}
+            else:
+                # Use highest priority, or highest svtId as tie-breaker
+                current = image_index_mapping[image_index]
+                if priority > current['priority'] or (priority == current['priority'] and svt_id > current['svtId']):
+                    image_index_mapping[image_index] = {'svtId': svt_id, 'priority': priority}
+        
+        # Map ascension to imageIndex (typically 0-based ascension maps to 0-based imageIndex)
+        ascension_image_index = ascension - 1  # Convert 1-based to 0-based
+        if ascension_image_index in image_index_mapping:
+            return image_index_mapping[ascension_image_index]['svtId']
+    
+    # Step 4: Try spriteModel mapping (some exports include per-ascension sprite model -> variant mapping)
+    extra_assets = servant_json.get('extraAssets', {}) or {}
+    sprite_models = extra_assets.get('spriteModel', {}) or {}
+    asc_sprite_map = sprite_models.get('ascension', {}) or {}
+    try:
+        # asc_sprite_map may map ascension index -> svtId
+        if ascension in asc_sprite_map:
+            return _extract_number(asc_sprite_map[ascension])
+        # or keys might be strings
+        if str(ascension) in asc_sprite_map:
+            return _extract_number(asc_sprite_map[str(ascension)])
+    except Exception:
+        pass
+
+    # Step 5: Try skillSvts releaseConditions
+    skill_svts = servant_json.get('skillSvts', [])
+    if skill_svts:
+        for skill_entry in skill_svts:
+            release_conditions = skill_entry.get('releaseConditions', [])
+            for condition in release_conditions:
+                if condition.get('condType') == 'equipWithTargetCostume':
+                    cond_target_id = _extract_number(condition.get('condTargetId', condition.get('condNum', 0)))
+                    # condTargetId may be encoded as a costume svt id or a small ascension threshold
+                    if cond_target_id:
+                        # If cond_target_id looks like a small ascension number (<=10) compare to ascension
+                        if cond_target_id <= 10 and (cond_target_id == ascension or cond_target_id == ascension + 10):
+                            return _extract_number(skill_entry.get('svtId', top_level_svt_id))
+                        # Otherwise treat as a svt id mapping
+                        if cond_target_id == top_level_svt_id or cond_target_id == ascension:
+                            return _extract_number(skill_entry.get('svtId', top_level_svt_id))
+    
+    # Step 5: Fallback to top-level svtId
+    return top_level_svt_id
+
+
+def select_character(character_id):
+    """
+    Load character data from database or mock data.
+    
+    Args:
+        character_id: Collection number of the character
+        
+    Returns:
+        Character data dict or None if not found
+    """
+    # Try to use a global `db` object if available (test harness may provide one).
+    db = globals().get('db', None)
+    if db:
         try:
-            return int(value)
-        except (ValueError, TypeError):
-            return 0
+            servant = db.servants.find_one({'collectionNo': character_id})
+            if servant:
+                return servant
+        except Exception:
+            # If any DB access error occurs, fall back to file-based loading
+            pass
 
+    # File fallback for local tests / environments without a DB.
+    # Look for example_servant_data/<collectionNo>.json relative to repo root.
+    import json
+    import os
 
-def compute_variant_svt_id(servant_data, ascension_index, costume_svt_id=None):
-    """Compute variant svtId based on ascension and costume."""
-    if costume_svt_id:
-        return costume_svt_id
-    
-    base_id = servant_data.get('id', 0)
-    collection_no = servant_data.get('collectionNo', 0)
-    
-    # Simple variant computation (can be expanded)
-    return base_id + (ascension_index - 1) * 10
+    # Compute the path to the example_servant_data directory (repo root is one
+    # level up from the units package).
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    example_dir = os.path.join(repo_root, 'example_servant_data')
 
+    try:
+        filename = f"{int(character_id)}.json"
+    except Exception:
+        filename = f"{str(character_id)}.json"
 
-# Base multipliers for damage calculation
-base_multipliers = {
-    'saber': 1.0,
-    'archer': 0.95,
-    'lancer': 1.05,
-    'rider': 1.0,
-    'caster': 0.9,
-    'assassin': 0.9,
-    'berserker': 1.1,
-    'shielder': 1.0,
-    'ruler': 1.1,
-    'avenger': 1.1,
-    'alterEgo': 1.0,
-    'moonCancer': 1.0,
-    'foreigner': 1.0,
-    'pretender': 1.0,
-}
+    filepath = os.path.join(example_dir, filename)
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, 'r', encoding='utf-8') as fh:
+                return json.load(fh)
+        except Exception:
+            # If reading fails, return None so caller can raise a clear error
+            return None
 
+    return None  # Ensure character_id is an integer
 
 class Servant:
-    def __init__(self, id, ascension=4, variant_svt_id=None, np=1, oc=1, 
-                 initialCharge=0, atkUp=0, busterUp=0, artsUp=0, quickUp=0, 
-                 damageUp=set(), npUp=0, attack=0, append_5=False, 
-                 busterDamageUp=0, quickDamageUp=0, artsDamageUp=0):
-        """Initialize Servant with comprehensive ascension parsing."""
+    special_servants = [
+        #transforms completly new character on np to 4132
+        312,
+        # transforms np to different type on skill
+        394, 391, 413, 448,
+        # changes traits on different ascension
+        385,
+        # changes traits, skills and NP on different ascension
+        1, 444,
+        # applies special effect per turn that needs a translation to its real effect
+        350, 306, 305]
+
+    def __init__(self, collectionNo, np=1, oc=1, ascension=1, lvl=0, initialCharge=0, attack=0, atkUp=0, artsUp=0, quickUp=0, busterUp=0, npUp=0, damageUp=0, busterDamageUp=0, quickDamageUp=0, artsDamageUp=0, append_5=False, variant_svt_id=None):
+        self.id = collectionNo
+        self.data = select_character(collectionNo)
+        if self.data is None:
+            raise ValueError(f"Servant data for collectionNo {collectionNo} not found.")
+        self.name = self.data.get('name')
+        self.class_name = self.data.get('className')
+        self.class_id = self.data.get('classId')
+        self.gender = self.data.get('gender')
+        self.attribute = self.data.get('attribute')
+        # Store level and ascension
+        self.lvl = lvl
+        # The API sometimes returns the selected variant svt id in the 'ascension'
+        # field. If ascension looks like a variant id (large number), treat it as
+        # such and allow an optional explicit variant_svt_id parameter as well.
+        incoming_ascension = ascension
+        self._user_supplied_variant = None
+
+        if variant_svt_id is not None:
+            # explicit override takes precedence
+            self._user_supplied_variant = variant_svt_id
+            self.ascension = 1
+        else:
+            # heuristic: treat large ints (>=100000) as svt ids
+            try:
+                if isinstance(incoming_ascension, int) and incoming_ascension >= 100000:
+                    self._user_supplied_variant = incoming_ascension
+                    self.ascension = 1
+                else:
+                    self.ascension = incoming_ascension
+            except Exception:
+                self.ascension = incoming_ascension
+        self.atk_growth = self.data.get('atkGrowth', [])
+        # ... rest of __init__ ...
+
+    @property
+    def attack(self):
+        # Prefer bonus_attack if set, otherwise fallback to data or 0
+        if hasattr(self, 'bonus_attack') and self.bonus_attack:
+            return self.bonus_attack
+        # Try to get from data (baseAtk or atkBase)
+        if self.data:
+            return self.data.get('baseAtk', self.data.get('atkBase', 0))
         
-        from . import select_character  # Import here to avoid circular imports
+        self.name = self.data.get('name')
+        self.class_name = self.data.get('className')
+        self.class_id = self.data.get('classId')
+        self.gender = self.data.get('gender')
+        self.attribute = self.data.get('attribute')
         
-        # Store initial parameters
-        self.id = id
-        self.ascension = ascension
-        self._user_supplied_variant = variant_svt_id
+        # Store level and ascension
+        self.lvl = lvl
+
+        # The API sometimes returns the selected variant svt id in the 'ascension'
+        # field. If ascension looks like a variant id (large number), treat it as
+        # such and allow an optional explicit variant_svt_id parameter as well.
+        incoming_ascension = ascension
+        self._user_supplied_variant = None
+
+        if variant_svt_id is not None:
+            # explicit override takes precedence
+            self._user_supplied_variant = variant_svt_id
+            self.ascension = 1
+        else:
+            # heuristic: treat large ints (>=100000) as svt ids
+            try:
+                if isinstance(incoming_ascension, int) and incoming_ascension >= 100000:
+                    self._user_supplied_variant = incoming_ascension
+                    self.ascension = 1
+                else:
+                    self.ascension = incoming_ascension
+            except Exception:
+                self.ascension = incoming_ascension
+        self.atk_growth = self.data.get('atkGrowth', [])
+
+        # Compute variant svtId for ascension/costume-specific data. Pass along
+        # any user-supplied variant id (from variant_svt_id param or detected
+        # from the incoming ascension).
+        variant_override = self._user_supplied_variant
+        self.variant_svt_id = compute_variant_svt_id(self.data, self.ascension, variant_override)
         
-        # Load base servant data
-        self.data = select_character(id)
-        if not self.data:
-            raise ValueError(f"Servant with id {id} not found")
-        
-        # Set basic attributes
-        self.name = self.data.get('name', f'Servant_{id}')
-        self.class_name = self.data.get('className', 'unknown')
-        
-        # Compute variant svtId
-        self.variant_svt_id = compute_variant_svt_id(self.data, ascension, variant_svt_id)
-        
-        # Get ascension-specific data using comprehensive parser
-        ascension_data = select_ascension_data(self.data, ascension)
-        
+        # Store the original base svtId for consistent release condition checking
+        # This is the base variant before any costume changes are applied
+        self.original_base_svt_id = _extract_number(self.data.get('id', self.data.get('svtId', self.variant_svt_id)))
+
+        # Use ascension-aware data selection so Servant picks ascension-specific
+        # skills and noblePhantasms when present in the JSON. Falls back to
+        # legacy fields if ascension-specific data is not available.
+        ascension_data = select_ascension_data(self.data, self.ascension)
+
         # Initialize traits system with base traits and ascension-specific additions
         self.trait_set = TraitSet(self.data.get('traits', []))
         # If a variant override was provided or detected, apply costume traits
@@ -615,7 +758,7 @@ class Servant:
         # Recompute variant svtId
         self.variant_svt_id = compute_variant_svt_id(self.data, ascension_index, costume_svt_id)
         
-        # Update ascension-aware data using comprehensive parser
+        # Update ascension-aware data
         ascension_data = select_ascension_data(self.data, ascension_index)
         
         # Update traits
@@ -642,17 +785,90 @@ class Servant:
         Args:
             changes: Dict with 'add' and/or 'remove' keys containing trait lists
         """
-        if 'add' in changes:
-            for trait in changes['add']:
-                self.trait_set.add_trait(trait)
+        self.trait_set.apply_trait_changes(changes)
+    
+    def get_traits(self):
+        """Get all currently active trait IDs."""
+        return self.trait_set.get_traits()
+    
+    def has_trait(self, trait_id):
+        """Check if servant currently has a specific trait."""
+        return self.trait_set.contains(trait_id)
+    
+    # Backwards compatibility property
+    @property
+    def traits(self):
+        """Backwards compatibility: return traits as list of IDs."""
+        return list(self.trait_set.get_traits())
+
+    def __repr__(self):
+        return (
+            f"Servant(name={self.name}, class_id={self.class_name}, attribute={self.attribute})\n"
+            f"Ascension: {self.ascension}, Variant ID: {self.variant_svt_id}\n"
+            f"Traits: {len(self.get_traits())} active\n"
+            f"Buffs:\n{self.buffs.grouped_str()}"
+        )
+    
+
+    def set_npgauge(self, value):
         
-        if 'remove' in changes:
-            for trait in changes['remove']:
-                self.trait_set.remove_trait(trait)
+        if value == 0:
+            logging.info(f"Setting NP GAUGE to 0 for {self.name}")
+            self.np_gauge = 0
+        else:
+            logging.info(f"INCREASING NP GAUGE OF {self.name} TO {self.np_gauge + value}")
+            self.np_gauge += value
 
-    # Rest of the Servant class methods would continue here...
-    # (apply_passive_buffs, calc_damage, etc. - keeping existing implementation)
+    def get_npgauge(self):
+        return self.np_gauge
+
+    def apply_bonus_buffs(self):
+        # Only apply if the value is nonzero
+        if self.user_atk_mod:
+            self.apply_buff({'buff_name': 'ATK Up', 'value': self.user_atk_mod, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_b_up:
+            self.apply_buff({'buff_name': 'Buster Up', 'value': self.user_b_up, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_a_up:
+            self.apply_buff({'buff_name': 'Arts Up', 'value': self.user_a_up, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_q_up:
+            self.apply_buff({'buff_name': 'Quick Up', 'value': self.user_q_up, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_np_damage_mod:
+            self.apply_buff({'buff_name': 'NP Strength Up', 'value': self.user_np_damage_mod, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_buster_damage_up:
+            self.apply_buff({'buff_name': 'Buster Card Damage Up', 'value': self.user_buster_damage_up, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_quick_damage_up:
+            self.apply_buff({'buff_name': 'Quick Card Damage Up', 'value': self.user_quick_damage_up, 'turns': -1, 'functvals': [], 'tvals': []})
+        if self.user_arts_damage_up:
+            self.apply_buff({'buff_name': 'Arts Card Damage Up', 'value': self.user_arts_damage_up, 'turns': -1, 'functvals': [], 'tvals': []})
+          
+
+    def apply_passive_buffs(self):
+        for passive in self.passives:
+            for func in passive['functions']:
+                for buff in func['buffs']:
+                    state = {
+                        'buff_name': buff.get('name', 'Unknown'),
+                        'value': func['svals'].get('Value', 0),
+                        'turns': -1,  # Infinite duration
+                        'functvals': func.get('functvals', [])
+                    }
+                    self.apply_buff(state)
+
+    def apply_buff(self, state):
+        buff = state['buff_name']
+        value = state['value']
+        functvals = state['functvals']
+        tvals = [tval['id'] for tval in state.get('tvals', [])]
+        turns = state['turns']
+
+        self.buffs.add_buff({'buff': buff, 'functvals': functvals, 'value': value, 'tvals': tvals, 'turns': turns})
 
 
-# The rest of the file would include all the existing Servant methods
-# that are not shown here for brevity...
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove database connection if present
+        if 'data' in state and hasattr(state['data'], 'collection'):  # crude check for pymongo object
+            state['data'] = None
+        return state
+

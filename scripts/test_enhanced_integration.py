@@ -73,7 +73,7 @@ def test_enhanced_integration():
                 print(f"\n  📊 Ascension {asc}:")
                 
                 # Import here to avoid circular imports during module loading
-                from units.Servant_updated import select_ascension_data
+                from units.Servant import select_ascension_data
                 from units import select_character
                 
                 servant_data = select_character(servant_id)
@@ -126,7 +126,7 @@ def test_dynamic_ascension_changes():
     print("\n=== Dynamic Ascension Change Test ===")
     
     try:
-        from units.Servant_updated import Servant
+        from units.Servant import Servant
         
         # Test with U-Olga Marie (complete replacement)
         print("🔄 Testing U-Olga Marie dynamic ascension changes...")

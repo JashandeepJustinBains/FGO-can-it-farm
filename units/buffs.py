@@ -116,7 +116,7 @@ class Buffs:
                             self.servant.power_mod[tval] = 0
                         self.servant.power_mod[tval] += buff.get("value", 0)
                 elif 'Triggers Each Turn (Increase NP)' in buff['buff'] or 'Triggers Each Turn (NP Absorb)' in buff['buff']: # TODO assumes all Triggers Each Turn buffs are for NP gain
-                    self.servant.np_gauge += buff['value']
+                    self.servant.np_gauge += buff['value'] / 1000
                 elif buff['buff'] == 'NP Gain Up':
                     self.servant.np_gain_mod += buff['value'] / 1000
                 elif buff['buff'] == 'Buster Card Damage Up':

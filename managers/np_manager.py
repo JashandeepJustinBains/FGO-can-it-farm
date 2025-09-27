@@ -2,7 +2,7 @@ import logging
 
 # Configure logging
 logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
-                    format='%(asctime)s:%(levelname)s:%(message)s')
+                    format='%(asctime)s:%(levelname)s:%(message)s', force=True)
 
 # needed to increase consecutivly used NPs OC levels
 # should be static 
@@ -18,11 +18,15 @@ class npManager:
         # Log which servant is about to use NP for easier tracing
         logging.info(f"\n BEGINNING NP LOG for servant id={getattr(servant,'id',None)} name={getattr(servant,'name',None)} np_gauge={getattr(servant,'np_gauge',None)} \n")
                 
+
         if servant.stats.get_npgauge() >= 99:
-            for i in range(int(servant.stats.get_npgauge() // 100)-1):
-                print(f"Servant {servant.name} has {servant.np_gauge} NP% and can apply OVERCHARGE UP 1 * {servant.stats.get_npgauge() // 100} times")
-                self.sm.apply_effect(np_oc_1_turn, servant)
-                servant.buffs.process_servant_buffs()
+            # Cap overcharge up to 2 extra (for a max of 3 total, as in FGO)
+            oc_extra = min(2, max(0, int(servant.stats.get_npgauge() // 100) - 1))
+            if oc_extra > 0:
+                print(f"Servant {servant.name} has {servant.np_gauge} NP% and can apply OVERCHARGE UP 1 * {oc_extra} times (capped at 2 extra)")
+                for i in range(oc_extra):
+                    self.sm.apply_effect(np_oc_1_turn, servant)
+                    servant.buffs.process_servant_buffs()
 
             functions = servant.nps.get_np_values(servant.stats.get_np_level(), servant.stats.get_oc_level())
             servant.stats.set_npgauge(0)  # Reset NP gauge after use
