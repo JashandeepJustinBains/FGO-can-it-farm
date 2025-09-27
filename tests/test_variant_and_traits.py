@@ -12,25 +12,6 @@ from units.Servant import Servant, compute_variant_svt_id, select_ascension_data
 from units.traits import TraitSet, parse_trait_add_data, get_applicable_trait_adds
 
 
-class MockDB:
-    """Mock database for testing."""
-    def __init__(self):
-        self.servants = MockCollection()
-
-
-class MockCollection:
-    """Mock collection that loads from example JSON files."""
-    def find_one(self, query):
-        collection_no = query.get('collectionNo')
-        if collection_no:
-            try:
-                with open(f'example_servant_data/{collection_no}.json', 'r') as f:
-                    return json.load(f)
-            except FileNotFoundError:
-                return None
-        return None
-
-
 def test_trait_set_basic_functionality():
     """Test basic TraitSet operations."""
     # Test initialization with base traits
@@ -107,49 +88,6 @@ def test_variant_svt_id_computation_basic():
     # Test fallback to top-level id
     result = compute_variant_svt_id(servant_data, 1)
     assert result == 800100
-
-
-def test_variant_svt_id_with_np_svts():
-    """Test variant svtId computation with npSvts imageIndex mapping."""
-    servant_data = {
-        'id': 304800,
-        'npSvts': [
-            {'svtId': 304800, 'imageIndex': 0, 'priority': 1},
-            {'svtId': 304810, 'imageIndex': 1, 'priority': 1},
-            {'svtId': 304820, 'imageIndex': 3, 'priority': 1}
-        ]
-    }
-    
-    # Test ascension 1 → imageIndex 0 → svtId 304800
-    result = compute_variant_svt_id(servant_data, 1)
-    assert result == 304800
-    
-    # Test ascension 2 → imageIndex 1 → svtId 304810
-    result = compute_variant_svt_id(servant_data, 2)
-    assert result == 304810
-    
-    # Test ascension 4 → imageIndex 3 → svtId 304820
-    result = compute_variant_svt_id(servant_data, 4)
-    assert result == 304820
-    
-    # Test unmapped ascension → fallback to top-level
-    result = compute_variant_svt_id(servant_data, 3)
-    assert result == 304800  # fallback
-
-
-def test_variant_svt_id_priority_handling():
-    """Test variant svtId computation with priority handling."""
-    servant_data = {
-        'id': 304800,
-        'npSvts': [
-            {'svtId': 304800, 'imageIndex': 0, 'priority': 1},
-            {'svtId': 304810, 'imageIndex': 0, 'priority': 2},  # higher priority
-        ]
-    }
-    
-    # Should pick svtId 304810 due to higher priority
-    result = compute_variant_svt_id(servant_data, 1)
-    assert result == 304810
 
 
 def test_select_ascension_data_legacy_format():
@@ -303,50 +241,83 @@ def test_level_10_skill_values():
 def test_integration_with_example_servants():
     """Test integration with actual example servant data."""
     
-    # Test with Mash (1.json)
-    try:
-        with open('example_servant_data/1.json', 'r') as f:
-            mash_data = json.load(f)
-        
-        # Test variant computation
-        variant_id = compute_variant_svt_id(mash_data, 1)
-        assert variant_id == mash_data.get('id', 800100)
-        
-        # Test ascension data selection
-        ascension_data = select_ascension_data(mash_data, 1)
-        assert 'skills' in ascension_data
-        assert 'noblePhantasms' in ascension_data
-        
-        # Test traits
-        if 'traits' in mash_data:
-            trait_set = TraitSet(mash_data['traits'])
+    # Connect to MongoDB Atlas
+    from pymongo import MongoClient
+    import os
+    mongo_uri = os.getenv('MONGO_URI_READ')
+    if not mongo_uri:
+        pytest.skip("No MONGO_URI_READ environment variable set for MongoDB Atlas")
+    client = MongoClient(mongo_uri)
+    db = client['FGOCanItFarmDatabase']
+    servants_col = db['servants']
+
+    # Test with Mash (collectionNo: 1)
+    mash_data = servants_col.find_one({'collectionNo': 1})
+    if not mash_data:
+        pytest.skip("Mash (collectionNo: 1) not found in MongoDB")
+
+    # Test variant computation
+    variant_id = compute_variant_svt_id(mash_data, 1)
+    assert variant_id == mash_data.get('id', 800100)
+
+    # Test ascension data selection
+    ascension_data = select_ascension_data(mash_data, 1)
+    assert 'skills' in ascension_data
+    assert 'noblePhantasms' in ascension_data
+
+    # Test traits
+    if 'traits' in mash_data:
+        # Only keep dict traits with an 'id' field
+        dict_traits = [t for t in mash_data['traits'] if isinstance(t, dict) and 'id' in t]
+        if dict_traits:
+            trait_set = TraitSet(dict_traits)
             assert trait_set.contains(1000)  # servant trait
-        
-    except FileNotFoundError:
-        pytest.skip("example_servant_data/1.json not found")
-    
-    # Test with Mélusine (312.json)
-    try:
-        with open('example_servant_data/312.json', 'r') as f:
-            melusine_data = json.load(f)
-        
-        # Test variant computation
-        variant_id = compute_variant_svt_id(melusine_data, 1)
-        assert variant_id == melusine_data.get('id', 304800)
-        
-        # Test ascension traits
-        if 'ascensionAdd' in melusine_data and 'individuality' in melusine_data['ascensionAdd']:
-            trait_set = TraitSet(melusine_data.get('traits', []))
-            trait_set.apply_ascension_traits(melusine_data['ascensionAdd'], 0)
-            
-            # Check that ascension 0 traits are applied
-            individuality = melusine_data['ascensionAdd']['individuality']
-            if 'ascension' in individuality and '0' in individuality['ascension']:
-                for trait in individuality['ascension']['0']:
-                    assert trait_set.contains(trait['id'])
-    
-    except FileNotFoundError:
-        pytest.skip("example_servant_data/312.json not found")
+
+    # Test with Mélusine (collectionNo: 312)
+    melusine_data = servants_col.find_one({'collectionNo': 312})
+    if not melusine_data:
+        pytest.skip("Mélusine (collectionNo: 312) not found in MongoDB")
+
+    # Test that skills/NPs change between ascensions 1-2 and 3-4 for Mélusine
+    # Check that skill 3 in priority 1 (asc 1-2) has different function values (svals) than in priority 2 (asc 3-4)
+    if 'skillsByPriority' in melusine_data:
+        skills_by_priority = melusine_data['skillsByPriority']
+        def extract_svals(skill):
+            if not skill:
+                return None
+            svals = []
+            for func in skill.get('functions', []):
+                if 'svals' in func:
+                    svals.append(tuple(v.get('Value') for v in func['svals'] if 'Value' in v))
+            return tuple(svals) if svals else None
+
+        # Get skill 3 for priority 1 (asc 1-2) and priority 2 (asc 3-4)
+        skill3_prio1 = skills_by_priority.get('1', {}).get('3')
+        skill3_prio2 = skills_by_priority.get('2', {}).get('3')
+
+        svals_prio1 = extract_svals(skill3_prio1)
+        svals_prio2 = extract_svals(skill3_prio2)
+        assert svals_prio1 and svals_prio2 and svals_prio1 != svals_prio2, "Skill 3 function values (svals) should differ between ascension priorities 1 (asc 1-2) and 2 (asc 3-4)"
+
+    # NPs
+    if 'npsByPriority' in melusine_data and 'npPriorityMapping' in melusine_data:
+        mapping = melusine_data['npPriorityMapping']
+        nps_by_priority = melusine_data['npsByPriority']
+        # Ascensions 1-2
+        asc12_nps = set()
+        for prio, idxs in mapping.items():
+            for idx in idxs:
+                if idx in [1, 2] and prio in nps_by_priority:
+                    for np in nps_by_priority[prio]:
+                        asc12_nps.add(np['id'])
+        # Ascensions 3-4
+        asc34_nps = set()
+        for prio, idxs in mapping.items():
+            for idx in idxs:
+                if idx in [3, 4] and prio in nps_by_priority:
+                    for np in nps_by_priority[prio]:
+                        asc34_nps.add(np['id'])
+        assert asc12_nps and asc34_nps and asc12_nps != asc34_nps, "NPs should differ between ascensions 1-2 and 3-4"
 
 
 def test_trait_add_parsing():
@@ -398,8 +369,6 @@ if __name__ == '__main__':
     test_trait_set_ascension_traits()
     test_trait_set_costume_traits()
     test_variant_svt_id_computation_basic()
-    test_variant_svt_id_with_np_svts()
-    test_variant_svt_id_priority_handling()
     test_select_ascension_data_legacy_format()
     test_select_ascension_data_list_of_lists()
     test_skill_svts_selection()

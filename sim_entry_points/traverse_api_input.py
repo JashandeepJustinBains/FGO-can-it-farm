@@ -30,7 +30,19 @@ def traverse_api_input(servant_init_dicts, mc_id, quest_id, commands):
     for command in commands:
         result = driver.execute_token(command)
         if result is False:
-            logging.error(f"Failed to execute command: {command}")
-            break 
+            if command == '#':
+                # Check if any enemies are still alive
+                enemies = driver.game_manager.get_enemies()
+                if any(enemy.get_hp() > 0 for enemy in enemies):
+                    logging.error(f"End turn failed: Enemies are still alive. Command: {command}")
+                    print("End turn failed: Enemies are still alive.")
+                    break
+                else:
+                    logging.info(f"All waves have been completed. Command: {command}")
+                    print("All waves have been completed.")
+                    break
+            else:
+                logging.error(f"Failed to execute command: {command}")
+                break
     logging.info("Commands executed successfully.")
     return driver  # Always return driver for logging and testing purposes

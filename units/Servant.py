@@ -549,6 +549,16 @@ base_multipliers = {
 
 
 class Servant:
+    def __repr__(self):
+        # Enhanced repr: show name, class, attribute, ascension, variant, traits, and grouped buffs
+        trait_count = len(self.trait_set.traits) if hasattr(self, 'trait_set') and hasattr(self.trait_set, 'traits') else 'N/A'
+        trait_list = ', '.join(str(t) for t in getattr(self.trait_set, 'traits', []))
+        return (
+            f"Servant(name={getattr(self, 'name', None)}, class_id={getattr(self, 'class_name', None)}, attribute={getattr(self, 'attribute', None)})\n"
+            f"Ascension: {getattr(self, 'ascension', None)}, Variant ID: {getattr(self, 'variant_svt_id', None)}\n"
+            f"Traits: {trait_count} active: [{trait_list}]\n"
+            f"Buffs:\n{self.buffs.grouped_str()}"
+        )
     @property
     def id(self):
         return self.collectionNo
@@ -585,7 +595,7 @@ class Servant:
                     })
     def __init__(self, collectionNo=None, ascension=4, variant_svt_id=None, np=1, oc=1,
                  initialCharge=0, atkUp=0, busterUp=0, artsUp=0, quickUp=0,
-                 damageUp=set(), npUp=0, attack=0, append_5=False,
+                 damageUp=set(), npUp=0, attack=0, append_5=True,
                  busterDamageUp=0, quickDamageUp=0, artsDamageUp=0):
         """Initialize Servant with comprehensive ascension parsing."""
 

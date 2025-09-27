@@ -125,25 +125,34 @@ class npManager:
             print(f"{servant.name} does not have enough NP gauge: {servant.get_npgauge()}")
 
     def apply_np_damage(self, servant, target):
-        card_damage_value = None
+
+        # Card type and modifiers
         card_type = servant.nps.card
+        card_damage_value = None
+        card_mod = 1.0
+        card_damage_mod = 0.0
+        enemy_res_mod = 0.0
         card_np_value = 1
+        card_eff_mod = 0.0
         if card_type == 'buster':
             card_damage_value = 1.5
-            card_eff_mod = servant.stats.get_b_up()
-            card_damage_mod = servant.stats.get_b_up() + servant.stats.get_buster_card_damage_up()
+            card_mod = 1 + servant.stats.get_b_up()
+            card_damage_mod = servant.stats.get_buster_card_damage_up()
             enemy_res_mod = target.get_b_resdown()
+            card_eff_mod = servant.stats.get_b_up()
         elif card_type == 'quick':
             card_damage_value = 0.8
-            card_eff_mod = servant.stats.get_q_up()
-            card_damage_mod = servant.stats.get_q_up() + servant.stats.get_quick_card_damage_up()
+            card_mod = 1 + servant.stats.get_q_up()
+            card_damage_mod = servant.stats.get_quick_card_damage_up()
             enemy_res_mod = target.get_q_resdown()
+            card_eff_mod = servant.stats.get_q_up()
         elif card_type == 'arts':
             card_damage_value = 1
             card_np_value = 3
-            card_eff_mod = servant.stats.get_a_up()
-            card_damage_mod = servant.stats.get_a_up() + servant.stats.get_arts_card_damage_up()
+            card_mod = 1 + servant.stats.get_a_up()
+            card_damage_mod = servant.stats.get_arts_card_damage_up()
             enemy_res_mod = target.get_a_resdown()
+            card_eff_mod = servant.stats.get_a_up()
 
         class_modifier = servant.stats.get_class_multiplier(target.get_class())
         attribute_modifier = servant.stats.get_attribute_modifier(target)
@@ -155,15 +164,15 @@ class npManager:
 
         np_damage_multiplier, np_damage_correction_init, np_correction, np_correction_id, np_correction_target = servant.nps.get_np_damage_values(np_level=servant.stats.get_np_level(), oc=servant.stats.get_oc_level())
 
-
         # For normal NPs, just use the base multiplier (no SE logic)
         se_multiplier = np_damage_multiplier
 
         servant_atk = servant.stats.get_base_atk()
         # Print all buffs and modifiers for debugging
-        logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | Card Damage Value: {card_damage_value} | Card damage Mod: {card_damage_mod} | Card eff Mod: {card_eff_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} | Self Damage Mod: {self_damage_mod} | NP Damage Mod: {np_damage_mod} | SE Multiplier: {se_multiplier}")
+        logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | Card Damage Value: {card_damage_value} | Card Mod: {card_mod} | Card Damage Mod: {card_damage_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} | Self Damage Mod: {self_damage_mod} | NP Damage Mod: {np_damage_mod} | SE Multiplier: {se_multiplier}")
 
-        total_damage = (servant_atk * se_multiplier * (card_damage_value * (1 + card_damage_mod - enemy_res_mod)) *
+        # FGO-accurate: Card Mod is multiplicative with card value, Card Damage Mod is additive
+        total_damage = (servant_atk * se_multiplier * (card_damage_value * card_mod + card_damage_mod - enemy_res_mod) *
                         class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
                         (1 + self_damage_mod + np_damage_mod + power_mod))
 
@@ -271,21 +280,29 @@ class npManager:
         if np_correction is not None and np_correction_id is not None:
             individuality_ids = np_correction_id if isinstance(np_correction_id, list) else [np_correction_id]
             if np_correction_target == 0:
-                # Count on self buffs
+                # Count on self buffs (should check both buffs and traits)
                 count = 0
                 for indv in individuality_ids:
-                    c = servant.buffs.count_buffs_by_individuality(indv)
-                    logging.info(f"[SE NP] Counting self buffs for individuality {indv}: {c}")
-                    count += c
-                logging.info(f"[SE NP] Total self buff count for {individuality_ids}: {count}")
+                    # Count buffs with tvals/vals matching individuality
+                    c_buffs = servant.buffs.count_buffs_by_individuality(indv)
+                    # Also count static traits if needed (legacy logic)
+                    c_traits = 0
+                    if hasattr(servant, 'traits'):
+                        c_traits = servant.traits.count(indv)
+                    logging.info(f"[SE NP] Counting self buffs for individuality {indv}: buffs={c_buffs}, traits={c_traits}")
+                    count += c_buffs + c_traits
+                logging.info(f"[SE NP] Total self buff+trait count for {individuality_ids}: {count}")
             elif np_correction_target == 1:
                 # Count on enemy buffs/traits
                 count = 0
                 for indv in individuality_ids:
-                    c = target.buffs.count_buffs_by_individuality(indv)
-                    logging.info(f"[SE NP] Counting enemy buffs/traits for individuality {indv}: {c}")
-                    count += c
-                logging.info(f"[SE NP] Total enemy buff/trait count for {individuality_ids}: {count}")
+                    c_buffs = target.buffs.count_buffs_by_individuality(indv)
+                    c_traits = 0
+                    if hasattr(target, 'traits'):
+                        c_traits = target.traits.count(indv)
+                    logging.info(f"[SE NP] Counting enemy buffs/traits for individuality {indv}: buffs={c_buffs}, traits={c_traits}")
+                    count += c_buffs + c_traits
+                logging.info(f"[SE NP] Total enemy buff+trait count for {individuality_ids}: {count}")
             else:
                 logging.warning(f"[SE NP] Unknown Target value for SE NP: {np_correction_target}")
                 count = 0

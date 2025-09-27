@@ -4,7 +4,7 @@ import logging
 logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
-magic_bullet_buff = {'buff': 'Magic Bullet', 'functvals': [], 'value': 9999, 'tvals': [], 'turns': -1}
+magic_bullet_buff = {'buff': 'Magic Bullet', 'functvals': [], 'value': 9999, 'tvals': [2885], 'turns': -1}
 
 class Buffs:
     def count_buffs_by_individuality(self, individuality_id):
@@ -121,6 +121,12 @@ class Buffs:
                     self.servant.a_up += buff['value'] / 1000
                 elif buff['buff'] == 'Quick Up':
                     self.servant.q_up += buff['value'] / 1000
+                elif buff['buff'] == 'Buster Card Damage Up':
+                    self.servant.buster_card_damage_up += buff['value'] / 1000
+                elif buff['buff'] == 'Arts Card Damage Up':
+                    self.servant.arts_card_damage_up += buff['value'] / 1000
+                elif buff['buff'] == 'Quick Card Damage Up':
+                    self.servant.quick_card_damage_up += buff['value'] / 1000
                 elif buff['buff'] == 'Power Up':
                     self.servant.power_mod += buff['value'] / 1000
                 elif buff['buff'] in ['NP Overcharge Level Up', 'Overcharge Lv. Up']:
@@ -151,12 +157,6 @@ class Buffs:
                         logging.info(f"[Buffs] Unhandled trigger effect: {name} value={value}")
                 elif buff['buff'] == 'NP Gain Up':
                     self.servant.np_gain_mod += buff['value'] / 1000
-                elif buff['buff'] == 'Buster Card Damage Up':
-                    self.servant.buster_card_damage_up += buff['value'] / 1000
-                elif buff['buff'] == 'Arts Card Damage Up':
-                    self.servant.arts_card_damage_up += buff['value'] / 1000
-                elif buff['buff'] == 'Quick Card Damage Up':
-                    self.servant.quick_card_damage_up += buff['value'] / 1000
 
     def parse_passive(self, passives_data):
         passives = []

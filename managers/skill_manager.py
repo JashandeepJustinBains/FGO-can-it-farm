@@ -219,6 +219,7 @@ class SkillManager:
 
         # Generic on-hit behavior: many datasets encode a chained trigger that
         # grants NP or charges a counter. Detect common patterns and apply.
+
         if trigger_type == 'on-hit':
             # Only apply on-hit triggers to normal cards, not NPs, unless this is a bonus effect for NPs
             # Heuristic: if is_np is True, skip unless buff['type'] or buff['buff'] contains 'NP Bonus Effect' or 'NP attackAfterFunction'
@@ -228,31 +229,33 @@ class SkillManager:
                 if not any(kw in (buff.get('type','') + buff.get('buff','')) for kw in bonus_keywords):
                     logging.info(f"run_triggered_buff: skipping on-hit trigger {buff.get('buff')} for NP context")
                     return False
-            # Common NP-grant patterns: svals.Value2 or buff['value'] holds a
-            # small number representing percent (e.g., 10 -> 10%).
-            val2 = svals.get('Value2')
-            grant = None
-            if isinstance(val2, (int, float)) and abs(val2) < 1000:
-                grant = float(val2)
-            elif isinstance(buff.get('value'), (int, float)) and abs(buff.get('value')) < 1000:
-                grant = float(buff.get('value'))
-            else:
-                v = svals.get('Value')
-                if isinstance(v, (int, float)) and abs(v) < 1000:
-                    grant = float(v)
+            # Only grant NP gauge for specific effect names, not for NP Gain Up stat
+            np_gauge_effects = [
+                'Increase NP Gauge', 'NP Absorption', 'NP Charge', 'NP Gauge Up', 'NP Gauge Increase', 'NP Gauge Boost'
+            ]
+            buff_name = (buff.get('buff') or '').strip().lower()
+            if any(buff_name == effect.lower() for effect in np_gauge_effects):
+                val2 = svals.get('Value2')
+                grant = None
+                if isinstance(val2, (int, float)) and abs(val2) < 1000:
+                    grant = float(val2)
+                elif isinstance(buff.get('value'), (int, float)) and abs(buff.get('value')) < 1000:
+                    grant = float(buff.get('value'))
+                else:
+                    v = svals.get('Value')
+                    if isinstance(v, (int, float)) and abs(v) < 1000:
+                        grant = float(v)
 
-            if grant:
-                logging.info(f"run_triggered_buff: granting NP {grant}% to {getattr(source_servant,'name',None)}")
-                source_servant.set_npgauge(grant)
-                return True
-
+                if grant:
+                    logging.info(f"run_triggered_buff: granting NP {grant}% to {getattr(source_servant,'name',None)}")
+                    source_servant.set_npgauge(grant)
+                    return True
             # Counter-style on-hit: if no numeric grant but Count exists, we
             # treat this as a stack-consuming effect with no direct grant here.
             if isinstance(buff.get('count'), int) or ('Count' in svals):
                 logging.info(f"run_triggered_buff: detected counter-style trigger for {buff.get('buff')}")
                 # nothing to do here at generic level; caller may decrement
                 return True
-
             return False
 
         # End-turn triggers should be handled by buff processing; not run here
@@ -363,7 +366,9 @@ class SkillManager:
         target.set_npgauge(percent)
 
     def apply_cooldown_reduction(self, effect, target):
-        target.skills.decrement_cooldowns(effect.get('svals', {}).get('Value'))
+        # Normalize svals to always be a dict (legacy data may use list)
+        svals = self._normalize_svals(effect)
+        target.skills.decrement_cooldowns(svals.get('Value'))
 
     def apply_transform(self, effect, target):
         # TODO how do we parse transform effects?
