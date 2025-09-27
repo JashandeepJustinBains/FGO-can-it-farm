@@ -7,6 +7,21 @@ logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
 magic_bullet_buff = {'buff': 'Magic Bullet', 'functvals': [], 'value': 9999, 'tvals': [], 'turns': -1}
 
 class Buffs:
+    def count_buffs_by_individuality(self, individuality_id):
+        """Count buffs on this servant with a tval or vals id matching individuality_id (int)."""
+        count = 0
+        for buff in self.buffs:
+            # Check tvals and vals for matching individuality
+            tvals = buff.get('tvals', [])
+            vals = buff.get('vals', [])
+            # tvals/vals can be list of dicts or ints
+            for v in tvals + vals:
+                if isinstance(v, dict):
+                    if v.get('id') == individuality_id:
+                        count += 1
+                elif v == individuality_id:
+                    count += 1
+        return count
     def __init__(self, servant=None, enemy=None):
         # Initialize basic buffs list and stateful effect tracking for all cases
         self.buffs = []
@@ -115,8 +130,25 @@ class Buffs:
                         if tval not in self.servant.power_mod:
                             self.servant.power_mod[tval] = 0
                         self.servant.power_mod[tval] += buff.get("value", 0)
-                elif 'Triggers Each Turn (Increase NP)' in buff['buff'] or 'Triggers Each Turn (NP Absorb)' in buff['buff']: # TODO assumes all Triggers Each Turn buffs are for NP gain
-                    self.servant.np_gauge += buff['value'] / 1000
+                elif 'Triggers Each Turn' in buff['buff'] or 'Triggers Each Hit' in buff['buff']:
+                    # Robust trigger: apply effect based on buff type, not just NP
+                    # Try to infer effect from buff['buff'] name
+                    name = buff['buff']
+                    value = buff.get('value', 0) / 1000
+                    if 'NP' in name and ('Increase' in name or 'Absorb' in name or 'Gain' in name):
+                        self.servant.np_gauge += value
+                    elif 'ATK Up' in name:
+                        self.servant.atk_mod += value
+                    elif 'NP Strength Up' in name or 'upNpdamage' in name:
+                        self.servant.np_damage_mod += value
+                    elif 'Star' in name and ('Gain' in name or 'Up' in name):
+                        # If you have a star mechanic, increment it here
+                        if hasattr(self.servant, 'star_count'):
+                            self.servant.star_count += int(buff.get('value', 0) / 100)
+                    # Add more trigger types as needed
+                    else:
+                        # Default: log and skip
+                        logging.info(f"[Buffs] Unhandled trigger effect: {name} value={value}")
                 elif buff['buff'] == 'NP Gain Up':
                     self.servant.np_gain_mod += buff['value'] / 1000
                 elif buff['buff'] == 'Buster Card Damage Up':

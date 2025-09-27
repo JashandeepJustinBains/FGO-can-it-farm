@@ -55,24 +55,45 @@ class NP:
     def get_np_damage_values(self, oc=1, np_level=1, new_id=None):
         np_entry = self._get_np_entry(new_id)
         for func in np_entry.get('functions', []):
-            ftype = func.get('funcType')
-            svals = func.get('svals', [])
-            try:
-                val = svals[np_level - 1].get('Value', 0) if isinstance(svals, list) and svals else 0
-            except Exception:
-                val = 0
-            if ftype in ('damageNp', 'damageNpPierce'):
-                return val / 1000, None, None, None, None
-            if ftype in ('damageNpIndividual', 'damageNpStateIndividualFix'):
-                target = svals[np_level - 1].get('Target', 0) if isinstance(svals, list) and svals else 0
-                corr = svals[np_level - 1].get('Correction', 0) if isinstance(svals, list) and svals else 0
-                return val / 1000, None, corr / 1000 if corr else None, None, target
-            if ftype == 'damageNpIndividualSum':
-                init = svals[np_level - 1].get('Value2', 0) if isinstance(svals, list) and svals else 0
-                corr = svals[np_level - 1].get('Correction', 0) if isinstance(svals, list) and svals else 0
-                target = svals[np_level - 1].get('Target', 0) if isinstance(svals, list) and svals else 0
-                ids = svals[np_level - 1].get('TargetList', []) if isinstance(svals, list) and svals else []
-                return val / 1000, init / 1000 if init else None, corr / 1000 if corr else None, ids, target
+                ftype = func.get('funcType')
+                svals = func.get('svals', [])
+                np_damage = 0
+                np_damage_correction_init = 0
+                np_correction = 0
+                np_correction_id = []
+                np_correction_target = 0
+
+                np_level_idx = np_level - 1
+                try:
+                    # Standard NP damage
+                    if ftype in ['damageNp', 'damageNpPierce']:
+                        if oc == 1:
+                            np_damage = svals[np_level_idx].get('Value', 0)
+                        else:
+                            np_damage = func.get(f'svals{oc}', svals)[np_level_idx].get('Value', 0)
+                        return np_damage / 1000, None, None, None, None
+                    # Trait-based super effective (e.g., 1.5x if enemy has trait X)
+                    elif ftype in ['damageNpIndividual', 'damageNpStateIndividualFix']:
+                        np_damage = svals[np_level_idx].get('Value', 0)
+                        np_correction_target = svals[np_level_idx].get('Target', 0)
+                        np_correction = svals[np_level_idx].get('Correction', 0)
+                        return np_damage / 1000, None, np_correction / 1000, None, np_correction_target
+                    # Buff-count-based super effective (e.g., burn count, magic bullet count)
+                    elif ftype == 'damageNpIndividualSum':
+                        np_damage = svals[np_level_idx].get('Value', 0)
+                        np_damage_correction_init = svals[np_level_idx].get('Value2', 0)
+                        np_correction = svals[np_level_idx].get('Correction', 0)
+                        np_correction_target = svals[np_level_idx].get('Target', 0)
+                        np_correction_id = svals[np_level_idx].get('TargetList', 0)
+                        return (
+                            np_damage / 1000,
+                            np_damage_correction_init / 1000,
+                            np_correction / 1000,
+                            np_correction_id,
+                            np_correction_target
+                        )
+                except Exception:
+                    continue
         return 0, None, None, None, None
 
     def get_npgain(self, card_type, new_id=None):
