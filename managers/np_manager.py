@@ -155,40 +155,9 @@ class npManager:
 
         np_damage_multiplier, np_damage_correction_init, np_correction, np_correction_id, np_correction_target = servant.nps.get_np_damage_values(np_level=servant.stats.get_np_level(), oc=servant.stats.get_oc_level())
 
-        # Handle super effective (SE) NPs with buff/trait count logic
-        se_multiplier = 1.0
-        if np_correction is not None and np_correction_id is not None:
-            # damageNpIndividualSum logic
-            individuality_ids = np_correction_id if isinstance(np_correction_id, list) else [np_correction_id]
-            # Target: 0=self, 1=enemy
-            if np_correction_target == 0:
-                # Count on self
-                count = 0
-                for indv in individuality_ids:
-                    count += servant.buffs.count_buffs_by_individuality(indv)
-            else:
-                # Count on enemy
-                count = 0
-                for indv in individuality_ids:
-                    count += target.buffs.count_buffs_by_individuality(indv)
-            # Cap count if ParamAddMaxCount present
-            param_add_max = None
-            # Try to get ParamAddMaxCount from svals if present
-            np_entry = servant.nps._get_np_entry()
-            for func in np_entry.get('functions', []):
-                if func.get('funcType') == 'damageNpIndividualSum':
-                    svals = func.get('svals', [])
-                    if svals:
-                        svals0 = svals[servant.stats.get_np_level()-1] if servant.stats.get_np_level()-1 < len(svals) else svals[-1]
-                        param_add_max = svals0.get('ParamAddMaxCount')
-                        break
-            if param_add_max is not None:
-                count = min(count, param_add_max)
-            # SE formula: base = np_damage_multiplier, add = np_correction * count, min = np_damage_correction_init
-            se_multiplier = max(np_damage_correction_init, 1 + np_correction * count)
-            logging.info(f"Super Effective NP: individuality_ids={individuality_ids}, count={count}, correction={np_correction}, base={np_damage_multiplier}, min={np_damage_correction_init}, se_multiplier={se_multiplier}")
-        else:
-            se_multiplier = np_damage_multiplier
+
+        # For normal NPs, just use the base multiplier (no SE logic)
+        se_multiplier = np_damage_multiplier
 
         servant_atk = servant.stats.get_base_atk()
         # Print all buffs and modifiers for debugging
@@ -227,7 +196,7 @@ class npManager:
                     # let SkillManager decide if the buff should run for this card
                     ran = False
                     try:
-                        ran = self.sm.run_triggered_buff(buff=buff, source_servant=servant, target=target, card_type=card_type)
+                        ran = self.sm.run_triggered_buff(buff=buff, source_servant=servant, target=target, card_type=card_type, is_np=True)
                     except Exception:
                         ran = False
                     # If the triggered handler ran and the buff has a finite count,
@@ -293,42 +262,58 @@ class npManager:
         np_damage_mod = servant.stats.get_np_damage_mod()
         
         # Cumulative Damage Logic
+
         np_damage_multiplier, np_damage_correction_init, np_correction, np_correction_id, np_correction_target = servant.nps.get_np_damage_values(np_level=servant.stats.get_np_level(), oc=servant.stats.get_oc_level())
-        is_super_effective = 1
-        super_effective_modifier = 1
-        is_super_effective = 1 if np_correction_target in target.traits else 0
         servant_atk = servant.stats.get_base_atk()
-        
-        if np_correction_id:
-            if np_correction_target == 1:
-                for id in np_correction_id:
-                    super_effective_modifier += np_correction * target.traits.count(id)
+
+        # Super Effective logic for SE NPs (damageNpIndividualSum, etc)
+        se_multiplier = 1.0
+        if np_correction is not None and np_correction_id is not None:
+            individuality_ids = np_correction_id if isinstance(np_correction_id, list) else [np_correction_id]
+            if np_correction_target == 0:
+                # Count on self buffs
+                count = 0
+                for indv in individuality_ids:
+                    c = servant.buffs.count_buffs_by_individuality(indv)
+                    logging.info(f"[SE NP] Counting self buffs for individuality {indv}: {c}")
+                    count += c
+                logging.info(f"[SE NP] Total self buff count for {individuality_ids}: {count}")
+            elif np_correction_target == 1:
+                # Count on enemy buffs/traits
+                count = 0
+                for indv in individuality_ids:
+                    c = target.buffs.count_buffs_by_individuality(indv)
+                    logging.info(f"[SE NP] Counting enemy buffs/traits for individuality {indv}: {c}")
+                    count += c
+                logging.info(f"[SE NP] Total enemy buff/trait count for {individuality_ids}: {count}")
             else:
-                for id in np_correction_id:
-                    cum = 0
-                    if servant.name == "Super Aoko":
-                        for buff in servant.buffs.buffs:
-                            if buff['buff'] == "Magic Bullet":
-                                cum = min(10, cum + 1)
-                        super_effective_modifier += cum * np_correction
-                        if super_effective_modifier > 0:
-                            is_super_effective = 1
+                logging.warning(f"[SE NP] Unknown Target value for SE NP: {np_correction_target}")
+                count = 0
 
-        # Print all buffs and modifiers for debugging  
-        logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | initial np correction amount: {np_damage_correction_init} | np correction: {np_correction} | what id is used for the correction {np_correction_id} | target or buff that effects np_correction amounts:{np_correction_target} | Card Damage Value: {card_damage_value} | Card Mod: {card_eff_mod} | Card Damage Mod: {card_damage_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} | Self Damage Mod: {self_damage_mod} | NP Damage Mod: {np_damage_mod} | Super Effective Modifier: {super_effective_modifier} | Is Super Effective: {is_super_effective}")
-        
-        if super_effective_modifier:
-            is_super_effective = 1
+            # Cap count if ParamAddMaxCount present
+            param_add_max = None
+            np_entry = servant.nps._get_np_entry()
+            for func in np_entry.get('functions', []):
+                if func.get('funcType') == 'damageNpIndividualSum':
+                    svals = func.get('svals', [])
+                    if svals:
+                        svals0 = svals[servant.stats.get_np_level()-1] if servant.stats.get_np_level()-1 < len(svals) else svals[-1]
+                        param_add_max = svals0.get('ParamAddMaxCount')
+                        break
+            if param_add_max is not None:
+                count = min(count, param_add_max)
+                logging.info(f"[SE NP] Capped count to ParamAddMaxCount={param_add_max}")
+            se_multiplier = max(np_damage_correction_init, 1 + np_correction * count)
+            logging.info(f"Super Effective NP: individuality_ids={individuality_ids}, count={count}, correction={np_correction}, base={np_damage_multiplier}, min={np_damage_correction_init}, se_multiplier={se_multiplier}, Target={np_correction_target}")
+        else:
+            se_multiplier = np_damage_multiplier
 
-        if np_correction_id:
-            logging.info(f"does this enemy {target.name} with traits {target.traits} get super effected with this servants np who is SE against {np_correction_id}? {any(trait in target.traits for trait in np_correction_id)}")
-        else: 
-            logging.info(f"does this enemy {target.name} with traits {target.traits} get super effected with this servants np who is SE against")
+        # Print all buffs and modifiers for debugging
+        logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | initial np correction amount: {np_damage_correction_init} | np correction: {np_correction} | what id is used for the correction {np_correction_id} | target or buff that effects np_correction amounts:{np_correction_target} | Card Damage Value: {card_damage_value} | Card Mod: {card_eff_mod} | Card Damage Mod: {card_damage_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} | Self Damage Mod: {self_damage_mod} | NP Damage Mod: {np_damage_mod} | SE Multiplier: {se_multiplier}")
 
-        total_damage = (servant_atk * np_damage_multiplier * (card_damage_value * (1 + card_damage_mod - enemy_res_mod)) *
-            class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
-            (1 + self_damage_mod + np_damage_mod + power_mod) * 
-            (1 + (((super_effective_modifier if is_super_effective == 1 else 0) - 1))))
+        total_damage = (servant_atk * se_multiplier * (card_damage_value * (1 + card_damage_mod - enemy_res_mod)) *
+                        class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
+                        (1 + self_damage_mod + np_damage_mod + power_mod))
 
         logging.info(f"Total Damage: {total_damage}")
 

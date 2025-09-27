@@ -198,7 +198,7 @@ class SkillManager:
         }
         target.buffs.add_buff(buff_entry)
 
-    def run_triggered_buff(self, buff, source_servant, target, card_type=None):
+    def run_triggered_buff(self, buff, source_servant, target, card_type=None, is_np=False):
         """Interpret a stored buff's trigger semantics and execute it.
 
         We try to avoid hardcoding specific function ids. Instead we rely on the
@@ -220,6 +220,14 @@ class SkillManager:
         # Generic on-hit behavior: many datasets encode a chained trigger that
         # grants NP or charges a counter. Detect common patterns and apply.
         if trigger_type == 'on-hit':
+            # Only apply on-hit triggers to normal cards, not NPs, unless this is a bonus effect for NPs
+            # Heuristic: if is_np is True, skip unless buff['type'] or buff['buff'] contains 'NP Bonus Effect' or 'NP attackAfterFunction'
+            if is_np:
+                # Acceptable NP bonus effect types/names
+                bonus_keywords = ['NP Bonus Effect', 'NP attackAfterFunction', 'NP Buster Attack Bonus Effect', 'NP Arts Attack Bonus Effect', 'NP Quick Attack Bonus Effect']
+                if not any(kw in (buff.get('type','') + buff.get('buff','')) for kw in bonus_keywords):
+                    logging.info(f"run_triggered_buff: skipping on-hit trigger {buff.get('buff')} for NP context")
+                    return False
             # Common NP-grant patterns: svals.Value2 or buff['value'] holds a
             # small number representing percent (e.g., 10 -> 10%).
             val2 = svals.get('Value2')
@@ -234,12 +242,6 @@ class SkillManager:
                     grant = float(v)
 
             if grant:
-                # The codebase represents NP gauge as a percentage (0-100).
-                # `grant` is already expressed in percent (e.g. 10 -> 10%),
-                # so pass it through directly to set_npgauge which adds the
-                # percentage value to the servant's np_gauge. Previously this
-                # divided by 100 here which produced tiny fractional increases
-                # and prevented NPs from charging as expected.
                 logging.info(f"run_triggered_buff: granting NP {grant}% to {getattr(source_servant,'name',None)}")
                 source_servant.set_npgauge(grant)
                 return True
