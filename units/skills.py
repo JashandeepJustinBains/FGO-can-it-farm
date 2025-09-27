@@ -15,6 +15,27 @@ class Skills:
         self.max_cooldowns = self.initialize_max_cooldowns()
         self.cooldown_reduction_applied = {1: False, 2: False, 3: False}
 
+    def _extract_number(self, value):
+        """Extract number handling MongoDB format."""
+        if isinstance(value, dict) and '$numberInt' in value:
+            return int(value['$numberInt'])
+        elif isinstance(value, dict) and '$numberLong' in value:
+            return int(value['$numberLong'])
+        elif isinstance(value, dict) and '$numberDouble' in value:
+            return int(float(value['$numberDouble']))
+        elif isinstance(value, (int, float)):
+            return int(value)
+        elif isinstance(value, str) and value.isdigit():
+            return int(value)
+        elif value is None:
+            return 0
+        else:
+            # Fallback for other types
+            try:
+                return int(value)
+            except (ValueError, TypeError):
+                return 0
+
     def _parse_single_skill(self, skill: Dict[str, Any]):
         cooldowns = skill.get('coolDown', [])
         cooldown = self._extract_number(cooldowns[-1]) if cooldowns else 0
