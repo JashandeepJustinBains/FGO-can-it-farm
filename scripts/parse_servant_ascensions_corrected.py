@@ -161,6 +161,7 @@ def create_structured_servant_data(servant_data: Dict[str, Any]) -> Dict[str, An
         'className': servant_data.get('className', ''),
         'attribute': servant_data.get('attribute', ''),
         'maxAscensions': 4,
+        'atkGrowth': servant_data.get('atkGrowth', servant_data.get('atkgrowth', [])),
         'skillsByPriority': skills_by_priority,
         'npsByPriority': nps_by_priority,
         'skillPriorityMapping': skill_priority_mapping,

@@ -13,28 +13,13 @@ def select_character(character_id):
             servant = db.servants.find_one({'collectionNo': character_id})
             if servant:
                 return servant
-        except Exception:
-            # If any DB access error occurs, fall back to file-based loading
-            pass
+            else:
+                raise ValueError(f"Servant with collectionNo {character_id} not found in database")
+        except Exception as e:
+            raise RuntimeError(f"Failed to load servant {character_id} from database: {e}")
 
-    # File fallback for local tests / environments without a DB.
-    # Look for example_servant_data/<collectionNo>.json relative to repo root.
-    import os
-    import json
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    example_dir = os.path.join(repo_root, 'example_servant_data')
-    try:
-        filename = f"{int(character_id)}.json"
-    except Exception:
-        filename = f"{str(character_id)}.json"
-    filepath = os.path.join(example_dir, filename)
-    if os.path.exists(filepath):
-        try:
-            with open(filepath, 'r', encoding='utf-8') as fh:
-                return json.load(fh)
-        except Exception:
-            return None
-    return None
+    # If no db is available, raise an error
+    raise RuntimeError("No database connection available to load servant data")
 """
 Updated Servant.py with comprehensive ascension parser integration.
 
@@ -530,22 +515,7 @@ def compute_variant_svt_id(servant_data, ascension_index, costume_svt_id=None):
 
 
 # Base multipliers for damage calculation
-base_multipliers = {
-    'saber': 1.0,
-    'archer': 0.95,
-    'lancer': 1.05,
-    'rider': 1.0,
-    'caster': 0.9,
-    'assassin': 0.9,
-    'berserker': 1.1,
-    'shielder': 1.0,
-    'ruler': 1.1,
-    'avenger': 1.1,
-    'alterEgo': 1.0,
-    'moonCancer': 1.0,
-    'foreigner': 1.0,
-    'pretender': 1.0,
-}
+from data import base_multipliers
 
 
 class Servant:
@@ -593,7 +563,7 @@ class Servant:
                         'tvals': [tval['id'] for tval in state.get('tvals', [])] if 'tvals' in state else [],
                         'turns': state['turns']
                     })
-    def __init__(self, collectionNo=None, ascension=4, variant_svt_id=None, np=1, oc=1,
+    def __init__(self, collectionNo=None, ascension=4, variant_svt_id=None, lvl=0, np=1, oc=1,
                  initialCharge=0, atkUp=0, busterUp=0, artsUp=0, quickUp=0,
                  damageUp=set(), npUp=0, attack=0, append_5=True,
                  busterDamageUp=0, quickDamageUp=0, artsDamageUp=0):
@@ -612,6 +582,7 @@ class Servant:
         # Set basic attributes
         self.name = self.data.get('name', f'Servant_{collectionNo}')
         self.class_name = self.data.get('className', 'unknown')
+        self.lvl = lvl
 
         # Legacy compatibility: set class_id and attribute fields
         self.class_id = self.data.get('classId')

@@ -129,7 +129,7 @@ class npManager:
         # Card type and modifiers
         card_type = servant.nps.card
         card_damage_value = None
-        card_mod = 1.0
+        card_mod = 0.0
         card_damage_mod = 0.0
         enemy_res_mod = 0.0
         card_np_value = 1
@@ -165,7 +165,7 @@ class npManager:
         np_damage_multiplier, np_damage_correction_init, np_correction, np_correction_id, np_correction_target = servant.nps.get_np_damage_values(np_level=servant.stats.get_np_level(), oc=servant.stats.get_oc_level())
 
         # For normal NPs, just use the base multiplier (no SE logic)
-        se_multiplier = np_damage_multiplier
+        se_multiplier = 1
 
         servant_atk = servant.stats.get_base_atk()
         # Print all buffs and modifiers for debugging

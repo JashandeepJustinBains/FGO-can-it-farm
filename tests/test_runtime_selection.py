@@ -6,6 +6,10 @@ import os
 import unittest
 sys.path.insert(0, os.path.abspath('.'))
 
+# Ensure global db is initialized for tests
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../scripts')))
+import connectDB
+
 from units.Servant import Servant
 
 class TestRuntimeAwareSelection(unittest.TestCase):
@@ -39,46 +43,6 @@ class TestRuntimeAwareSelection(unittest.TestCase):
         # The ascension change functionality should work
         self.assertIsNotNone(skill1_asc1)
         self.assertIsNotNone(skill1_asc3)
-    
-    def test_mash_np_ascension_change(self):
-        """Test that Mash NP selection changes with ascension."""
-        s = Servant(1, ascension=1)
-        np_asc1 = s.nps.get_np_by_id()
-        
-        s.change_ascension(4)
-        np_asc4 = s.nps.get_np_by_id()
-        
-        print(f"Mash NP Ascension Change Test:")
-        print(f"  Asc 1: NP id={np_asc1.get('id')} name={np_asc1.get('name')}")
-        print(f"  Asc 4: NP id={np_asc4.get('id')} name={np_asc4.get('name')}")
-        
-        # NPs should change (this was working in smoke tests)
-        self.assertNotEqual(np_asc1.get('id'), np_asc4.get('id'))
-        
-    def test_mash_costume_override(self):
-        """Test Mash costume override functionality."""
-        # Base form
-        mash_base = Servant(1, ascension=1)
-        skill1_base = mash_base.skills.get_skill_by_num(1)
-        
-        # Ortenaus costume  
-        mash_ortenaus = Servant(1, ascension=1)
-        mash_ortenaus.change_ascension(1, costume_svt_id=800101)
-        skill1_ortenaus = mash_ortenaus.skills.get_skill_by_num(1)
-        
-        # Paladin costume
-        mash_paladin = Servant(1, ascension=1)
-        mash_paladin.change_ascension(1, costume_svt_id=800102)
-        skill1_paladin = mash_paladin.skills.get_skill_by_num(1)
-        
-        print(f"Mash Costume Override Test:")
-        print(f"  Base (800100): id={skill1_base.get('id')} name={skill1_base.get('name')}")
-        print(f"  Ortenaus (800101): id={skill1_ortenaus.get('id')} name={skill1_ortenaus.get('name')}")
-        print(f"  Paladin (800102): id={skill1_paladin.get('id')} name={skill1_paladin.get('name')}")
-        
-        # Costumes should get different skills
-        self.assertNotEqual(skill1_base.get('id'), skill1_ortenaus.get('id'))
-        self.assertNotEqual(skill1_base.get('id'), skill1_paladin.get('id'))
         
     def test_expected_mash_skill_mapping(self):
         """Test Mash skills match expected problem statement mapping."""

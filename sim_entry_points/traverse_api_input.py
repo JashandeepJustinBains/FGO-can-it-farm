@@ -21,6 +21,7 @@ if not mongo_uri:
 # Connect to MongoDB
 client = MongoClient(mongo_uri)
 db = client['FGOCanItFarmDatabase']
+globals()['db'] = db
 
 def traverse_api_input(servant_init_dicts, mc_id, quest_id, commands):
     servant_init_dicts = [s for s in servant_init_dicts if s.get("collectionNo")]

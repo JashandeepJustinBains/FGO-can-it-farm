@@ -1,6 +1,7 @@
 
 import logging
 import os
+import connectDB
 os.makedirs("outputs", exist_ok=True)
 logging.basicConfig(
     filename="outputs/output.log",

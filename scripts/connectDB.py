@@ -22,3 +22,4 @@ mysticcode_collection = db['mysticcodes']
 
 # Set the encoding to UTF-8
 sys.stdout.reconfigure(encoding='utf-8')
+globals()['db'] = db

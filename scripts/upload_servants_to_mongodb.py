@@ -32,7 +32,7 @@ for filename in os.listdir(servant_dir):
 
 # If collectionNo 1 was not uploaded, try to upload it explicitly
 if not uploaded_1:
-    path_1 = os.path.join(servant_dir, "1_structured.json")
+    path_1 = os.path.join(servant_dir, "1_copy_structured.json")
     if os.path.exists(path_1):
         with open(path_1, "r", encoding="utf-8") as f:
             data = json.load(f)
