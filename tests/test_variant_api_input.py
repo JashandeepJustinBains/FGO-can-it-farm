@@ -1,3 +1,4 @@
+import tests.test_db_setup
 import pytest
 import json
 from sim_entry_points.traverse_api_input import traverse_api_input

@@ -1,11 +1,12 @@
-"""
-Tests for ascension/costume-aware variant selection and traits system.
-
-Tests validate the algorithm picks correct variant svtId, selects skills with
-highest id and level 10 values, chooses appropriate NP variants, and handles
-trait transformations correctly.
-"""
-
+import tests.test_db_setup
+from dotenv import load_dotenv
+load_dotenv()
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../scripts')))
+import connectDB
+# Ensure global db is set in this test's global scope
+if hasattr(connectDB, 'db'):
+    globals()['db'] = connectDB.db
 import json
 import pytest
 from units.Servant import Servant, compute_variant_svt_id, select_ascension_data

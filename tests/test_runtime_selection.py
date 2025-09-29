@@ -1,3 +1,16 @@
+from pymongo import MongoClient
+from dotenv import load_dotenv
+import sys, os
+load_dotenv()
+mongo_uri = os.getenv('MONGO_URI_READ')
+if not mongo_uri:
+    raise ValueError("No MONGO_URI_READ environment variable set")
+client = MongoClient(mongo_uri)
+db = client['FGOCanItFarmDatabase']
+servants_collection = db['servants']
+quests_collection = db['quests']
+mysticcode_collection = db['mysticcodes']
+sys.stdout.reconfigure(encoding='utf-8')
 #!/usr/bin/env python3
 """Unit tests for runtime-aware skill and NP selection."""
 
@@ -6,9 +19,8 @@ import os
 import unittest
 sys.path.insert(0, os.path.abspath('.'))
 
-# Ensure global db is initialized for tests
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../scripts')))
-import connectDB
+
+import tests.test_db_setup
 
 from units.Servant import Servant
 

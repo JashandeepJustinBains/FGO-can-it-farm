@@ -1,3 +1,4 @@
+from scripts.connectDB import db
 def select_character(character_id):
     """
     Load character data from database or mock data.
@@ -8,7 +9,7 @@ def select_character(character_id):
     """
     # Try to use a global `db` object if available (test harness may provide one).
     db = globals().get('db', None)
-    if db:
+    if db is not None:
         try:
             servant = db.servants.find_one({'collectionNo': character_id})
             if servant:
@@ -563,9 +564,11 @@ class Servant:
                         'tvals': [tval['id'] for tval in state.get('tvals', [])] if 'tvals' in state else [],
                         'turns': state['turns']
                     })
+
+
     def __init__(self, collectionNo=None, ascension=4, variant_svt_id=None, lvl=0, np=1, oc=1,
                  initialCharge=0, atkUp=0, busterUp=0, artsUp=0, quickUp=0,
-                 damageUp=set(), npUp=0, attack=0, append_5=True,
+                 damageUp=0, npUp=0, attack=0, append_5=True,
                  busterDamageUp=0, quickDamageUp=0, artsDamageUp=0):
         """Initialize Servant with comprehensive ascension parsing."""
 
@@ -609,10 +612,19 @@ class Servant:
         self.cards = self.data.get('cards', [])
         
         # Initialize skills and NPs with ascension-aware data
-        self.skills = Skills(ascension_data.get('skills', self.data.get('skills', [])), self, append_5=append_5)
+        # Use skillsByPriority if present for FGO-accurate skill selection
+        skills_by_priority = ascension_data.get('skillsByPriority') or self.data.get('skillsByPriority')
+        if skills_by_priority:
+            self.skills = Skills.from_skills_by_priority(skills_by_priority, self, append_5=append_5)
+        else:
+            self.skills = Skills(ascension_data.get('skills', self.data.get('skills', [])), self, append_5=append_5)
         self.np_level = np
         self.oc_level = oc
-        self.nps = NP(ascension_data.get('noblePhantasms', self.data.get('noblePhantasms', [])), self)
+        nps_by_priority = ascension_data.get('npsByPriority') or self.data.get('npsByPriority')
+        if nps_by_priority:
+            self.nps = NP.from_nps_by_priority(nps_by_priority, self)
+        else:
+            self.nps = NP(ascension_data.get('noblePhantasms', self.data.get('noblePhantasms', [])), self)
         self.rarity = self.data.get('rarity')
         self.np_gauge = initialCharge
         self.np_gain_mod = 1
@@ -625,7 +637,7 @@ class Servant:
         self.b_up = busterUp
         self.a_up = artsUp
         self.q_up = quickUp
-        self.power_mod = damageUp
+        self.damage_mod = damageUp
         self.np_damage_mod = npUp
         self.card_type = self.nps.nps[0]['card'] if self.nps.nps else None
         self.class_base_multiplier = 1 if self.collectionNo == 426 else base_multipliers[self.class_name]
@@ -642,6 +654,7 @@ class Servant:
         self.user_a_up = artsUp
         self.user_q_up = quickUp
         self.user_np_damage_mod = npUp
+        self.user_damage_mod = damageUp
         self.user_buster_damage_up = busterDamageUp
         self.user_quick_damage_up = quickDamageUp
         self.user_arts_damage_up = artsDamageUp
@@ -681,8 +694,16 @@ class Servant:
             self._apply_ascension_traits()
         
         # Recreate skills and NPs with new ascension data and variant
-        self.skills = Skills(ascension_data.get('skills', self.data.get('skills', [])), self)
-        self.nps = NP(ascension_data.get('noblePhantasms', self.data.get('noblePhantasms', [])), self)
+        skills_by_priority = ascension_data.get('skillsByPriority') or self.data.get('skillsByPriority')
+        if skills_by_priority:
+            self.skills = Skills.from_skills_by_priority(skills_by_priority, self)
+        else:
+            self.skills = Skills(ascension_data.get('skills', self.data.get('skills', [])), self)
+        nps_by_priority = ascension_data.get('npsByPriority') or self.data.get('npsByPriority')
+        if nps_by_priority:
+            self.nps = NP.from_nps_by_priority(nps_by_priority, self)
+        else:
+            self.nps = NP(ascension_data.get('noblePhantasms', self.data.get('noblePhantasms', [])), self)
         
         # Update passives
         passives_data = ascension_data.get('passives', self.data.get('classPassive', []))
@@ -714,18 +735,6 @@ class Servant:
         if self.data:
             return self.data.get('baseAtk', self.data.get('atkBase', 0))
         return 0
-
-    def apply_passive_buffs(self):
-        for passive in self.passives:
-            for func in passive['functions']:
-                for buff in func['buffs']:
-                    state = {
-                        'buff_name': buff.get('name', 'Unknown'),
-                        'value': func['svals'].get('Value', 0),
-                        'turns': -1,  # Infinite duration
-                        'functvals': func.get('functvals', [])
-                    }
-                    self.buffs.add_buff({'buff': state['buff_name'], 'functvals': state['functvals'], 'value': state['value'], 'tvals': [tval['id'] for tval in state.get('tvals', [])] if 'tvals' in state else [], 'turns': state['turns']})
 
     # Rest of the Servant class methods would continue here...
     # (apply_passive_buffs, calc_damage, etc. - keeping existing implementation)

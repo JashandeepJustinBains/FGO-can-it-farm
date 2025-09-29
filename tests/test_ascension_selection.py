@@ -1,3 +1,4 @@
+import tests.test_db_setup
 """
 Tests for ascension-aware skill and NP selection.
 
@@ -6,13 +7,16 @@ based on their current ascension level, ensuring proper release condition
 checking and priority handling.
 """
 
+
+from dotenv import load_dotenv
+load_dotenv()
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../scripts')))
+import connectDB
+# Ensure global db is set in this test's global scope
+if hasattr(connectDB, 'db'):
+    globals()['db'] = connectDB.db
 import unittest
-import os
-import sys
-
-# Add repo root to path to enable imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from units.Servant import Servant
 from tools.per_ascension_diag import enhanced_diag_servant
 

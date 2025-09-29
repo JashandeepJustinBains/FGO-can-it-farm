@@ -57,11 +57,50 @@ class GameManager:
         logging.info(f"servants are: {servants_list}")
         for i, servant in enumerate(self.servants):
             if servant.id == 413:
-                # Create a fresh transformed Aoko instance
-                transformed = Servant(collectionNo=4132)
-                # Copy buffs, cooldowns, and optionally NP gauge
-                transformed.buffs.buffs = copy.deepcopy(aoko_buffs)
+                # Gather all relevant init parameters from the original Aoko
+                init_kwargs = dict(
+                    collectionNo=4132,  # transformed Aoko
+                    ascension=getattr(servant, 'ascension', 4),
+                    lvl=getattr(servant, 'lvl', 0),
+                    np=getattr(servant, 'np_level', 1),
+                    oc=getattr(servant, 'oc_level', 1),
+                    atkUp=getattr(servant, 'user_atk_mod', 0),
+                    busterUp=getattr(servant, 'user_b_up', 0),
+                    artsUp=getattr(servant, 'user_a_up', 0),
+                    quickUp=getattr(servant, 'user_q_up', 0),
+                    damageUp=getattr(servant, 'user_damage_mod', 0),
+                    npUp=getattr(servant, 'user_np_damage_mod', 0),
+                    attack=getattr(servant, 'bonus_attack', 0),
+                    append_5=True,  # preserve default
+                    busterDamageUp=getattr(servant, 'user_buster_damage_up', 0),
+                    quickDamageUp=getattr(servant, 'user_quick_damage_up', 0),
+                    artsDamageUp=getattr(servant, 'user_arts_damage_up', 0)
+                )
+                # Create a fresh transformed Aoko instance with copied parameters
+                transformed = Servant(**init_kwargs)
+                # Deepcopy only non-permanent buffs (turns != -1), preserving new dict structure
+                import copy as _copy
+                if isinstance(aoko_buffs, dict):
+                    transformed.buffs.buffs = {
+                        buff_type: [_copy.deepcopy(buff) for buff in buff_list if isinstance(buff, dict) and buff.get('turns', 0) != -1]
+                        for buff_type, buff_list in aoko_buffs.items()
+                    }
+                    # Fix owner reference if present
+                    for buff_type, buff_list in transformed.buffs.buffs.items():
+                        for buff in buff_list:
+                            if 'owner' in buff:
+                                buff['owner'] = transformed
+                else:
+                    # fallback: if aoko_buffs is a list (legacy), keep only non-permanent dicts
+                    transformed.buffs.buffs = [_copy.deepcopy(buff) for buff in aoko_buffs if isinstance(buff, dict) and buff.get('turns', 0) != -1]
+                    for buff in transformed.buffs.buffs:
+                        if 'owner' in buff:
+                            buff['owner'] = transformed
+                # Only process buffs for correct stacking (do NOT re-apply passives)
+                if hasattr(transformed.buffs, 'process_servant_buffs'):
+                    transformed.buffs.process_servant_buffs()
                 transformed.skills.cooldowns = copy.deepcopy(aoko_cooldowns)
+                # NP gauge resets to 0 by default (FGO-accurate), but allow override if explicitly provided
                 if aoko_np_gauge is not None:
                     transformed.np_gauge = aoko_np_gauge
                 # Replace in the party

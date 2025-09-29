@@ -10,8 +10,7 @@ class Stats:
                 self.servant.cooldowns[skill] = max(self.servant.cooldowns[skill] - effect['svals']['Value'], 0)
 
     def get_base_atk(self):
-        # 1000atk from silver fous
-        return ( self.servant.attack + 1000 + self.get_atk_at_level() ) * self.get_class_base_multiplier()
+        return ( self.servant.attack + self.get_atk_at_level() ) * self.get_class_base_multiplier()
 
     def get_atk_at_level(self, level=0):
         if level == 0:
@@ -87,6 +86,10 @@ class Stats:
         if self.servant.np_gauge > 300:
             self.servant.np_gauge = 300
 
+    def get_damage_up_mod(self):
+        return getattr(self.servant, 'user_damage_mod', 0)
+
+
     def get_current_buffs(self):
         return [
             {'atk': self.get_atk_mod()},
@@ -98,7 +101,8 @@ class Stats:
             {'quick card damage+': self.get_quick_card_damage_up()},
             {'power mods': self.get_power_mod()},
             {'np gain': self.servant.np_gain_mod},
-            {'np damage': self.get_np_damage_mod()}
+            {'np damage': self.get_np_damage_mod()},
+            {'damage_up_mod': self.get_damage_up_mod()}
         ]
 
     def get_class_multiplier(self, defender_class):

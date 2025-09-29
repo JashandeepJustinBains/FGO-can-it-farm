@@ -14,6 +14,22 @@ class npManager:
         self.tm = self.sm.tm
         self.gm = self.tm.gm
 
+    def _consume_magic_bullets(self, servant, count=10):
+        """Remove up to `count` Magic Bullet buffs (individuality 2885) from servant."""
+        removed = 0
+        new_buffs = []
+        for buff in servant.buffs.buffs:
+            if (
+                buff.get('buff') == 'Magic Bullet'
+                and 2885 in buff.get('tvals', [])
+                and removed < count
+            ):
+                removed += 1
+                continue  # skip (remove) this buff
+            new_buffs.append(buff)
+        servant.buffs.buffs = new_buffs
+        logging.info(f"[NPManager] Consumed {removed} Magic Bullets from {servant.name} after NP.")
+
     def use_np(self, servant):
         # Log which servant is about to use NP for easier tracing
         logging.info(f"\n BEGINNING NP LOG for servant id={getattr(servant,'id',None)} name={getattr(servant,'name',None)} np_gauge={getattr(servant,'np_gauge',None)} \n")
@@ -95,6 +111,9 @@ class npManager:
                     logging.info("transform_aoko called successfully")
                 except Exception as e:
                     logging.exception(f"transform_aoko raised exception: {e}")
+            # Remove up to 10 Magic Bullets after NP for Aoko/Super Aoko
+            if getattr(servant, 'id', None) == 4132:
+                self._consume_magic_bullets(servant, count=10)
 
             # If the NP had side-effects that mark the caster for death (self-sacrifice)
             # handle removal immediately so the effect is visible to the rest of the command flow.
@@ -129,27 +148,23 @@ class npManager:
         # Card type and modifiers
         card_type = servant.nps.card
         card_damage_value = None
-        card_mod = 0.0
         card_damage_mod = 0.0
         enemy_res_mod = 0.0
         card_np_value = 1
         card_eff_mod = 0.0
         if card_type == 'buster':
             card_damage_value = 1.5
-            card_mod = 1 + servant.stats.get_b_up()
             card_damage_mod = servant.stats.get_buster_card_damage_up()
             enemy_res_mod = target.get_b_resdown()
             card_eff_mod = servant.stats.get_b_up()
         elif card_type == 'quick':
             card_damage_value = 0.8
-            card_mod = 1 + servant.stats.get_q_up()
             card_damage_mod = servant.stats.get_quick_card_damage_up()
             enemy_res_mod = target.get_q_resdown()
             card_eff_mod = servant.stats.get_q_up()
         elif card_type == 'arts':
             card_damage_value = 1
             card_np_value = 3
-            card_mod = 1 + servant.stats.get_a_up()
             card_damage_mod = servant.stats.get_arts_card_damage_up()
             enemy_res_mod = target.get_a_resdown()
             card_eff_mod = servant.stats.get_a_up()
@@ -158,8 +173,8 @@ class npManager:
         attribute_modifier = servant.stats.get_attribute_modifier(target)
         atk_mod = servant.stats.get_atk_mod()
         enemy_def_mod = target.get_def()
+        generic_pmod = servant.stats.get_damage_up_mod()
         power_mod = servant.stats.get_power_mod(target)
-        self_damage_mod = 0
         np_damage_mod = servant.stats.get_np_damage_mod()
 
         np_damage_multiplier, np_damage_correction_init, np_correction, np_correction_id, np_correction_target = servant.nps.get_np_damage_values(np_level=servant.stats.get_np_level(), oc=servant.stats.get_oc_level())
@@ -169,12 +184,12 @@ class npManager:
 
         servant_atk = servant.stats.get_base_atk()
         # Print all buffs and modifiers for debugging
-        logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | Card Damage Value: {card_damage_value} | Card Mod: {card_mod} | Card Damage Mod: {card_damage_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} | Self Damage Mod: {self_damage_mod} | NP Damage Mod: {np_damage_mod} | SE Multiplier: {se_multiplier}")
+        logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | Card Damage Value: {card_damage_value} | Card Damage Mod: {card_damage_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} + generic pmod: {generic_pmod} | NP Damage Mod: {np_damage_mod} | SE Multiplier: {se_multiplier}")
 
         # FGO-accurate: Card Mod is multiplicative with card value, Card Damage Mod is additive
-        total_damage = (servant_atk * se_multiplier * (card_damage_value * card_mod + card_damage_mod - enemy_res_mod) *
+        total_damage = (servant_atk * np_damage_multiplier * se_multiplier * (card_damage_value * (1 + card_damage_mod + card_eff_mod - enemy_res_mod)) *
                         class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
-                        (1 + self_damage_mod + np_damage_mod + power_mod))
+                        (1 + np_damage_mod + generic_pmod + power_mod))
 
         # Record initial HP before damage
         initial_hp = getattr(target, 'initial_hp', None)
@@ -224,8 +239,8 @@ class npManager:
                 pass
 
             target.set_hp(hit_damage)
-            logging.info(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np")
-
+            logging.info(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left")
+            servant.stats.set_npgauge(servant.stats.get_npgauge() + np_per_hit)
             if target.get_hp() <= 0:
                 logging.info(f"{target.get_name()} has been defeated by hit {i+1}!")
 
@@ -248,26 +263,26 @@ class npManager:
         if card_type == 'buster':
             card_damage_value = 1.5
             card_eff_mod = servant.stats.get_b_up()
-            card_damage_mod = servant.stats.get_b_up() + servant.stats.get_buster_card_damage_up()
+            card_damage_mod = servant.stats.get_buster_card_damage_up()
             enemy_res_mod = target.get_b_resdown()
         elif card_type == 'quick':
             card_damage_value = 0.8
             card_eff_mod = servant.stats.get_q_up()
-            card_damage_mod = servant.stats.get_q_up() + servant.stats.get_quick_card_damage_up()
+            card_damage_mod = servant.stats.get_quick_card_damage_up()
             enemy_res_mod = target.get_q_resdown()
         elif card_type == 'arts':
             card_damage_value = 1
             card_np_value = 3
             card_eff_mod = servant.stats.get_a_up()
-            card_damage_mod = servant.stats.get_a_up() + servant.stats.get_arts_card_damage_up()
+            card_damage_mod = servant.stats.get_arts_card_damage_up()
             enemy_res_mod = target.get_a_resdown()
         
         class_modifier = servant.stats.get_class_multiplier(target.get_class())
         attribute_modifier = servant.stats.get_attribute_modifier(target)
         atk_mod = servant.stats.get_atk_mod()
         enemy_def_mod = target.get_def()
+        generic_pmod = servant.stats.get_damage_up_mod()
         power_mod = servant.stats.get_power_mod(target)
-        self_damage_mod = 0
         np_damage_mod = servant.stats.get_np_damage_mod()
         
         # Cumulative Damage Logic
@@ -323,14 +338,15 @@ class npManager:
             se_multiplier = max(np_damage_correction_init, 1 + np_correction * count)
             logging.info(f"Super Effective NP: individuality_ids={individuality_ids}, count={count}, correction={np_correction}, base={np_damage_multiplier}, min={np_damage_correction_init}, se_multiplier={se_multiplier}, Target={np_correction_target}")
         else:
-            se_multiplier = np_damage_multiplier
+            se_multiplier = 1
 
         # Print all buffs and modifiers for debugging
-        logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | initial np correction amount: {np_damage_correction_init} | np correction: {np_correction} | what id is used for the correction {np_correction_id} | target or buff that effects np_correction amounts:{np_correction_target} | Card Damage Value: {card_damage_value} | Card Mod: {card_eff_mod} | Card Damage Mod: {card_damage_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} | Self Damage Mod: {self_damage_mod} | NP Damage Mod: {np_damage_mod} | SE Multiplier: {se_multiplier}")
+        logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | initial np correction amount: {np_damage_correction_init} | np correction: {np_correction} | what id is used for the correction {np_correction_id} | target or buff that effects np_correction amounts:{np_correction_target} | Card Damage Value: {card_damage_value} | Card Mod: {card_eff_mod} | Card Damage Mod: {card_damage_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} + generic pmod {generic_pmod} | NP Damage Mod: {np_damage_mod} | SE Multiplier: {se_multiplier}")
 
-        total_damage = (servant_atk * se_multiplier * (card_damage_value * (1 + card_damage_mod - enemy_res_mod)) *
+        # FGO-accurate: Card Mod is multiplicative with card value, Card Damage Mod is additive
+        total_damage = (servant_atk * np_damage_multiplier * se_multiplier * (card_damage_value * (1 + card_damage_mod + card_eff_mod - enemy_res_mod)) *
                         class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
-                        (1 + self_damage_mod + np_damage_mod + power_mod))
+                        (1 + np_damage_mod  + generic_pmod + power_mod))
 
         logging.info(f"Total Damage: {total_damage}")
 
@@ -375,8 +391,10 @@ class npManager:
                 pass
 
             target.set_hp(hit_damage)
-            logging.info(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np")
+            logging.info(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left")
+            servant.stats.set_npgauge(np_per_hit)
 
             if target.get_hp() <= 0:
                 logging.info(f"{target.get_name()} has been defeated by hit {i+1}!")
         print(f"{servant.stats.get_name()} attacks {target.get_name()} with Noble Phantasm for {'%.0f' % total_damage} total damage! {target.get_name()} is left with {target.hp} hp")
+        

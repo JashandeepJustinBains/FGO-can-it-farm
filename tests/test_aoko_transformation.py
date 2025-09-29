@@ -1,7 +1,19 @@
-
+from pymongo import MongoClient
+from dotenv import load_dotenv
+import sys, os
+load_dotenv()
+mongo_uri = os.getenv('MONGO_URI_READ')
+if not mongo_uri:
+    raise ValueError("No MONGO_URI_READ environment variable set")
+client = MongoClient(mongo_uri)
+db = client['FGOCanItFarmDatabase']
+servants_collection = db['servants']
+quests_collection = db['quests']
+mysticcode_collection = db['mysticcodes']
+sys.stdout.reconfigure(encoding='utf-8')
+import tests.test_db_setup
 import logging
 import os
-import connectDB
 os.makedirs("outputs", exist_ok=True)
 logging.basicConfig(
     filename="outputs/output.log",
@@ -14,8 +26,8 @@ from sim_entry_points.traverse_api_input import traverse_api_input
 def test_aoko_transformation():
     input_data = {
         "Team": [
-            {"collectionNo": 413, "initialCharge": 20},
-            {"collectionNo": 414, "np": 5},
+            {"collectionNo": 413, "initialCharge": 20, "attack": 2400, "damageUp": 0.8},
+            {"collectionNo": 414, "np": 5, "attack": 2000, "initialCharge": 20},
             {"collectionNo": 284},
             {"collectionNo": 284},
             {"collectionNo": 316}

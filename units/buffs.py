@@ -22,6 +22,7 @@ class Buffs:
                 elif v == individuality_id:
                     count += 1
         return count
+    
     def __init__(self, servant=None, enemy=None):
         # Initialize basic buffs list and stateful effect tracking for all cases
         self.buffs = []
@@ -82,6 +83,7 @@ class Buffs:
         self.servant.a_up = self.servant.user_a_up
         self.servant.q_up = self.servant.user_q_up
         self.servant.power_mod = {}
+        self.user_damage_mod= self.servant.user_damage_mod
         self.servant.np_damage_mod = self.servant.user_np_damage_mod
         self.servant.oc_level = 1
         self.servant.np_gain_mod = 1
@@ -106,6 +108,9 @@ class Buffs:
         # Apply the Boost NP Strength Up multiplier
         if boost_np_strength_up_active:
             self.servant.np_damage_mod *= 2
+
+        #TODO buffs that have the same "value" number will overwrite each other
+        #   as an example if you do 2 castoria skill 3's 1 turn after the first it will over writethe turn but not add a new one
 
         # Second pass for other buffs
         for buff in self.buffs:
@@ -190,6 +195,13 @@ class Buffs:
         return functions
 
     def add_buff(self, buff: dict):
+        # Ensure Magic Bullet buffs always have tvals: [2885] for individuality counting
+        if buff.get('buff') == 'Magic Bullet':
+            # If tvals is missing or does not contain 2885, add it
+            tvals = buff.get('tvals', [])
+            if 2885 not in tvals:
+                tvals = list(tvals) + [2885]
+                buff['tvals'] = tvals
         self.buffs.append(buff)
 
     def remove_buff(self, buff: dict):

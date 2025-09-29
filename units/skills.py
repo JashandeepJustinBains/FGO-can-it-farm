@@ -1,10 +1,41 @@
 from typing import List, Dict, Any
 
+
 class Skills:
-    def __init__(self, skills_data: List[Dict[str, Any]], servant=None, append_5=False, mystic_code=None):
+    @classmethod
+    def from_skills_by_priority(cls, skills_by_priority: dict, servant=None, append_5=False, mystic_code=None):
+        """
+        Construct Skills from skillsByPriority dict, selecting the highest available priority for each slot.
+        """
+        # Find all priorities (as ints), sort descending
+        priorities = sorted([int(p) for p in skills_by_priority.keys()], reverse=True)
+        selected_skills = []
+        used_slots = set()
+        # For each slot 1,2,3
+        for slot in [1,2,3]:
+            # For each priority, high to low
+            for p in priorities:
+                slot_dict = skills_by_priority.get(str(p), {})
+                skill = slot_dict.get(str(slot))
+                if skill:
+                    selected_skills.append(skill)
+                    used_slots.add(slot)
+                    break
+        # Now selected_skills is a list of the best skill for each slot (may be <3 if missing)
+        return cls(selected_skills, servant=servant, append_5=append_5, mystic_code=mystic_code)
+
+    def __init__(self, skills_data: List[Dict[str, Any]], servant=None, append_5=False, mystic_code=None, skills_by_priority: dict = None):
         self.servant = servant
         self.append_5 = append_5
         self.skills = {1: [], 2: [], 3: []}
+        # If skills_by_priority is provided, use the FGO logic
+        if skills_by_priority:
+            obj = Skills.from_skills_by_priority(skills_by_priority, servant=servant, append_5=append_5, mystic_code=mystic_code)
+            self.skills = obj.skills
+            self.cooldowns = obj.cooldowns
+            self.max_cooldowns = obj.max_cooldowns
+            self.cooldown_reduction_applied = obj.cooldown_reduction_applied
+            return
         for s in (skills_data or []):
             num = int(s.get('num', 1)) if s.get('num') is not None else 1
             parsed = self._parse_single_skill(s)

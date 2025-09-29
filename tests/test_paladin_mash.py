@@ -1,6 +1,19 @@
+from pymongo import MongoClient
+from dotenv import load_dotenv
+import sys, os
+load_dotenv()
+mongo_uri = os.getenv('MONGO_URI_READ')
+if not mongo_uri:
+    raise ValueError("No MONGO_URI_READ environment variable set")
+client = MongoClient(mongo_uri)
+db = client['FGOCanItFarmDatabase']
+servants_collection = db['servants']
+quests_collection = db['quests']
+mysticcode_collection = db['mysticcodes']
+sys.stdout.reconfigure(encoding='utf-8')
+import tests.test_db_setup
 import logging
 import os
-import sys
 os.makedirs("outputs", exist_ok=True)
 logging.basicConfig(
     filename="outputs/output.log",
@@ -10,11 +23,6 @@ logging.basicConfig(
 )
 from sim_entry_points.traverse_api_input import traverse_api_input
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../scripts')))
-import connectDB
-
-# Ensure global db is set in this test's global scope
-if hasattr(connectDB, 'db'):
-    globals()['db'] = connectDB.db
 
 def test_paladin_mash():
     input_data = {
