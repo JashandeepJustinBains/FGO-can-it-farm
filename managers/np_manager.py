@@ -41,7 +41,7 @@ class npManager:
             if oc_extra > 0:
                 print(f"Servant {servant.name} has {servant.np_gauge} NP% and can apply OVERCHARGE UP 1 * {oc_extra} times (capped at 2 extra)")
                 for i in range(oc_extra):
-                    self.sm.apply_effect(np_oc_1_turn, servant)
+                    self.sm.apply_effect(np_oc_1_turn, servant, source_skill_num='NP')
                     servant.buffs.process_servant_buffs()
 
             functions = servant.nps.get_np_values(servant.stats.get_np_level(), servant.stats.get_oc_level())
@@ -91,15 +91,15 @@ class npManager:
                         self.apply_np_odd_damage(servant, maintarget)
                 
                 else:
-                    # non-damaging NP effects
+                    # non-damaging NP effects - pass source metadata so apply_buff can label the source
                     if func['funcTargetType'] == 'enemyAll':
-                        self.sm.apply_effect(func, servant)
+                        self.sm.apply_effect(func, servant, source_skill_num='NP')
                     if func['funcTargetType'] == 'enemy':
-                        self.sm.apply_effect(func, maintarget)
+                        self.sm.apply_effect(func, maintarget, source_skill_num='NP')
                     if func['funcTargetType'] == 'self':
-                        self.sm.apply_effect(func, servant)
+                        self.sm.apply_effect(func, servant, source_skill_num='NP')
                     if func['funcTargetType'] == 'ptAll':
-                        self.sm.apply_effect(func, servant)
+                        self.sm.apply_effect(func, servant, source_skill_num='NP')
             for s in self.gm.servants[0:2]:
                 if s is not servant:
                     self.sm.apply_effect(np_oc_1_turn, s)
@@ -226,7 +226,11 @@ class npManager:
                     # If the triggered handler ran and the buff has a finite count,
                     # decrement and drop if depleted. Handlers may also handle this.
                     if ran:
-                        count = buff.get('count') or (buff.get('svals') or {}).get('Count')
+                        # Only treat Count as a finite counter if it's a
+                        # non-negative integer. Some svals use -1 as a sentinel
+                        # meaning 'not a counter' and should be ignored here.
+                        sval_count = (buff.get('svals') or {}).get('Count')
+                        count = buff.get('count') if isinstance(buff.get('count'), int) else (sval_count if isinstance(sval_count, int) and sval_count >= 0 else None)
                         if isinstance(count, int):
                             new_count = count - 1
                             buff['count'] = new_count

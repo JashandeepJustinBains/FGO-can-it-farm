@@ -4,7 +4,7 @@ import logging
 logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
-magic_bullet_buff = {'buff': 'Magic Bullet', 'functvals': [], 'value': 9999, 'tvals': [2885], 'turns': -1}
+magic_bullet_buff = {'buff': 'Magic Bullet', 'functvals': [], 'value': 9999, 'tvals': [2885], 'turns': -1, 'source': 'system'}
 
 class Buffs:
     def count_buffs_by_individuality(self, individuality_id):
@@ -133,11 +133,23 @@ class Buffs:
                 elif buff['buff'] == 'Quick Card Damage Up':
                     self.servant.quick_card_damage_up += buff['value'] / 1000
                 elif buff['buff'] == 'Power Up':
-                    self.servant.power_mod += buff['value'] / 1000
+                    # Power Up may target specific trait ids (tvals) or be a global power modifier.
+                    tvals = buff.get('tvals', []) or []
+                    if tvals:
+                        for tval in tvals:
+                            if tval not in self.servant.power_mod:
+                                self.servant.power_mod[tval] = 0
+                            self.servant.power_mod[tval] += buff.get('value', 0)
+                    else:
+                        # No tvals: store under a special global key to avoid type errors.
+                        self.servant.power_mod.setdefault('global', 0)
+                        self.servant.power_mod['global'] += buff.get('value', 0)
                 elif buff['buff'] in ['NP Overcharge Level Up', 'Overcharge Lv. Up']:
                     self.servant.oc_level = min(self.servant.oc_level + buff['value'], 5)
                 elif "STR Up" in buff["buff"] or "Strength Up" in buff["buff"]:
-                    for tval in buff['tvals']:
+                    # Some buff entries (display-only or legacy) may not include 'tvals'.
+                    # Use .get to default to an empty list to avoid KeyError.
+                    for tval in buff.get('tvals', []):
                         if tval not in self.servant.power_mod:
                             self.servant.power_mod[tval] = 0
                         self.servant.power_mod[tval] += buff.get("value", 0)
@@ -202,6 +214,18 @@ class Buffs:
             if 2885 not in tvals:
                 tvals = list(tvals) + [2885]
                 buff['tvals'] = tvals
+        # Defensive: ensure every buff has a 'source' key for debugging output.
+        if 'source' not in buff or not buff.get('source'):
+            if buff.get('is_passive'):
+                buff['source'] = 'passive'
+            elif buff.get('user_input') or buff.get('from_user'):
+                buff['source'] = 'user'
+            elif buff.get('from_skill') or buff.get('skill') or buff.get('skill_num'):
+                # best-effort label when we know it came from a skill
+                buff['source'] = 'skill'
+            else:
+                buff['source'] = 'unknown'
+
         self.buffs.append(buff)
 
     def remove_buff(self, buff: dict):
@@ -221,16 +245,54 @@ class Buffs:
 
     def grouped_str(self):
         from collections import defaultdict
+        import math
         grouped = defaultdict(list)
+        # Group buffs by name, but keep all instances
         for buff in self.buffs:
             name = buff.get('buff', 'Unknown')
-            value = buff.get('value', 0)
-            turns = buff.get('turns', -1)
-            grouped[name].append((value, turns))
+            grouped[name].append(buff)
         lines = []
-        for name, vals in grouped.items():
-            val_str = ', '.join([f"value={v/1000 if v else v}, turns={t}" for v, t in vals])
-            lines.append(f"{name}: [{val_str}]")
+        for name, buffs in grouped.items():
+            # Each buff instance on its own line, with value, turns, and source
+            for buff in buffs:
+                value = buff.get('value', 0)
+                # If a user provided an explicit display value for permanent user-inputted buffs,
+                # prefer that for debugging output so users see the numbers they entered.
+                if buff.get('user_input') and buff.get('turns', -1) == -1 and 'display_value' in buff:
+                    display_value = buff.get('display_value')
+                    value_str = str(display_value)
+                else:
+                # FGO convention: value is percent if >1, else decimal
+                    value_str = f"{value/1000:.3f}" if isinstance(value, (int, float)) and not math.isclose(value, 0) else str(value)
+                turns = buff.get('turns', -1)
+                # Try to get source: skill, passive, user, etc.
+                source = buff.get('source', None)
+                if not source:
+                    # Try to infer from metadata
+                    if buff.get('is_passive'):
+                        source = 'passive'
+                    elif buff.get('user_input', False):
+                        source = 'user'
+                    elif buff.get('from_skill', False):
+                        source = 'skill'
+                    else:
+                        source = 'unknown'
+                else:
+                    # If a stored skill_turn is present, ensure the source string
+                    # includes the turn (T#) for clarity. Many sources are like
+                    # 'Aozaki Aoko S3' — if 'skill_turn' exists we append ' T#'.
+                    st = buff.get('skill_turn', None)
+                    if st is not None:
+                        # only append if 'T' not already present
+                        if 'T' not in str(source):
+                            source = f"{source} T{st}"
+                # Always show permanent buffs (turns=-1), even if value is 0
+                # Always show user/passive buffs, even if value is 0
+                show = True
+                if value == 0 and turns != -1 and source not in ('user', 'passive'):
+                    show = False
+                if show:
+                    lines.append(f"{name}: {{value={value_str}, turns={turns}, source={source}}}")
         return "\n".join(lines) if lines else "No active buffs"
 
     def __repr__(self):

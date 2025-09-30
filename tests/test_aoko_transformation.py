@@ -26,7 +26,7 @@ from sim_entry_points.traverse_api_input import traverse_api_input
 def test_aoko_transformation():
     input_data = {
         "Team": [
-            {"collectionNo": 413, "initialCharge": 20, "attack": 2400, "damageUp": 0.8},
+            {"collectionNo": 413, "initialCharge": 20, "attack": 2400, "damageUp": 0.3},
             {"collectionNo": 414, "np": 5, "attack": 2000, "initialCharge": 20},
             {"collectionNo": 284},
             {"collectionNo": 284},
@@ -65,3 +65,4 @@ def test_aoko_transformation():
     assert final_ids == [4132, 284, 316, 284], f"Final party mismatch, got {final_ids}"
     assert 414 not in final_ids, "Servant 414 should have been removed from the party"
     assert 413 not in final_ids, "Original 413 should no longer be present after transform"
+    assert driver_state == True

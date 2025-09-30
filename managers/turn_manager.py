@@ -63,18 +63,26 @@ class TurnManager:
             logging.info(f"AFTER INSTANTDEATH servants are: {servants_list}")
 
             # End the turn and decrement buffs if all enemies are defeated
-            self.decrement_buffs()
-            self.decrement_cooldowns()
-            
+            # End the turn. We will advance to the next wave (if any) and
+            # perform buff/cooldown decrements on the wave-advance token so
+            # decrements align with the '#' token (wave boundary).
             print(f"Wave {self.gm.wave} completed.")
-            
-            # Check if it's the last wave
-            if self.gm.wave >= self.gm.total_waves:  # Correcting the comparison
+
+            # If this was the final wave, perform a final decrement and finish.
+            if self.gm.wave >= self.gm.total_waves:
+                # Final wave completed: decrement timers once and end.
+                self.decrement_buffs()
+                self.decrement_cooldowns()
                 print("All waves completed. Ending program.")
                 return True
             else:
+                # Advance to the next wave first (this is the '#' token),
+                # then decrement buffs/cooldowns so the decrement is tied to
+                # the wave advancement.
                 self.gm.get_next_wave()
-            return True
+                self.decrement_buffs()
+                self.decrement_cooldowns()
+                return True
         else:
             # Return False if any enemy still has health
             print(self.gm.get_enemies())

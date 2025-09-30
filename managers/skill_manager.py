@@ -38,6 +38,23 @@ class SkillManager:
             svals = svals[-1] if svals else {}
         return svals or {}
 
+    def _get_current_turn(self):
+        """Return the current turn index from the turn manager if available."""
+        # Prefer the GameManager.wave field as the authoritative combat progress
+        # marker if available (user requested). Fall back to the turn manager
+        # attributes only if gm.wave is not present.
+        try:
+            if hasattr(self, 'gm') and getattr(self.gm, 'wave', None) is not None:
+                return getattr(self.gm, 'wave')
+        except Exception:
+            pass
+        if not hasattr(self, 'tm') or self.tm is None:
+            return None
+        for attr in ('turn', 'current_turn', 'turn_num', 'turn_index', 'current_turn_index'):
+            if hasattr(self.tm, attr):
+                return getattr(self.tm, attr)
+        return None
+
     def extract_state(self, effect):
         svals = self._normalize_svals(effect)
 
@@ -96,7 +113,11 @@ class SkillManager:
         # a chained/triggered buff that fires later (commonly on-hit for NP
         # triggers). We'll interpret that as 'on-hit' unless other data
         # indicates end-of-turn behavior.
-        if 'TriggeredFuncPosition' in svals or 'Count' in svals:
+        # Only consider Count as evidence of a chained/triggered effect if
+        # it contains a meaningful (non-sentinel) integer value. Many data
+        # entries use -1 as a placeholder; we must not treat that as a real
+        # counter value. Require an int >= 0.
+        if 'TriggeredFuncPosition' in svals or (isinstance(svals.get('Count'), int) and svals.get('Count') >= 0):
             return 'on-hit'
 
         # If a Turn is present but no TriggeredFuncPosition, this tends to be
@@ -107,7 +128,7 @@ class SkillManager:
         # Default to 'immediate' meaning the effect is applied at skill use time
         return 'immediate'
 
-    def apply_effect(self, effect, servant, ally_target=None, source_functions=None):
+    def apply_effect(self, effect, servant, ally_target=None, source_functions=None, source_skill_num=None):
         if not effect.get('funcType'):
             return
 
@@ -145,20 +166,51 @@ class SkillManager:
         for target in targets:
             if check_cond_target(target) and check_field_req():
                 if effect_type in self.effect_functions:
-                    # call the bound method
+                    # call the bound method and include source metadata when available
                     try:
-                        self.effect_functions[effect_type](effect=effect, target=target)
+                        self.effect_functions[effect_type](effect=effect, target=target, source_servant=servant, source_skill_num=source_skill_num)
                     except TypeError:
                         # fallback signature for methods that expect (self, effect, target)
-                        self.effect_functions[effect_type](self, effect=effect, target=target)
+                        try:
+                            self.effect_functions[effect_type](self, effect=effect, target=target, source_servant=servant, source_skill_num=source_skill_num)
+                        except TypeError:
+                            # final fallback: call without extra kwargs
+                            self.effect_functions[effect_type](effect=effect, target=target)
 
-    def apply_add_state(self, effect=None, target=None):
+    def apply_add_state(self, effect=None, target=None, source_servant=None, source_skill_num=None, **kwargs):
+        """Apply a buff-like state from an effect and propagate source metadata.
+
+        effect: raw effect dict
+        target: target servant
+        source_servant: optional actor object applying the buff
+        source_skill_num: optional skill index (1-based) or 'NP'
+        """
         state = self.extract_state(effect)
-        # include trigger_type metadata on the buff entry
+        # Attach source metadata so apply_buff can compose debug source strings
+        if source_servant:
+            state['source_servant'] = source_servant
+        if source_skill_num is not None:
+            state['skill_num'] = source_skill_num
+        # Record the current turn at the moment the skill/effect is applied so
+        # the buff's source can retain the exact turn even if the global turn
+        # counter changes later (e.g., during transforms or delayed processing).
+        try:
+            state['skill_turn'] = self._get_current_turn()
+        except Exception:
+            pass
         self.apply_buff(target, state)
 
-    def apply_add_state_short(self, effect=None, target=None):
+    def apply_add_state_short(self, effect=None, target=None, source_servant=None, source_skill_num=None, **kwargs):
+        """Short variant of add_state which also propagates source metadata."""
         state = self.extract_state(effect)
+        if source_servant:
+            state['source_servant'] = source_servant
+        if source_skill_num is not None:
+            state['skill_num'] = source_skill_num
+        try:
+            state['skill_turn'] = self._get_current_turn()
+        except Exception:
+            pass
         self.apply_buff(target, state)
 
     def apply_passive_buffs(self, servant):
@@ -171,13 +223,24 @@ class SkillManager:
                         'turns': -1,  # Infinite duration
                         'functvals': func.get('functvals', []),
                         'svals': func.get('svals', {}),
-                        'count': func.get('svals', {}).get('Count')
+                        'count': func.get('svals', {}).get('Count'),
+                        # Mark this state as originating from a passive so apply_buff
+                        # can annotate the buff source for debugging.
+                        'is_passive': True,
+                        'source': 'passive'
                     }
                     state['trigger_type'] = self._determine_trigger_type(state)
                     self.apply_buff(servant, state)
 
+
+
     def apply_buff(self, target, state):
         buff = state.get('buff_name')
+        # Diagnostic logging to trace missing source info
+        try:
+            logging.info(f"[apply_buff] target={getattr(target,'name',None)} state_keys={list(state.keys())} state_preview={ {k: state.get(k) for k in ['value','turns','skill_num','source_servant','is_passive','user_input','from_skill']} }")
+        except Exception:
+            logging.info(f"[apply_buff] target={getattr(target,'name',None)} state keys logging failed")
         value = state.get('value')
         functvals = state.get('functvals', [])
         tvals = [tval.get('id') for tval in state.get('tvals', [])] if state.get('tvals') else []
@@ -186,6 +249,53 @@ class SkillManager:
 
         raw_svals = state.get('svals')
         count = state.get('count')
+
+        # Build a debug "source" string. Try several plausible places for data:
+        # - explicit fields on state set by callers
+        # - a source_servant object
+        # - fallback markers (passive/user/from_skill)
+        # Prefer the stored skill_turn (captured at skill use) so that the
+        # buff's source keeps the original application turn even if the
+        # turn manager advances or changes later.
+        turn = state.get('skill_turn') if 'skill_turn' in state else None
+        if turn is None:
+            # fallback: query the turn manager dynamically
+            for attr in ('turn', 'current_turn', 'turn_num', 'turn_index', 'current_turn_index'):
+                if hasattr(self.tm, attr):
+                    turn = getattr(self.tm, attr)
+                    break
+
+        actor_name = None
+        # possible fields populated by callers
+        if isinstance(state.get('source_servant'), str):
+            actor_name = state.get('source_servant')
+        else:
+            src_serv = state.get('source_servant') or state.get('servant') or state.get('owner')
+            try:
+                actor_name = getattr(src_serv, 'name', None) or (src_serv.get('name') if isinstance(src_serv, dict) else None)
+            except Exception:
+                actor_name = None
+
+        skill_num = state.get('skill_num') or state.get('from_skill_num') or state.get('skill') or state.get('source_skill')
+        # Compose debug source
+        if actor_name and skill_num and turn is not None:
+            source = f"{actor_name} S{skill_num} T{turn}"
+        elif actor_name and skill_num:
+            source = f"{actor_name} S{skill_num}"
+        elif actor_name and turn is not None:
+            source = f"{actor_name} T{turn}"
+        elif actor_name:
+            source = actor_name
+        elif state.get('is_passive') or state.get('isPassive'):
+            source = 'passive'
+        elif state.get('user_input') or state.get('from_user'):
+            # Explicitly mark user/API-provided buffs with a clear debugging tag
+            source = 'user-inputted'
+        elif state.get('from_skill'):
+            source = f"skill:{state.get('from_skill')}"
+        else:
+            source = state.get('source', 'unknown')
+
         buff_entry = {
             'buff': buff,
             'functvals': functvals,
@@ -194,9 +304,12 @@ class SkillManager:
             'turns': turns,
             'svals': raw_svals,
             'count': count,
-            'trigger_type': state.get('trigger_type')
+            'trigger_type': state.get('trigger_type'),
+            'source': source,
+            'skill_turn': state.get('skill_turn')
         }
         target.buffs.add_buff(buff_entry)
+
 
     def run_triggered_buff(self, buff, source_servant, target, card_type=None, is_np=False):
         """Interpret a stored buff's trigger semantics and execute it.
@@ -250,9 +363,12 @@ class SkillManager:
                     logging.info(f"run_triggered_buff: granting NP {grant}% to {getattr(source_servant,'name',None)}")
                     source_servant.set_npgauge(grant)
                     return True
-            # Counter-style on-hit: if no numeric grant but Count exists, we
-            # treat this as a stack-consuming effect with no direct grant here.
-            if isinstance(buff.get('count'), int) or ('Count' in svals):
+            # Counter-style on-hit: only treat this as a stack-consuming
+            # effect if the stored 'count' or the svals 'Count' carries a
+            # meaningful non-negative integer. Ignore sentinel values like -1.
+            buff_count = buff.get('count')
+            sval_count = svals.get('Count')
+            if (isinstance(buff_count, int) and buff_count >= 0) or (isinstance(sval_count, int) and sval_count >= 0):
                 logging.info(f"run_triggered_buff: detected counter-style trigger for {buff.get('buff')}")
                 # nothing to do here at generic level; caller may decrement
                 return True
@@ -295,11 +411,18 @@ class SkillManager:
         skill_num += 1
         if self.skill_available(servant, skill_num):
             skill = servant.skills.get_skill_by_num(skill_num)
+            # If the skills dataset is incomplete for this servant, get_skill_by_num may return None.
+            if skill is None:
+                logging.warning(f"Skill number {skill_num} not found for {servant.name}; skipping.")
+                return False
             servant.skills.set_skill_cooldown(skill_num)
             logging.info(f"Skill {skill_num} used. Cooldown remaining: {servant.skills.get_skill_cooldowns()[skill_num]} turns")
             logging.info(f"Applying {servant.name}'s {servant.skills.get_skill_by_num(skill_num)}")
-            for effect in skill['functions']:
-                self.apply_effect(effect, servant, target)
+            # Some skill entries may have 'functions' set to None; treat as empty list.
+            funcs = skill.get('functions') or []
+            for effect in funcs:
+                # Pass the skill number so apply_effect and apply_buff can annotate sources
+                self.apply_effect(effect, servant, target, source_skill_num=skill_num)
 
         else:
             print(f"{servant.name} skill {skill_num} is on cooldown: {servant.skills.cooldowns[skill_num]} turns remaining")

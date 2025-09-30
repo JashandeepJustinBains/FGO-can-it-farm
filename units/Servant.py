@@ -551,19 +551,30 @@ class Servant:
         for passive in self.passives:
             for func in passive['functions']:
                 for buff in func['buffs']:
-                    state = {
-                        'buff_name': buff.get('name', 'Unknown'),
-                        'value': func['svals'].get('Value', 0),
-                        'turns': -1,  # Infinite duration
-                        'functvals': func.get('functvals', [])
+                    # Build a passive buff dict and mark it as originating from a passive
+                    buff_name = buff.get('name', 'Unknown')
+                    value = func.get('svals', {}).get('Value', 0)
+                    turns = -1  # permanent/passive
+                    functvals = func.get('functvals', [])
+                    # tvals may be present on the passive's buff entry; ensure safe extraction
+                    tvals = []
+                    try:
+                        tvals = [tval.get('id') if isinstance(tval, dict) else tval for tval in (buff.get('tvals') or [])]
+                    except Exception:
+                        tvals = []
+
+                    entry = {
+                        'buff': buff_name,
+                        'functvals': functvals,
+                        'value': value,
+                        'tvals': tvals,
+                        'turns': turns,
+                        'skill_turn': None,
+                        'is_passive': True,
+                        'source': 'passive',
+                        'svals': func.get('svals', {})
                     }
-                    self.buffs.add_buff({
-                        'buff': state['buff_name'],
-                        'functvals': state['functvals'],
-                        'value': state['value'],
-                        'tvals': [tval['id'] for tval in state.get('tvals', [])] if 'tvals' in state else [],
-                        'turns': state['turns']
-                    })
+                    self.buffs.add_buff(entry)
 
 
     def __init__(self, collectionNo=None, ascension=4, variant_svt_id=None, lvl=0, np=1, oc=1,
@@ -658,6 +669,43 @@ class Servant:
         self.user_buster_damage_up = busterDamageUp
         self.user_quick_damage_up = quickDamageUp
         self.user_arts_damage_up = artsDamageUp
+        # Create permanent, display-only buff entries for any user-provided modifiers
+        # We don't change numeric application (which uses the user_* fields directly),
+        # but we add zero-valued buff entries with a display_value so the UI/debug
+        # shows the user-provided values as permanent buffs (source=user-inputted).
+        try:
+            # mapping: servant attribute -> buff display name
+            user_buffs = [
+                ('user_atk_mod', 'ATK Up'),
+                ('user_b_up', 'Buster Up'),
+                ('user_a_up', 'Arts Up'),
+                ('user_q_up', 'Quick Up'),
+                ('user_np_damage_mod', 'NP Strength Up'),
+                ('user_damage_mod', 'Power Up'),
+                ('user_buster_damage_up', 'Buster Card Damage Up'),
+                ('user_quick_damage_up', 'Quick Card Damage Up'),
+                ('user_arts_damage_up', 'Arts Card Damage Up'),
+            ]
+            for attr, buffname in user_buffs:
+                val = getattr(self, attr, 0)
+                # Add an entry even if val == 0 so permanent user-specified zero buffs are visible
+                entry = {
+                    'buff': buffname,
+                    'value': 0,
+                    'display_value': val,
+                        'turns': -1,
+                        'skill_turn': None,
+                        'source': 'user',
+                    'user_input': True
+                }
+                # Use Buffs.add_buff so grouped_str and other tooling will see them
+                try:
+                    self.buffs.add_buff(entry)
+                except Exception:
+                    # If buffs not yet initialized for some reason, skip gracefully
+                    pass
+        except Exception:
+            pass
 
     def _apply_ascension_traits(self):
         """Apply ascension-specific traits based on current ascension level."""

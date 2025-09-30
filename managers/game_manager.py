@@ -51,6 +51,8 @@ class GameManager:
         # TODO similar to aoko exchange character with different ascension and copy over buffs, cooldowns, np gauge
         return
 
+
+    # updated
     def transform_aoko(self, aoko_buffs, aoko_cooldowns, aoko_np_gauge=None):
         print("What? \nAoko is transforming!")
         servants_list = [servant.name for servant in self.servants]
@@ -78,27 +80,89 @@ class GameManager:
                 )
                 # Create a fresh transformed Aoko instance with copied parameters
                 transformed = Servant(**init_kwargs)
-                # Deepcopy only non-permanent buffs (turns != -1), preserving new dict structure
+                # Deepcopy buffs into a flat list and preserve permanent buffs (turns == -1).
                 import copy as _copy
+                all_buffs = []
                 if isinstance(aoko_buffs, dict):
-                    transformed.buffs.buffs = {
-                        buff_type: [_copy.deepcopy(buff) for buff in buff_list if isinstance(buff, dict) and buff.get('turns', 0) != -1]
-                        for buff_type, buff_list in aoko_buffs.items()
-                    }
-                    # Fix owner reference if present
-                    for buff_type, buff_list in transformed.buffs.buffs.items():
-                        for buff in buff_list:
-                            if 'owner' in buff:
-                                buff['owner'] = transformed
+                    # flatten dict-of-lists into a single list and deepcopy all dict buffs
+                    for buff_list in aoko_buffs.values():
+                        for buff in (buff_list or []):
+                            if isinstance(buff, dict):
+                                all_buffs.append(_copy.deepcopy(buff))
                 else:
-                    # fallback: if aoko_buffs is a list (legacy), keep only non-permanent dicts
-                    transformed.buffs.buffs = [_copy.deepcopy(buff) for buff in aoko_buffs if isinstance(buff, dict) and buff.get('turns', 0) != -1]
-                    for buff in transformed.buffs.buffs:
-                        if 'owner' in buff:
-                            buff['owner'] = transformed
+                    # aoko_buffs is a list (legacy): copy all dict entries
+                    all_buffs = [_copy.deepcopy(buff) for buff in (aoko_buffs or []) if isinstance(buff, dict)]
+
+                # Preserve owner references where present -> point to new transformed instance
+                for buff in all_buffs:
+                    if 'owner' in buff:
+                        buff['owner'] = transformed
+
+                # Diagnostic: log how many incoming buffs are missing explicit source metadata
+                try:
+                    missing_source = [b for b in all_buffs if not b.get('source')]
+                    logging.info(f"transform_aoko: incoming aoko_buffs total={len(all_buffs)} missing_source_count={len(missing_source)}")
+                    # Log a short preview of missing entries
+                    for b in missing_source[:20]:
+                        logging.info(f"transform_aoko: missing_source_preview: buff={b.get('buff')} value={b.get('value')} turns={b.get('turns')} keys={list(b.keys())}")
+                    # Also log counts by buff name and preview Arts Up entries explicitly
+                    try:
+                        from collections import Counter
+                        name_counts = Counter([b.get('buff', '<unknown>') for b in all_buffs])
+                        logging.info(f"transform_aoko: buff_name_counts={dict(name_counts)}")
+                        arts_up_pre = [b for b in all_buffs if (b.get('buff') or '').lower() == 'arts up']
+                        logging.info(f"transform_aoko: arts_up_incoming_count={len(arts_up_pre)}")
+                        for b in arts_up_pre[:20]:
+                            logging.info(f"transform_aoko: arts_up_preview incoming: value={b.get('value')} turns={b.get('turns')} source={b.get('source')} keys={list(b.keys())}")
+                    except Exception as e:
+                        logging.exception(f"transform_aoko nested diagnostics failed: {e}")
+                except Exception as e:
+                    logging.exception(f"transform_aoko diagnostic logging failed: {e}")
+
+                # Assign flattened list to transformed.buffs.buffs (Buffs expects a list)
+                transformed.buffs.buffs = all_buffs
+
+                # Diagnostic: after assigning, log what the transformed instance contains for Arts Up
+                try:
+                    arts_up_after = [b for b in transformed.buffs.buffs if (b.get('buff') or '').lower() == 'arts up']
+                    logging.info(f"transform_aoko: arts_up_after_count={len(arts_up_after)}")
+                    for b in arts_up_after[:20]:
+                        logging.info(f"transform_aoko: arts_up_preview after assign: value={b.get('value')} turns={b.get('turns')} source={b.get('source')} keys={list(b.keys())}")
+                except Exception as e:
+                    logging.exception(f"transform_aoko post-assign diagnostics failed: {e}")
+
+                # Snapshot the pre-assign buff signatures so we can detect any loss after processing
+                try:
+                    def _sig(b):
+                        return (str(b.get('buff')), float(b.get('value') or 0), int(b.get('turns') or -1), str(b.get('source') or ''), str(b.get('display_value') or ''))
+                    pre_sigs = [_sig(b) for b in all_buffs]
+                except Exception:
+                    pre_sigs = []
+
                 # Only process buffs for correct stacking (do NOT re-apply passives)
                 if hasattr(transformed.buffs, 'process_servant_buffs'):
                     transformed.buffs.process_servant_buffs()
+
+                # After processing, compare signatures and log any missing entries
+                try:
+                    post_sigs = []
+                    for b in getattr(transformed.buffs, 'buffs', []):
+                        try:
+                            post_sigs.append(_sig(b))
+                        except Exception:
+                            post_sigs.append((str(b.get('buff')), float(b.get('value') or 0), int(b.get('turns') or -1), str(b.get('source') or ''), str(b.get('display_value') or '')))
+
+                    missing_after = [s for s in pre_sigs if s not in post_sigs]
+                    added_after = [s for s in post_sigs if s not in pre_sigs]
+                    logging.info(f"transform_aoko: pre_count={len(pre_sigs)} post_count={len(post_sigs)} missing_after_count={len(missing_after)} added_after_count={len(added_after)}")
+                    if missing_after:
+                        for s in missing_after[:50]:
+                            logging.info(f"transform_aoko: MISSING AFTER PROCESS: buff={s[0]} value={s[1]} turns={s[2]} source={s[3]} display={s[4]}")
+                    if added_after:
+                        for s in added_after[:50]:
+                            logging.info(f"transform_aoko: ADDED AFTER PROCESS: buff={s[0]} value={s[1]} turns={s[2]} source={s[3]} display={s[4]}")
+                except Exception as e:
+                    logging.exception(f"transform_aoko post-process comparison failed: {e}")
                 transformed.skills.cooldowns = copy.deepcopy(aoko_cooldowns)
                 # NP gauge resets to 0 by default (FGO-accurate), but allow override if explicitly provided
                 if aoko_np_gauge is not None:
@@ -108,6 +172,8 @@ class GameManager:
                 print(f"Contratulations! Your 'Aoko Aozaki' transformed into '{transformed.name}' ")
         servants_list = [servant.name for servant in self.servants]
         logging.info(f"servants are: {servants_list}")
+
+    
     
     def init_quest(self):
         self.quest = Quest(self.quest_id)

@@ -45,5 +45,24 @@ def traverse_api_input(servant_init_dicts, mc_id, quest_id, commands):
             else:
                 logging.error(f"Failed to execute command: {command}")
                 break
-    logging.info("Commands executed successfully.")
+    # If we completed iterating through commands without breaking early,
+    # and all enemies are defeated, mark the driver run as successful so
+    # callers/tests that check truthiness (driver == True) will pass.
+    enemies = driver.game_manager.get_enemies()
+    if not any(enemy.get_hp() > 0 for enemy in enemies):
+        driver.run_succeeded = True
+        logging.info("Commands executed successfully and all enemies defeated.")
+    else:
+        logging.warning("Commands executed but enemies remain alive.")
+
+    # Persist a compact per-token trace for replay/visualization by web
+    try:
+        os.makedirs('outputs', exist_ok=True)
+        trace_path = os.path.join('outputs', 'step_log.json')
+        with open(trace_path, 'w', encoding='utf-8') as fh:
+            json.dump(driver.all_tokens, fh, ensure_ascii=False)
+        logging.info(f"Wrote step trace to {trace_path}")
+    except Exception:
+        logging.exception('Failed to write step trace')
+
     return driver  # Always return driver for logging and testing purposes
