@@ -7,10 +7,44 @@ from units.Servant import Servant
 from units.Enemy import Enemy
 import logging
 import re
+import json
 
-# Configure logging
-logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
-                    format='%(asctime:s:%(levelname)s:%(message)s')
+# Configure logging: split into regular INFO, verbose DEBUG, and compact human-readable logs
+LOG_DIR = './outputs'
+
+# Root logger
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.DEBUG)
+
+# remove existing handlers if any (helpful in test/reload cycles)
+for h in list(root_logger.handlers):
+    root_logger.removeHandler(h)
+
+# regular INFO file
+info_handler = logging.FileHandler(f"{LOG_DIR}/output.log", encoding='utf-8')
+info_handler.setLevel(logging.INFO)
+info_formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s')
+info_handler.setFormatter(info_formatter)
+root_logger.addHandler(info_handler)
+
+# verbose DEBUG file
+debug_handler = logging.FileHandler(f"{LOG_DIR}/verbose.log", encoding='utf-8')
+debug_handler.setLevel(logging.DEBUG)
+debug_formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(name)s:%(message)s')
+debug_handler.setFormatter(debug_formatter)
+root_logger.addHandler(debug_handler)
+
+# Compact logger for human-readable test output (one-line summaries)
+compact_logger = logging.getLogger('compact')
+compact_logger.setLevel(logging.INFO)
+for h in list(compact_logger.handlers):
+    compact_logger.removeHandler(h)
+compact_handler = logging.FileHandler(f"{LOG_DIR}/compact.log", encoding='utf-8')
+compact_handler.setLevel(logging.INFO)
+compact_formatter = logging.Formatter('%(asctime)s: %(message)s')
+compact_handler.setFormatter(compact_formatter)
+compact_logger.addHandler(compact_handler)
+
 
 class Driver:
     def __init__(self, servant_init_dicts, quest_id, mc_id=260):
@@ -25,6 +59,8 @@ class Driver:
         self.all_tokens = []
         # Indicates whether the last run completed successfully (all tokens used and enemies defeated)
         self.run_succeeded = False
+        # Monotonic step counter for token ordering
+        self.step_counter = 0
 
     def reset_state(self):
         self.game_manager = GameManager(self.servant_init_dicts, self.quest_id, self.mc_id)
@@ -105,10 +141,16 @@ class Driver:
         # --- Standard token execution ---
         action = token_actions.get(token)
 
+        # Increment and assign an index for this token step so the trace is ordered
+        self.step_counter += 1
         # Prepare a compact snapshot for this token
         step = {
+            'index': self.step_counter,
             'token': token,
             'action': None,
+            'wave': getattr(self.game_manager, 'wave', None),
+            'is_wave_end': False,
+            'pre_servants': None,  # snapshot before action (populated for wave end)
             'servants': [],  # minimal servant states (id, name, cooldowns, buffs)
             'np_damage': [],  # list of {target,damage,left_edge,right_edge}
             'ok': True
@@ -143,6 +185,13 @@ class Driver:
             else:
                 step['action'] = 'other'
 
+            # capture a pre-action servant snapshot and enemy HP snapshot for damage calculation
+            # (pre_servants is useful for showing state immediately before wave processing)
+            pre_servants = []
+            for s in self.game_manager.servants:
+                pre_servants.append(_servant_snapshot(s))
+            step['pre_servants'] = pre_servants
+
             # capture enemy HP snapshot for damage calculation
             enemies = list(self.game_manager.get_enemies())
             enemies_pre_hp = [e.get_hp() for e in enemies]
@@ -159,7 +208,7 @@ class Driver:
                 if dmg > 0:
                     step['np_damage'].append({'target_index': idx, 'damage': dmg, 'left_edge': round(dmg * 0.9, 4), 'right_edge': round(dmg * 1.1, 4)})
 
-            # snapshot frontline servants minimal state
+            # snapshot frontline servants minimal state (post-action)
             for s in self.game_manager.servants:
                 step['servants'].append(_servant_snapshot(s))
 
@@ -172,11 +221,67 @@ class Driver:
             step['action'] = 'invalid'
             step['ok'] = False
 
+        # If this token was an end-turn marker, mark it explicitly so the
+        # frontend can jump to it; step['pre_servants'] contains the snapshot
+        # immediately before the end-turn processing (useful to inspect the
+        # last-in-wave status before removals/decrements).
+        if token == '#':
+            step['is_wave_end'] = True
+
         # Append token step summary for replay/visualization
         try:
             self.all_tokens.append(step)
+            # Write the compact step snapshot as a single JSON line to a dedicated file
+            try:
+                with open('./outputs/step_log_lines.jsonl', 'a', encoding='utf-8') as f:
+                    f.write(json.dumps(step, ensure_ascii=False) + '\n')
+            except Exception:
+                logging.exception('Failed to write step line to outputs/step_log_lines.jsonl')
+
+            # Log the compact step snapshot to the main output log as JSON for easy parsing
+            try:
+                logging.info("Step summary (compact): %s", json.dumps(step, ensure_ascii=False))
+            except Exception:
+                # Fallback to repr if JSON serialization fails for any reason
+                logging.info("Step summary (compact): %s", repr(step))
         except Exception:
             logging.exception('Failed to append token step to all_tokens')
+
+        # Write a compact human-readable summary line for quick test inspection
+        try:
+            def _summarize_servant(snap):
+                # buff summary: name=value(turns) joined by ; but limit to important buffs
+                bstrs = []
+                for b in snap.get('buffs', []):
+                    name = b.get('buff') or 'unknown'
+                    val = b.get('value')
+                    turns = b.get('turns')
+                    bstrs.append(f"{name}={val}({turns})")
+                # shorten if too long
+                if len(bstrs) > 6:
+                    bstrs = bstrs[:6] + ['...']
+                return f"{snap.get('name')}[{snap.get('id')}] cd={snap.get('cooldowns')} buffs={'|'.join(bstrs)}"
+
+            def _format_compact_step(step_obj):
+                idx = step_obj.get('index')
+                tok = step_obj.get('token')
+                act = step_obj.get('action')
+                wave = step_obj.get('wave')
+                servants = step_obj.get('servants', [])
+                servants_summary = ' || '.join([_summarize_servant(s) for s in servants])
+                npd = step_obj.get('np_damage', [])
+                dmg_summary = ''
+                if npd:
+                    parts = [f"t{d['target_index']}={int(d['damage'])}" for d in npd]
+                    dmg_summary = ' np:' + ','.join(parts)
+                return f"#{idx} {tok} {act} W{wave} -- {servants_summary}{dmg_summary}"
+
+            try:
+                compact_logger.info(_format_compact_step(step))
+            except Exception:
+                compact_logger.info('Failed to format compact step: %s', repr(step))
+        except Exception:
+            logging.exception('Failed to write compact summary')
 
         return self.game_manager
 
