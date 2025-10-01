@@ -15,10 +15,35 @@ class Skills:
         for slot in [1,2,3]:
             # For each priority, high to low
             for p in priorities:
-                slot_dict = skills_by_priority.get(str(p), {})
-                skill = slot_dict.get(str(slot))
-                if skill:
-                    selected_skills.append(skill)
+                slot_entry = skills_by_priority.get(str(p)) or skills_by_priority.get(p)
+                # slot_entry may be several shapes:
+                # - dict mapping slot -> skill (e.g. {'1': {...}, '2': {...}})
+                # - a single skill dict (e.g. {'id':..., 'num': 2, ...})
+                # - a list of skill dicts
+                candidate = None
+                if isinstance(slot_entry, dict):
+                    # Prefer explicit slot key
+                    candidate = slot_entry.get(str(slot)) or slot_entry.get(slot)
+                    # If the dict itself looks like a skill (has 'num' and 'id'), accept it
+                    if not candidate and 'num' in slot_entry and (slot_entry.get('id') or slot_entry.get('name')):
+                        try:
+                            if int(slot_entry.get('num', 1)) == slot:
+                                candidate = slot_entry
+                        except Exception:
+                            pass
+                elif isinstance(slot_entry, list):
+                    # Find a matching skill dict in the list
+                    for item in slot_entry:
+                        if isinstance(item, dict):
+                            try:
+                                if int(item.get('num', 1)) == slot:
+                                    candidate = item
+                                    break
+                            except Exception:
+                                continue
+
+                if candidate:
+                    selected_skills.append(candidate)
                     used_slots.add(slot)
                     break
         # Now selected_skills is a list of the best skill for each slot (may be <3 if missing)

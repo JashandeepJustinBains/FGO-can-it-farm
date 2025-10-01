@@ -4,9 +4,8 @@ from .MysticCode import MysticCode
 import copy
 import logging
 
-# Configure logging
-logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
-                    format='%(asctime)s:%(levelname)s:%(message)s')
+# Module logger (Driver.py will configure handlers)
+logger = logging.getLogger(__name__)
 
 class GameManager:
     def __init__(self, servant_init_dicts, quest_id, mc_id, gm_copy=None):
@@ -54,9 +53,10 @@ class GameManager:
 
     # updated
     def transform_aoko(self, aoko_buffs, aoko_cooldowns, aoko_np_gauge=None):
-        print("What? \nAoko is transforming!")
+        # High-level event: Aoko transformation started
+        logger.info("Aoko is transforming!")
         servants_list = [servant.name for servant in self.servants]
-        logging.info(f"servants are: {servants_list}")
+        logger.debug(f"servants are: {servants_list}")
         for i, servant in enumerate(self.servants):
             if servant.id == 413:
                 # Gather all relevant init parameters from the original Aoko
@@ -101,23 +101,23 @@ class GameManager:
                 # Diagnostic: log how many incoming buffs are missing explicit source metadata
                 try:
                     missing_source = [b for b in all_buffs if not b.get('source')]
-                    logging.info(f"transform_aoko: incoming aoko_buffs total={len(all_buffs)} missing_source_count={len(missing_source)}")
+                    logger.debug(f"transform_aoko: incoming aoko_buffs total={len(all_buffs)} missing_source_count={len(missing_source)}")
                     # Log a short preview of missing entries
                     for b in missing_source[:20]:
-                        logging.info(f"transform_aoko: missing_source_preview: buff={b.get('buff')} value={b.get('value')} turns={b.get('turns')} keys={list(b.keys())}")
+                        logger.debug(f"transform_aoko: missing_source_preview: buff={b.get('buff')} value={b.get('value')} turns={b.get('turns')} keys={list(b.keys())}")
                     # Also log counts by buff name and preview Arts Up entries explicitly
                     try:
                         from collections import Counter
                         name_counts = Counter([b.get('buff', '<unknown>') for b in all_buffs])
-                        logging.info(f"transform_aoko: buff_name_counts={dict(name_counts)}")
+                        logger.debug(f"transform_aoko: buff_name_counts={dict(name_counts)}")
                         arts_up_pre = [b for b in all_buffs if (b.get('buff') or '').lower() == 'arts up']
-                        logging.info(f"transform_aoko: arts_up_incoming_count={len(arts_up_pre)}")
+                        logger.debug(f"transform_aoko: arts_up_incoming_count={len(arts_up_pre)}")
                         for b in arts_up_pre[:20]:
-                            logging.info(f"transform_aoko: arts_up_preview incoming: value={b.get('value')} turns={b.get('turns')} source={b.get('source')} keys={list(b.keys())}")
+                            logger.debug(f"transform_aoko: arts_up_preview incoming: value={b.get('value')} turns={b.get('turns')} source={b.get('source')} keys={list(b.keys())}")
                     except Exception as e:
-                        logging.exception(f"transform_aoko nested diagnostics failed: {e}")
+                        logger.exception(f"transform_aoko nested diagnostics failed: {e}")
                 except Exception as e:
-                    logging.exception(f"transform_aoko diagnostic logging failed: {e}")
+                    logger.exception(f"transform_aoko diagnostic logging failed: {e}")
 
                 # Assign flattened list to transformed.buffs.buffs (Buffs expects a list)
                 transformed.buffs.buffs = all_buffs
@@ -125,11 +125,11 @@ class GameManager:
                 # Diagnostic: after assigning, log what the transformed instance contains for Arts Up
                 try:
                     arts_up_after = [b for b in transformed.buffs.buffs if (b.get('buff') or '').lower() == 'arts up']
-                    logging.info(f"transform_aoko: arts_up_after_count={len(arts_up_after)}")
+                    logger.debug(f"transform_aoko: arts_up_after_count={len(arts_up_after)}")
                     for b in arts_up_after[:20]:
-                        logging.info(f"transform_aoko: arts_up_preview after assign: value={b.get('value')} turns={b.get('turns')} source={b.get('source')} keys={list(b.keys())}")
+                        logger.debug(f"transform_aoko: arts_up_preview after assign: value={b.get('value')} turns={b.get('turns')} source={b.get('source')} keys={list(b.keys())}")
                 except Exception as e:
-                    logging.exception(f"transform_aoko post-assign diagnostics failed: {e}")
+                    logger.exception(f"transform_aoko post-assign diagnostics failed: {e}")
 
                 # Snapshot the pre-assign buff signatures so we can detect any loss after processing
                 try:
@@ -154,24 +154,24 @@ class GameManager:
 
                     missing_after = [s for s in pre_sigs if s not in post_sigs]
                     added_after = [s for s in post_sigs if s not in pre_sigs]
-                    logging.info(f"transform_aoko: pre_count={len(pre_sigs)} post_count={len(post_sigs)} missing_after_count={len(missing_after)} added_after_count={len(added_after)}")
+                    logger.debug(f"transform_aoko: pre_count={len(pre_sigs)} post_count={len(post_sigs)} missing_after_count={len(missing_after)} added_after_count={len(added_after)}")
                     if missing_after:
                         for s in missing_after[:50]:
-                            logging.info(f"transform_aoko: MISSING AFTER PROCESS: buff={s[0]} value={s[1]} turns={s[2]} source={s[3]} display={s[4]}")
+                            logger.debug(f"transform_aoko: MISSING AFTER PROCESS: buff={s[0]} value={s[1]} turns={s[2]} source={s[3]} display={s[4]}")
                     if added_after:
                         for s in added_after[:50]:
-                            logging.info(f"transform_aoko: ADDED AFTER PROCESS: buff={s[0]} value={s[1]} turns={s[2]} source={s[3]} display={s[4]}")
+                            logger.debug(f"transform_aoko: ADDED AFTER PROCESS: buff={s[0]} value={s[1]} turns={s[2]} source={s[3]} display={s[4]}")
                 except Exception as e:
-                    logging.exception(f"transform_aoko post-process comparison failed: {e}")
+                    logger.exception(f"transform_aoko post-process comparison failed: {e}")
                 transformed.skills.cooldowns = copy.deepcopy(aoko_cooldowns)
                 # NP gauge resets to 0 by default (FGO-accurate), but allow override if explicitly provided
                 if aoko_np_gauge is not None:
                     transformed.np_gauge = aoko_np_gauge
                 # Replace in the party
                 self.servants[i] = transformed
-                print(f"Contratulations! Your 'Aoko Aozaki' transformed into '{transformed.name}' ")
+                logger.info(f"Contratulations! Your 'Aoko Aozaki' transformed into '{transformed.name}' ")
         servants_list = [servant.name for servant in self.servants]
-        logging.info(f"servants are: {servants_list}")
+        logger.debug(f"servants are: {servants_list}")
 
     
     
@@ -185,9 +185,9 @@ class GameManager:
             self.wave += 1
             next_wave = self.quest.get_wave(self.wave)  # Fetch the next wave
             self.enemies = next_wave  # Update self.enemies with the new wave
-            print(f"Advancing to wave {self.wave}")  # Debug statement
+            logger.info(f"Advancing to wave {self.wave}")
         except StopIteration:
-            print("All waves completed. Ending program.")
+            logger.info("All waves completed. Ending program.")
             exit(0)  # Ends the program
         return 
 

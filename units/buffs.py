@@ -1,8 +1,7 @@
 import logging
 
-# Configure logging
-logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
-                    format='%(asctime)s:%(levelname)s:%(message)s')
+# Module logger (Driver.py will configure handlers)
+logger = logging.getLogger(__name__)
 
 magic_bullet_buff = {'buff': 'Magic Bullet', 'functvals': [], 'value': 9999, 'tvals': [2885], 'turns': -1, 'source': 'system'}
 
@@ -36,7 +35,7 @@ class Buffs:
 
     def process_end_turn_skills(self):
         add_magic_bullets = False
-        logging.info(f"PROCESSING END TURN SKILLS")
+        logger.debug(f"PROCESSING END TURN SKILLS")
         for i, buff in enumerate(self.buffs):
             # logging.info(f"step 2.{i}")
             if buff['buff'] == 'NP Gain Each Turn':
@@ -171,7 +170,7 @@ class Buffs:
                     # Add more trigger types as needed
                     else:
                         # Default: log and skip
-                        logging.info(f"[Buffs] Unhandled trigger effect: {name} value={value}")
+                        logger.debug(f"[Buffs] Unhandled trigger effect: {name} value={value}")
                 elif buff['buff'] == 'NP Gain Up':
                     self.servant.np_gain_mod += buff['value'] / 1000
 

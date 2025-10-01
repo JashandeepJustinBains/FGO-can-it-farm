@@ -1,8 +1,7 @@
 import logging
 
-# Configure logging
-logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
-                    format='%(asctime)s:%(levelname)s:%(message)s', force=True)
+# Module logger (Driver.py will configure handlers)
+logger = logging.getLogger(__name__)
 
 # needed to increase consecutivly used NPs OC levels
 # should be static 
@@ -28,11 +27,11 @@ class npManager:
                 continue  # skip (remove) this buff
             new_buffs.append(buff)
         servant.buffs.buffs = new_buffs
-        logging.info(f"[NPManager] Consumed {removed} Magic Bullets from {servant.name} after NP.")
+        logger.debug(f"[NPManager] Consumed {removed} Magic Bullets from {servant.name} after NP.")
 
     def use_np(self, servant):
-        # Log which servant is about to use NP for easier tracing
-        logging.info(f"\n BEGINNING NP LOG for servant id={getattr(servant,'id',None)} name={getattr(servant,'name',None)} np_gauge={getattr(servant,'np_gauge',None)} \n")
+        # Compact INFO: log NP usage; verbose/debug will include detailed internals
+        logger.info(f"NP used: id={getattr(servant,'id',None)} name={getattr(servant,'name',None)} np_gauge={servant.stats.get_npgauge()}")
                 
 
         if servant.stats.get_npgauge() >= 99:
@@ -61,7 +60,7 @@ class npManager:
             # Apply effects and damage
             for i, func in enumerate(functions):
                 if func['funcType'] in ['damageNp', 'damageNpPierce']:
-                    logging.info(f"firing basic ST or AOE NP of servant {servant}")
+                    logger.debug(f"firing basic ST or AOE NP of servant {servant}")
                     # if non-SE NP check for AoE or ST    
                     if (func['funcTargetType'] == 'enemyAll'):
                         servant.buffs.process_servant_buffs()
@@ -77,7 +76,7 @@ class npManager:
 
                 elif func['funcType'] in ['damageNpIndividualSum', 'damageNpStateIndividualFix', 'damageNpIndividual']:
                     # SE NPs
-                    logging.info(f"firing SE NP of servant {servant}")
+                    logger.debug(f"firing SE NP of servant {servant}")
                     if (func['funcTargetType'] == 'enemyAll'):
                         servant.buffs.process_servant_buffs()
                         for enemy in self.gm.get_enemies():
@@ -105,12 +104,12 @@ class npManager:
                     self.sm.apply_effect(np_oc_1_turn, s)
             # Special-case: Aoko transforms on NP use. Instrument and call transform.
             if servant.id == 413:
-                logging.info(f"Aoko NP use detected: id={servant.id}, name={servant.name}, np_gauge={servant.stats.get_npgauge()}")
+                logger.info(f"Aoko NP use detected: id={servant.id}, name={servant.name}, np_gauge={servant.stats.get_npgauge()}")
                 try:
                     self.gm.transform_aoko(aoko_buffs=servant.buffs.buffs, aoko_cooldowns=servant.skills.cooldowns)
-                    logging.info("transform_aoko called successfully")
+                    logger.info("transform_aoko called successfully")
                 except Exception as e:
-                    logging.exception(f"transform_aoko raised exception: {e}")
+                    logger.exception(f"transform_aoko raised exception: {e}")
             # Remove up to 10 Magic Bullets after NP for Aoko/Super Aoko
             if getattr(servant, 'id', None) == 4132:
                 self._consume_magic_bullets(servant, count=10)
@@ -118,7 +117,7 @@ class npManager:
             # If the NP had side-effects that mark the caster for death (self-sacrifice)
             # handle removal immediately so the effect is visible to the rest of the command flow.
             if getattr(servant, 'kill', False):
-                logging.info(f"Servant {servant.name} flagged for kill after NP; removing from party")
+                logger.info(f"Servant {servant.name} flagged for kill after NP; removing from party")
                 try:
                     idx = self.gm.servants.index(servant)
                 except ValueError:
@@ -130,21 +129,20 @@ class npManager:
                         swap = self.gm.servants[3]
                         self.gm.servants[idx] = swap
                         self.gm.servants.pop(3)
-                        logging.info(f"Replaced dead frontline servant with backline {swap.name}")
+                        logger.info(f"Replaced dead frontline servant with backline {swap.name}")
                     else:
                         # Otherwise just remove the servant from the list
                         removed = self.gm.servants.pop(idx)
-                        logging.info(f"Removed servant {removed.name} from party")
+                        logger.info(f"Removed servant {removed.name} from party")
 
                 # Reset the flag
                 servant.kill = False
 
-            logging.info("\n ENDING NP LOG \n")
+            logger.debug("END NP LOG")
         else:
             print(f"{servant.name} does not have enough NP gauge: {servant.get_npgauge()}")
 
     def apply_np_damage(self, servant, target):
-
         # Card type and modifiers
         card_type = servant.nps.card
         card_damage_value = None
@@ -183,8 +181,8 @@ class npManager:
         se_multiplier = 1
 
         servant_atk = servant.stats.get_base_atk()
-        # Print all buffs and modifiers for debugging
-        logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | Card Damage Value: {card_damage_value} | Card Damage Mod: {card_damage_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} + generic pmod: {generic_pmod} | NP Damage Mod: {np_damage_mod} | SE Multiplier: {se_multiplier}")
+        # Verbose: print all buffs and modifiers for debugging
+        logger.debug(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | Card Damage Value: {card_damage_value} | Card Damage Mod: {card_damage_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} + generic pmod: {generic_pmod} | NP Damage Mod: {np_damage_mod} | SE Multiplier: {se_multiplier}")
 
         # FGO-accurate: Card Mod is multiplicative with card value, Card Damage Mod is additive
         total_damage = (servant_atk * np_damage_multiplier * se_multiplier * (card_damage_value * (1 + card_damage_mod + card_eff_mod - enemy_res_mod)) *
@@ -243,12 +241,12 @@ class npManager:
                 pass
 
             target.set_hp(hit_damage)
-            logging.info(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left")
+            logger.debug(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left")
             servant.stats.set_npgauge(servant.stats.get_npgauge() + np_per_hit)
             if target.get_hp() <= 0:
-                logging.info(f"{target.get_name()} has been defeated by hit {i+1}!")
+                logger.info(f"{target.get_name()} has been defeated by hit {i+1}!")
 
-    # Record damage summary
+        # Record damage summary
         dmg_record = {
             'servant': servant.name,
             'damage': total_damage,
@@ -256,7 +254,7 @@ class npManager:
             'current_hp': target.get_hp(),
             'fraction_remaining': round(target.get_hp()/initial_hp, 4) if initial_hp else None
         }
-        logging.info(f"Damage record: {dmg_record}")
+        logger.info(f"Damage record: {dmg_record}")
         print(f"{servant.name} deals {total_damage} to {target.name} who has {target.get_hp()} hp left and gains {np_per_hit}% np | HP: {target.get_hp()}/{initial_hp} | Fraction Remaining: {dmg_record['fraction_remaining']}")
 
     def apply_np_odd_damage(self, servant, target):
@@ -308,9 +306,9 @@ class npManager:
                     c_traits = 0
                     if hasattr(servant, 'traits'):
                         c_traits = servant.traits.count(indv)
-                    logging.info(f"[SE NP] Counting self buffs for individuality {indv}: buffs={c_buffs}, traits={c_traits}")
+                    logger.debug(f"[SE NP] Counting self buffs for individuality {indv}: buffs={c_buffs}, traits={c_traits}")
                     count += c_buffs + c_traits
-                logging.info(f"[SE NP] Total self buff+trait count for {individuality_ids}: {count}")
+                logger.debug(f"[SE NP] Total self buff+trait count for {individuality_ids}: {count}")
             elif np_correction_target == 1:
                 # Count on enemy buffs/traits
                 count = 0
@@ -319,11 +317,11 @@ class npManager:
                     c_traits = 0
                     if hasattr(target, 'traits'):
                         c_traits = target.traits.count(indv)
-                    logging.info(f"[SE NP] Counting enemy buffs/traits for individuality {indv}: buffs={c_buffs}, traits={c_traits}")
+                    logger.debug(f"[SE NP] Counting enemy buffs/traits for individuality {indv}: buffs={c_buffs}, traits={c_traits}")
                     count += c_buffs + c_traits
-                logging.info(f"[SE NP] Total enemy buff+trait count for {individuality_ids}: {count}")
+                logger.debug(f"[SE NP] Total enemy buff+trait count for {individuality_ids}: {count}")
             else:
-                logging.warning(f"[SE NP] Unknown Target value for SE NP: {np_correction_target}")
+                logger.warning(f"[SE NP] Unknown Target value for SE NP: {np_correction_target}")
                 count = 0
 
             # Cap count if ParamAddMaxCount present
@@ -338,21 +336,21 @@ class npManager:
                         break
             if param_add_max is not None:
                 count = min(count, param_add_max)
-                logging.info(f"[SE NP] Capped count to ParamAddMaxCount={param_add_max}")
+                logger.debug(f"[SE NP] Capped count to ParamAddMaxCount={param_add_max}")
             se_multiplier = max(np_damage_correction_init, 1 + np_correction * count)
-            logging.info(f"Super Effective NP: individuality_ids={individuality_ids}, count={count}, correction={np_correction}, base={np_damage_multiplier}, min={np_damage_correction_init}, se_multiplier={se_multiplier}, Target={np_correction_target}")
+            logger.debug(f"Super Effective NP: individuality_ids={individuality_ids}, count={count}, correction={np_correction}, base={np_damage_multiplier}, min={np_damage_correction_init}, se_multiplier={se_multiplier}, Target={np_correction_target}")
         else:
             se_multiplier = 1
 
-        # Print all buffs and modifiers for debugging
-        logging.info(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | initial np correction amount: {np_damage_correction_init} | np correction: {np_correction} | what id is used for the correction {np_correction_id} | target or buff that effects np_correction amounts:{np_correction_target} | Card Damage Value: {card_damage_value} | Card Mod: {card_eff_mod} | Card Damage Mod: {card_damage_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} + generic pmod {generic_pmod} | NP Damage Mod: {np_damage_mod} | SE Multiplier: {se_multiplier}")
+        # Verbose: print all buffs and modifiers for debugging
+        logger.debug(f"Servant ATK: {servant_atk} | NP Damage Multiplier: {np_damage_multiplier} | initial np correction amount: {np_damage_correction_init} | np correction: {np_correction} | what id is used for the correction {np_correction_id} | target or buff that effects np_correction amounts:{np_correction_target} | Card Damage Value: {card_damage_value} | Card Mod: {card_eff_mod} | Card Damage Mod: {card_damage_mod} | Enemy Res Mod: {enemy_res_mod} | Class Modifier: {class_modifier} | Attribute Modifier: {attribute_modifier} | ATK Mod: {atk_mod} | Enemy Def Mod: {enemy_def_mod} | Power Mod: {power_mod} + generic pmod {generic_pmod} | NP Damage Mod: {np_damage_mod} | SE Multiplier: {se_multiplier}")
 
         # FGO-accurate: Card Mod is multiplicative with card value, Card Damage Mod is additive
         total_damage = (servant_atk * np_damage_multiplier * se_multiplier * (card_damage_value * (1 + card_damage_mod + card_eff_mod - enemy_res_mod)) *
                         class_modifier * attribute_modifier * 0.23 * (1 + atk_mod - enemy_def_mod) *
                         (1 + np_damage_mod  + generic_pmod + power_mod))
 
-        logging.info(f"Total Damage: {total_damage}")
+        logger.info(f"Total Damage: {total_damage}")
 
         np_gain = servant.stats.get_npgain() * servant.stats.get_np_gain_mod()
         np_distribution = servant.stats.get_npdist()
@@ -395,10 +393,10 @@ class npManager:
                 pass
 
             target.set_hp(hit_damage)
-            logging.info(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left")
+            logger.debug(f"{servant.name} deals {hit_damage} to {target.name} who has {target.get_hp()} hp left")
             servant.stats.set_npgauge(np_per_hit)
 
             if target.get_hp() <= 0:
-                logging.info(f"{target.get_name()} has been defeated by hit {i+1}!")
+                logger.info(f"{target.get_name()} has been defeated by hit {i+1}!")
         print(f"{servant.stats.get_name()} attacks {target.get_name()} with Noble Phantasm for {'%.0f' % total_damage} total damage! {target.get_name()} is left with {target.hp} hp")
         

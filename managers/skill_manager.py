@@ -1,8 +1,7 @@
 import logging
 
-# Configure logging
-logging.basicConfig(filename='./outputs/output.log', level=logging.INFO,
-                    format='%(asctime)s:%(levelname)s:%(message)s')
+# Module logger (Driver.py will configure handlers)
+logger = logging.getLogger(__name__)
 
 # Module-level trigger registry for future extensibility. We prefer
 # data-driven detection of trigger semantics (on-hit, end-turn, counter)
@@ -238,14 +237,14 @@ class SkillManager:
         buff = state.get('buff_name')
         # Diagnostic logging to trace missing source info
         try:
-            logging.info(f"[apply_buff] target={getattr(target,'name',None)} state_keys={list(state.keys())} state_preview={ {k: state.get(k) for k in ['value','turns','skill_num','source_servant','is_passive','user_input','from_skill']} }")
+            logger.debug(f"[apply_buff] target={getattr(target,'name',None)} state_keys={list(state.keys())} state_preview={ {k: state.get(k) for k in ['value','turns','skill_num','source_servant','is_passive','user_input','from_skill']} }")
         except Exception:
-            logging.info(f"[apply_buff] target={getattr(target,'name',None)} state keys logging failed")
+            logger.debug(f"[apply_buff] target={getattr(target,'name',None)} state keys logging failed")
         value = state.get('value')
         functvals = state.get('functvals', [])
         tvals = [tval.get('id') for tval in state.get('tvals', [])] if state.get('tvals') else []
         turns = state.get('turns')
-        logging.info(f"added buff {buff} to {getattr(target, 'name', '<unknown>')}")
+        logger.debug(f"added buff {buff} to {getattr(target, 'name', '<unknown>')}")
 
         raw_svals = state.get('svals')
         count = state.get('count')
@@ -321,7 +320,7 @@ class SkillManager:
         """
         trigger_type = buff.get('trigger_type') or (buff.get('svals') and ('TriggeredFuncPosition' in buff.get('svals')) and 'on-hit')
         svals = buff.get('svals', {}) or {}
-        logging.info(f"run_triggered_buff check: buff={buff.get('buff')} trigger_type={trigger_type} card_type={card_type} svals={svals} tvals={buff.get('tvals')} count={buff.get('count')}")
+        logger.debug(f"run_triggered_buff check: buff={buff.get('buff')} trigger_type={trigger_type} card_type={card_type} svals={svals} tvals={buff.get('tvals')} count={buff.get('count')}")
 
         # Respect card-type restrictions if present
         if card_type and buff.get('tvals'):
@@ -340,7 +339,7 @@ class SkillManager:
                 # Acceptable NP bonus effect types/names
                 bonus_keywords = ['NP Bonus Effect', 'NP attackAfterFunction', 'NP Buster Attack Bonus Effect', 'NP Arts Attack Bonus Effect', 'NP Quick Attack Bonus Effect']
                 if not any(kw in (buff.get('type','') + buff.get('buff','')) for kw in bonus_keywords):
-                    logging.info(f"run_triggered_buff: skipping on-hit trigger {buff.get('buff')} for NP context")
+                    logger.debug(f"run_triggered_buff: skipping on-hit trigger {buff.get('buff')} for NP context")
                     return False
             # Only grant NP gauge for specific effect names, not for NP Gain Up stat
             np_gauge_effects = [
@@ -360,7 +359,7 @@ class SkillManager:
                         grant = float(v)
 
                 if grant:
-                    logging.info(f"run_triggered_buff: granting NP {grant}% to {getattr(source_servant,'name',None)}")
+                    logger.info(f"run_triggered_buff: granting NP {grant}% to {getattr(source_servant,'name',None)}")
                     source_servant.set_npgauge(grant)
                     return True
             # Counter-style on-hit: only treat this as a stack-consuming
@@ -369,7 +368,7 @@ class SkillManager:
             buff_count = buff.get('count')
             sval_count = svals.get('Count')
             if (isinstance(buff_count, int) and buff_count >= 0) or (isinstance(sval_count, int) and sval_count >= 0):
-                logging.info(f"run_triggered_buff: detected counter-style trigger for {buff.get('buff')}")
+                logger.debug(f"run_triggered_buff: detected counter-style trigger for {buff.get('buff')}")
                 # nothing to do here at generic level; caller may decrement
                 return True
             return False
@@ -407,7 +406,7 @@ class SkillManager:
             print(f"Mystic Code skill {skill_num} is on cooldown: {mystic_code.cooldowns[skill_num]} turns remaining")
 
     def use_skill(self, servant, skill_num, target=None):
-        logging.info(f"BEGINNING USE_SKILL OF {servant.name}' SKILL {servant.skills.get_skill_by_num(skill_num+1)}")
+        logger.info(f"BEGINNING USE_SKILL OF {servant.name}' SKILL {servant.skills.get_skill_by_num(skill_num+1)}")
         skill_num += 1
         if self.skill_available(servant, skill_num):
             skill = servant.skills.get_skill_by_num(skill_num)
@@ -416,8 +415,8 @@ class SkillManager:
                 logging.warning(f"Skill number {skill_num} not found for {servant.name}; skipping.")
                 return False
             servant.skills.set_skill_cooldown(skill_num)
-            logging.info(f"Skill {skill_num} used. Cooldown remaining: {servant.skills.get_skill_cooldowns()[skill_num]} turns")
-            logging.info(f"Applying {servant.name}'s {servant.skills.get_skill_by_num(skill_num)}")
+            logger.info(f"Skill {skill_num} used. Cooldown remaining: {servant.skills.get_skill_cooldowns()[skill_num]} turns")
+            logger.debug(f"Applying {servant.name}'s {servant.skills.get_skill_by_num(skill_num)}")
             # Some skill entries may have 'functions' set to None; treat as empty list.
             funcs = skill.get('functions') or []
             for effect in funcs:
@@ -485,7 +484,7 @@ class SkillManager:
         else:
             percent = rv
 
-        logging.info(f"apply_gain_np: raw={raw_val} percent={percent} applied to {getattr(target,'name',None)}")
+        logger.info(f"apply_gain_np: raw={raw_val} percent={percent} applied to {getattr(target,'name',None)}")
         target.set_npgauge(percent)
 
     def apply_cooldown_reduction(self, effect, target):
@@ -539,7 +538,7 @@ class SkillManager:
             old = target.get_npgauge()
         # Generalized: multiplier=1.0 means +100% (double), so new = old * (1 + multiplier)
         new = old * (1 + multiplier)
-        logging.info(f"apply_multiply_np: multiplier={multiplier} old={old} new={new} for {getattr(target,'name',None)}")
+        logger.debug(f"apply_multiply_np: multiplier={multiplier} old={old} new={new} for {getattr(target,'name',None)}")
         # Set absolute gauge
         target.np_gauge = new
 

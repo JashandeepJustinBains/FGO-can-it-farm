@@ -30,6 +30,8 @@ into the Servant class and updates select_ascension_data to use them.
 
 import json
 import logging
+# Module logger (Driver.py will configure handlers)
+logger = logging.getLogger(__name__)
 import json
 from typing import Dict, List, Any, Optional, Tuple
 from collections import defaultdict
@@ -380,11 +382,11 @@ def select_ascension_data(servant_json: dict, ascension: int) -> dict:
             # Fallback to highest available ascension
             available_ascensions = sorted(all_ascensions.keys())
             highest_asc = available_ascensions[-1]
-            logging.warning(f"Ascension {ascension} not found, using highest available ascension {highest_asc}")
+            logger.warning(f"Ascension {ascension} not found, using highest available ascension {highest_asc}")
             return all_ascensions[highest_asc]
             
     except Exception as e:
-        logging.warning(f"Enhanced parser failed for servant {servant_json.get('collectionNo')}, ascension {ascension}: {e}")
+        logger.warning(f"Enhanced parser failed for servant {servant_json.get('collectionNo')}, ascension {ascension}: {e}")
     
     # Fallback to legacy parser
     return select_ascension_data_legacy(servant_json, ascension)
@@ -421,7 +423,7 @@ def select_ascension_data_legacy(servant_json: dict, ascension: int) -> dict:
             if ascensions_data:
                 highest_asc = max(ascensions_data, key=lambda x: x.get('ascension', x.get('ascensionIndex', x.get('index', 0))))
                 highest_level = highest_asc.get('ascension', highest_asc.get('ascensionIndex', highest_asc.get('index', 0)))
-                logging.warning(f"Ascension {ascension} not found, using highest available ascension {highest_level}")
+                logger.warning(f"Ascension {ascension} not found, using highest available ascension {highest_level}")
                 result['skills'] = highest_asc.get('skills', [])
                 result['noblePhantasms'] = highest_asc.get('noblePhantasms', [])
                 result['passives'] = highest_asc.get('passives', [])
@@ -429,8 +431,117 @@ def select_ascension_data_legacy(servant_json: dict, ascension: int) -> dict:
                 return result
     
     # Check for list-of-lists format (per-ascension lists)
+    # Some JSON exports (e.g., AtlasAcademy-derived) provide 'skillsByPriority'
+    # and 'npsByPriority' top-level maps instead of a flat 'skills' list.  Normalize
+    # those to the legacy shape so downstream code (Skills(...)) can parse slots.
     skills_data = servant_json.get('skills', [])
     nps_data = servant_json.get('noblePhantasms', [])
+
+    # Normalize skillsByPriority -> skills list (pick highest priority per slot)
+    if not skills_data and servant_json.get('skillsByPriority'):
+        sbp = servant_json.get('skillsByPriority')
+        flat_skills = []
+        # If sbp is a mapping of priority -> {slot: skill} (common), handle that first
+        if isinstance(sbp, dict):
+            try:
+                priorities = sorted([int(p) for p in sbp.keys() if str(p).isdigit()], reverse=True)
+            except Exception:
+                priorities = sorted(list(sbp.keys()), reverse=True)
+            for slot in [1, 2, 3]:
+                sel = None
+                for p in priorities:
+                    slot_entry = sbp.get(str(p)) or sbp.get(p) or sbp.get(int(p))
+                    if isinstance(slot_entry, dict):
+                        candidate = slot_entry.get(str(slot)) or slot_entry.get(slot)
+                        if candidate:
+                            sel = candidate
+                            break
+                    elif isinstance(slot_entry, list):
+                        # slot_entry may be a list of skill dicts
+                        for item in slot_entry:
+                            if isinstance(item, dict) and int(item.get('num', 1)) == slot:
+                                sel = item
+                                break
+                        if sel:
+                            break
+                if sel:
+                    flat_skills.append(sel)
+        else:
+            # sbp may be a nested list/dict structure; recursively collect skill dicts with a 'num' field
+            candidates = []
+            def collect(obj):
+                if isinstance(obj, dict):
+                    if 'num' in obj and ('id' in obj or 'name' in obj):
+                        candidates.append(obj)
+                    for v in obj.values():
+                        collect(v)
+                elif isinstance(obj, list):
+                    for item in obj:
+                        collect(item)
+            collect(sbp)
+            # Pick first found candidate per slot (preserving order)
+            slots = {}
+            for c in candidates:
+                try:
+                    slot = int(c.get('num', 1))
+                except Exception:
+                    slot = 1
+                if slot not in slots:
+                    slots[slot] = c
+            for slot in [1,2,3]:
+                if slot in slots:
+                    flat_skills.append(slots[slot])
+        skills_data = flat_skills
+
+    # Normalize npsByPriority -> noblePhantasms list (pick highest priority per NP slot)
+    if not nps_data and servant_json.get('npsByPriority'):
+        nbp = servant_json.get('npsByPriority')
+        flat_nps = []
+        if isinstance(nbp, dict):
+            try:
+                np_priorities = sorted([int(p) for p in nbp.keys() if str(p).isdigit()], reverse=True)
+            except Exception:
+                np_priorities = sorted(list(nbp.keys()), reverse=True)
+            for slot in [1]:
+                sel = None
+                for p in np_priorities:
+                    slot_entry = nbp.get(str(p)) or nbp.get(p) or nbp.get(int(p))
+                    if isinstance(slot_entry, dict):
+                        candidate = slot_entry.get(str(slot)) or slot_entry.get(slot)
+                        if candidate:
+                            sel = candidate
+                            break
+                    elif isinstance(slot_entry, list):
+                        for item in slot_entry:
+                            if isinstance(item, dict) and int(item.get('num', 1)) == slot:
+                                sel = item
+                                break
+                        if sel:
+                            break
+                if sel:
+                    flat_nps.append(sel)
+        else:
+            candidates = []
+            def collect(obj):
+                if isinstance(obj, dict):
+                    if 'num' in obj and ('id' in obj or 'name' in obj):
+                        candidates.append(obj)
+                    for v in obj.values():
+                        collect(v)
+                elif isinstance(obj, list):
+                    for item in obj:
+                        collect(item)
+            collect(nbp)
+            # Choose first candidate for slot 1
+            for c in candidates:
+                try:
+                    slot = int(c.get('num', 1))
+                except Exception:
+                    slot = 1
+                if slot == 1:
+                    flat_nps.append(c)
+                    break
+        nps_data = flat_nps
     
     # Detect if skills/nps are list-of-lists
     is_skills_list_of_lists = (skills_data and 
@@ -451,7 +562,7 @@ def select_ascension_data_legacy(servant_json: dict, ascension: int) -> dict:
             else:
                 # Use highest available
                 highest_idx = len(skills_data) - 1
-                logging.warning(f"Skills ascension {ascension} not found, using highest available ascension {highest_idx + 1}")
+                logger.warning(f"Skills ascension {ascension} not found, using highest available ascension {highest_idx + 1}")
                 result['skills'] = skills_data[highest_idx]
         else:
             result['skills'] = skills_data
@@ -462,7 +573,7 @@ def select_ascension_data_legacy(servant_json: dict, ascension: int) -> dict:
             else:
                 # Use highest available
                 highest_idx = len(nps_data) - 1
-                logging.warning(f"NoblePhantasms ascension {ascension} not found, using highest available ascension {highest_idx + 1}")
+                logger.warning(f"NoblePhantasms ascension {ascension} not found, using highest available ascension {highest_idx + 1}")
                 result['noblePhantasms'] = nps_data[highest_idx]
         else:
             result['noblePhantasms'] = nps_data
@@ -534,12 +645,12 @@ class Servant:
     def id(self):
         return self.collectionNo
     def set_npgauge(self, value):
-        import logging
         if value == 0:
-            logging.info(f"Setting NP GAUGE to 0 for {self.name}")
+            logger.info(f"Setting NP GAUGE to 0 for {self.name}")
             self.np_gauge = 0
         else:
-            logging.info(f"INCREASING NP GAUGE OF {self.name} TO {self.np_gauge + value}")
+            # Log increases at INFO so NP changes remain visible in compact logs
+            logger.info(f"INCREASING NP GAUGE OF {self.name} TO {self.np_gauge + value}")
             self.np_gauge += value
         # Cap NP gauge at 300%
         if self.np_gauge > 300:

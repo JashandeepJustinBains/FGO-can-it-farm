@@ -6,9 +6,8 @@ from pymongo import MongoClient
 from Driver import Driver
 import logging
 
-# Configure logging
-logging.basicConfig(filename='./outputs/traverse_api_input.log', level=logging.INFO,
-                    format='%(asctime)s:%(levelname)s:%(message)s')
+# Module logger (Driver.py will configure handlers)
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 load_dotenv()
